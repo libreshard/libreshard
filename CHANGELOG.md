@@ -6,6 +6,11 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### Tablet viewer
+
+- Picking a shard from the menu opens it full screen. A gear in the menu header opens "This
+  device", where each tablet can turn that off.
+
 ## [0.1.0] - 2026-11-03
 
 First public release.

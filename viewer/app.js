@@ -172,17 +172,43 @@ function hideToast() {
 const fsSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
 const isFullscreen = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
 
+// Both must run inside the user's tap: browsers refuse full screen (and the wake video) otherwise
 function toggleFullscreen() {
+  if (!isFullscreen()) return enterFullscreen(true);
+  keepAwake(false);
+  const p = (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  if (p && p.catch) p.catch(() => keepAwake(isFullscreen()));
+}
+
+// report: say so if the browser refuses (the automatic entry from the menu stays quiet)
+function enterFullscreen(report) {
+  if (!fsSupported || isFullscreen()) return;
   const root = document.documentElement;
-  keepAwake(!isFullscreen());
-  const p = isFullscreen()
-    ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
-    : (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+  keepAwake(true);
+  const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
   if (p && p.catch) p.catch(() => {
     keepAwake(isFullscreen());
-    showToast(t('viewer.fullscreenFailed'));
+    if (report) showToast(t('viewer.fullscreenFailed'));
   });
 }
+
+/* ---------- This device's settings ---------- */
+// Open shards full screen when picked from the menu: on by default, only the opt-out is stored
+const AUTO_FS_KEY = 'auto-fullscreen';
+const autoFullscreen = () => localStorage.getItem(AUTO_FS_KEY) !== 'off';
+
+function setDeviceSheet(open) {
+  $('devSheet').hidden = $('devScrim').hidden = !open;
+  $('devBtn').setAttribute('aria-expanded', String(open));
+  if (open) $('autoFs').checked = autoFullscreen();
+}
+$('devBtn').onclick = () => setDeviceSheet($('devSheet').hidden);
+$('devScrim').onclick = () => setDeviceSheet(false);
+$('autoFs').onchange = (e) => {
+  if (e.target.checked) localStorage.removeItem(AUTO_FS_KEY); else localStorage.setItem(AUTO_FS_KEY, 'off');
+};
+// Full screen is the only setting so far: without the API there is nothing to show
+$('devBtn').hidden = !fsSupported;
 
 // Fills a button with the icon and text for the current state
 function fillFsButton(b) {
@@ -294,7 +320,10 @@ function renderMenu() {
       desc.textContent = String(s.description).slice(0, 120);
       b.append(desc);
     }
-    b.onclick = () => { location.hash = s.id; };
+    b.onclick = () => {
+      if (autoFullscreen()) enterFullscreen(false);
+      location.hash = s.id;
+    };
     list.append(b);
   }
 }
@@ -397,6 +426,7 @@ function showShard(s) {
   releaseHeld();
   current = s.id;
   closePanel();
+  setDeviceSheet(false);
   $('menu').hidden = true;
   $('stage').hidden = false;
   $('frame').title = label(s);
@@ -492,7 +522,9 @@ function closePanel() { setPanel(false); }
 
 $('fab').onclick = () => setPanel($('panel').hidden);
 $('scrim').onclick = closePanel;
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closePanel(); setDeviceSheet(false); }
+});
 
 /* ---------- Shard → PC bridge ---------- */
 const DATA_MAX = 64 * 1024; // limit on the data each shard can save

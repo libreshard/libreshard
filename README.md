@@ -101,8 +101,9 @@ Open the `.dmg` and drag LibreShard to Applications. It isn't signed: right-clic
 1. Open LibreShard on the PC. The **Connect** tab shows a QR code for each network the PC is on.
 2. Scan one with the tablet's camera (the one that opens is the right one), or open the address on
    the tablet and type the 6-digit code.
-3. Pick a shard from the menu and tap away. The floating button in the top-left corner switches
-   shards and goes full screen.
+3. Pick a shard from the menu: it opens full screen (turn that off with the gear in the menu, per
+   tablet). The floating button in the top-left corner switches shards and leaves or enters full
+   screen.
 
 Each code works once and for 10 minutes. Paired devices are listed in the **Devices** tab, where you
 can rename or unpair them.
