@@ -290,7 +290,15 @@ test("'up' is never dropped by the rate limit", () => withServer({}, async (s) =
   await waitFor(() => s.keyboard.events.length === 80, 3000);
 }));
 
-test('a flood of messages disconnects the client', () => withServer({}, async (s) => {
+// A flood is more queued messages than the server can handle, not a rate: with an instant fake
+// keyboard a slow machine could drain the queue between network reads. A keyboard that takes 50 ms
+// per key keeps the queue growing on any machine.
+const slowKeyboard = () => {
+  const wait = () => new Promise((r) => setTimeout(r, 50));
+  return { events: [], pressKey: wait, releaseKey: wait };
+};
+
+test('a flood of messages disconnects the client', () => withServer({ keyboard: slowKeyboard() }, async (s) => {
   const c = await authed(s);
   for (let i = 0; i < 150; i++) c.send({ type: 'up', shard: 'demo', keys: 'f13' });
   assert.equal(await c.closed, 1008);
