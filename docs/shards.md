@@ -62,8 +62,8 @@ LibreShard links the folder instead of copying it:
 - Changing `manifest.json` reloads its declaration. New keys need your approval again.
 - The shard shows an "In development" badge on the PC.
 
-To debug, open the viewer in the PC's browser ("Open on this PC" in the Connect tab) and use the
-developer tools on the shard's iframe.
+To debug, open `http://localhost:7878/` in the PC's browser, type the code shown in the Connect tab
+and use the developer tools on the shard's iframe.
 
 ## manifest.json
 

@@ -465,7 +465,7 @@ npm run test:linux # the suite plus real key injection and app detection on Linu
 npm run shards:base # after editing shard-base/: copies libreshard.css/.js into every bundled shard
 ```
 
-Testing without a tablet: click "Open on this PC" in the app window (it pairs the PC's browser with the one-time token), or open `http://localhost:7878/` and type the code shown in the window. To debug a shard, use the browser's developer tools on the iframe.
+Testing without a tablet: the **This PC** card in the Connect tab opens the local panel. To debug a shard, open `http://localhost:7878/` in a browser instead, type the code shown in the window and use the developer tools on the iframe (the panel never takes the focus, so its developer tools can't be opened). Keys pressed from that browser land in the browser itself, since it is in front.
 
 What needs a restart:
 
