@@ -172,19 +172,15 @@ npm run dist     # compila el instalador de este sistema en dist/
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"cScale0": "#0d1b2a", "cScaleLabel0": "#22d3ee", "cScaleInv0": "#22d3ee", "cScale1": "#fbbf24", "cScaleLabel1": "#0d1b2a", "cScaleInv1": "#f59e0b", "cScale2": "#22d3ee", "cScaleLabel2": "#0d1b2a", "cScaleInv2": "#06b6d4", "cScale3": "#1f3a55", "cScaleLabel3": "#9cc3e0", "cScaleInv3": "#7ea3c2", "cScaleLabel11": "#7ea3c2"}, "themeCSS": ".eventWrapper { filter: none; }"}}%%
 timeline
-    section Publicada
-        0.1 : Primera versión pública
-    section En curso
-        0.2 : Shards a pantalla completa : Panel táctil en la propia PC
-    section Prevista
-        0.3 : Robustez y confianza : Diagnóstico, avisos más claros y arreglos
-        0.4 : Paneles sin programar : Editor visual e importación de Stream Deck
-        0.5 : Ecosistema de shards : Galería comunitaria y más idiomas
-        0.6 : Experiencia en la tablet : Menú mejorado, cambio automático y HTTPS
-        1.0 : Primera versión estable
-    section Tentativa
-        1.1 : Shards más potentes : Acciones, macros, datos en vivo y ratón
-        1.2 : Conectores : OBS y otras apps, con estado en vivo
+    Publicada : 0.1 · Primera versión pública
+    En curso : 0.2 · Shards a pantalla completa y panel táctil en la PC
+    Prevista : 0.3 · Robustez y confianza
+             : 0.4 · Paneles sin programar, con importación de Stream Deck
+             : 0.5 · Galería de shards y más idiomas
+             : 0.6 · Experiencia en la tablet
+             : 1.0 · Primera versión estable
+    Tentativa : 1.1 · Acciones, macros, datos en vivo y ratón
+              : 1.2 · Conectores para OBS y otras apps
 ```
 
 Las versiones y su contenido todavía pueden cambiar. La 1.1 y la 1.2 son tentativas y se evaluarán

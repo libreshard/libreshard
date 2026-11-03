@@ -169,19 +169,15 @@ npm run dist     # build the installer for this system into dist/
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"cScale0": "#0d1b2a", "cScaleLabel0": "#22d3ee", "cScaleInv0": "#22d3ee", "cScale1": "#fbbf24", "cScaleLabel1": "#0d1b2a", "cScaleInv1": "#f59e0b", "cScale2": "#22d3ee", "cScaleLabel2": "#0d1b2a", "cScaleInv2": "#06b6d4", "cScale3": "#1f3a55", "cScaleLabel3": "#9cc3e0", "cScaleInv3": "#7ea3c2", "cScaleLabel11": "#7ea3c2"}, "themeCSS": ".eventWrapper { filter: none; }"}}%%
 timeline
-    section Released
-        0.1 : First public release
-    section In progress
-        0.2 : Full-screen shards : Touch panel on the PC itself
-    section Planned
-        0.3 : Robustness and trust : Diagnostics, clearer warnings and fixes
-        0.4 : Panels without code : Visual editor and Stream Deck import
-        0.5 : Shard ecosystem : Community gallery and more languages
-        0.6 : Tablet experience : Smarter menu, auto-switching and HTTPS
-        1.0 : First stable version
-    section Tentative
-        1.1 : More capable shards : Actions, macros, live data and mouse
-        1.2 : Connectors : OBS and other apps, with live state
+    Released : 0.1 · First public release
+    In progress : 0.2 · Full-screen shards and a touch panel on the PC
+    Planned : 0.3 · Robustness and trust
+            : 0.4 · Panels without code, with Stream Deck import
+            : 0.5 · Shard gallery and more languages
+            : 0.6 · Tablet experience
+            : 1.0 · First stable version
+    Tentative : 1.1 · Actions, macros, live data and mouse
+              : 1.2 · Connectors for OBS and other apps
 ```
 
 Versions and their contents can still change. 1.1 and 1.2 are tentative and will be evaluated after
