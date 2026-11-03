@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Numpad</title>
+<link rel="stylesheet" href="libreshard.css">
+<link rel="stylesheet" href="style.css">
+<script src="strings.js"></script>
+<script src="libreshard.js"></script>
+</head>
+<body>
+<main class="ls-app">
+  <header class="ls-head">
+    <h1 class="ls-title" data-i18n="title">Numpad</h1>
+    <span class="ls-spacer"></span>
+    <button class="ls-btn ls-btn--quiet k-bs" data-key="backspace" data-repeat="120"><span class="ls-i i-backspace"></span><span data-i18n="backspace">Delete</span></button>
+    <button class="ls-btn ls-btn--quiet help" data-open="help" aria-label="Help"><span class="ls-i i-help"></span></button>
+  </header>
+  <section class="ls-body">
+    <div class="pad">
+      <button class="ls-btn ls-btn--quiet k-nl" data-key="numlock"><span data-i18n="numlock">Num Lock</span></button>
+      <button class="ls-btn op k-div" data-key="numpaddiv">÷</button>
+      <button class="ls-btn op k-mul" data-key="numpadmul">×</button>
+      <button class="ls-btn op k-minus" data-key="numpadminus">−</button>
+      <button class="ls-btn op k-plus" data-key="numpadplus">+</button>
+      <button class="ls-btn digit k7" data-key="numpad7">7</button>
+      <button class="ls-btn digit k8" data-key="numpad8">8</button>
+      <button class="ls-btn digit k9" data-key="numpad9">9</button>
+      <button class="ls-btn digit k4" data-key="numpad4">4</button>
+      <button class="ls-btn digit k5" data-key="numpad5">5</button>
+      <button class="ls-btn digit k6" data-key="numpad6">6</button>
+      <button class="ls-btn digit k1" data-key="numpad1">1</button>
+      <button class="ls-btn digit k2" data-key="numpad2">2</button>
+      <button class="ls-btn digit k3" data-key="numpad3">3</button>
+      <button class="ls-btn digit k0" data-key="numpad0">0</button>
+      <button class="ls-btn digit k-dot" data-key="numpaddot">.</button>
+      <button class="ls-btn ls-btn--accent k-enter" data-key="numpadenter"><span data-i18n="enter">Enter</span></button>
+    </div>
+  </section>
+</main>
+
+<div class="ls-sheet" id="help" hidden>
+  <button class="ls-btn ls-close" data-close aria-label="Close" data-i18n-aria="close"><span class="ls-i i-close"></span></button>
+  <h2 data-i18n="title">Numpad</h2>
+  <p data-i18n="helpNumlock"></p>
+  <p data-i18n="helpLayout"></p>
+</div>
+<script>
+  // The layout setting: calculator (7 8 9 on top) or phone (1 2 3 on top)
+  LS.ready(() => LS.settings((s) => document.body.classList.toggle('phone', s.layout === 'phone')));
+</script>
+</body>
+</html>

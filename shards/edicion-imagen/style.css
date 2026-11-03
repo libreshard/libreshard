@@ -1,0 +1,32 @@
+/* Landscape: tools and save on top, adjustments and history in the middle, held keys below */
+.tools {
+  display: grid; gap: var(--ls-gap);
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: 1fr 1fr .9fr;
+  grid-template-areas:
+    "brush eraser move lasso picker save"
+    "sizedown sizeup zoomout zoomin undo redo"
+    "pan pan pan sample sample sample";
+}
+.a-brush { grid-area: brush; } .a-eraser { grid-area: eraser; } .a-move { grid-area: move; }
+.a-lasso { grid-area: lasso; } .a-picker { grid-area: picker; } .a-save { grid-area: save; }
+.a-sizedown { grid-area: sizedown; } .a-sizeup { grid-area: sizeup; } .a-zoomout { grid-area: zoomout; }
+.a-zoomin { grid-area: zoomin; } .a-undo { grid-area: undo; } .a-redo { grid-area: redo; }
+.a-pan { grid-area: pan; } .a-sample { grid-area: sample; }
+.a-pan, .a-sample { flex-direction: row; gap: .7em; }
+
+/* Portrait: four columns */
+@media (orientation: portrait) {
+  .tools {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    grid-template-areas:
+      "brush eraser move lasso"
+      "picker sizedown sizeup save"
+      "zoomout zoomin undo redo"
+      "pan pan sample sample";
+  }
+}
+
+.is-off { opacity: .35; pointer-events: none; }
+.help { min-width: 48px; padding: 0; }

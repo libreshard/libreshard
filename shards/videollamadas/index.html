@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video calls</title>
+<link rel="stylesheet" href="libreshard.css">
+<link rel="stylesheet" href="style.css">
+<script src="strings.js"></script>
+<script src="libreshard.js"></script>
+</head>
+<body>
+<main class="ls-app">
+  <header class="ls-head">
+    <h1 class="ls-title" data-i18n="title">Video calls</h1>
+    <span class="ls-spacer"></span>
+    <span class="ls-chip" id="program">Zoom</span>
+    <button class="ls-btn ls-btn--quiet help" data-open="help" aria-label="Help"><span class="ls-i i-help"></span></button>
+  </header>
+  <!-- data-key is filled in by shard.js from the chosen program's key map -->
+  <section class="ls-body call">
+    <button class="ls-btn ls-btn--accent a-mic" data-act="mic"><span class="ls-i ls-i--lg i-mic"></span><span data-i18n="mic">Microphone</span><span class="ls-key"></span></button>
+    <button class="ls-btn ls-btn--accent a-camera" data-act="camera"><span class="ls-i ls-i--lg i-camera"></span><span data-i18n="camera">Camera</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-hand" data-act="hand"><span class="ls-i i-hand"></span><span data-i18n="hand">Raise hand</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-share" data-act="share"><span class="ls-i i-share"></span><span data-i18n="share">Share screen</span><span class="ls-key"></span></button>
+    <!-- Leaving asks for a second tap, so it has no data-key: shard.js presses it -->
+    <button class="ls-btn ls-btn--danger a-leave" id="leave" data-i18n-label="leave" data-armed-i18n="leaveConfirm"><span class="ls-i i-hangup"></span><span class="ls-label" data-i18n="leave">Leave</span><span class="ls-key"></span></button>
+  </section>
+</main>
+
+<div class="ls-sheet" id="help" hidden>
+  <button class="ls-btn ls-close" data-close aria-label="Close" data-i18n-aria="close"><span class="ls-i i-close"></span></button>
+  <h2 data-i18n="helpTitle">Video calls</h2>
+  <p id="helpProgram"></p>
+  <p data-i18n="helpChange"></p>
+  <p data-i18n="helpFront"></p>
+  <p data-i18n="helpToggle"></p>
+  <p data-i18n="helpMeet"></p>
+  <p data-i18n="helpBusy"></p>
+</div>
+
+<script src="shard.js"></script>
+</body>
+</html>

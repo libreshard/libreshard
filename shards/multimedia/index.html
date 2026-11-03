@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Media</title>
+<link rel="stylesheet" href="libreshard.css">
+<link rel="stylesheet" href="style.css">
+<script src="strings.js"></script>
+</head>
+<body>
+<main class="ls-app">
+  <header class="ls-head"><h1 class="ls-title" data-i18n="title">Media</h1></header>
+  <!-- The volume buttons repeat while held (data-repeat); the rest press once (data-key) -->
+  <section class="ls-body media">
+    <button class="ls-btn prev" data-key="prev" aria-label="Previous" data-i18n-aria="prev"><span class="ls-i ls-i--lg i-prev"></span></button>
+    <button class="ls-btn ls-btn--accent play" data-key="playpause" aria-label="Play / pause" data-i18n-aria="playpause"><span class="ls-i i-playpause"></span></button>
+    <button class="ls-btn next" data-key="next" aria-label="Next" data-i18n-aria="next"><span class="ls-i ls-i--lg i-next"></span></button>
+    <button class="ls-btn volup" data-key="volup" data-repeat><span class="ls-i ls-i--lg i-volup"></span><span data-i18n="volup">Volume up</span></button>
+    <button class="ls-btn ls-btn--gold mute" data-key="mute"><span class="ls-i ls-i--lg i-mute"></span><span data-i18n="mute">Mute</span></button>
+    <button class="ls-btn voldown" data-key="voldown" data-repeat><span class="ls-i ls-i--lg i-voldown"></span><span data-i18n="voldown">Volume down</span></button>
+  </section>
+</main>
+</body>
+</html>

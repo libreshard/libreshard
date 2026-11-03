@@ -1,0 +1,34 @@
+{
+  "id": "obs",
+  "name": "OBS Studio",
+  "author": "LibreShard",
+  "version": "1.0.0",
+  "icon": "🎬",
+  "description": "Record, stream, save replays, mute audio and switch scenes in OBS Studio, with any app in front",
+  "settings": [
+    {
+      "id": "keys", "type": "select", "default": "auto",
+      "label": { "en": "Key set", "es": "Juego de teclas" },
+      "options": [
+        { "value": "auto", "label": { "en": "Automatic (by system)", "es": "Automático (según el sistema)" } },
+        { "value": "windows", "label": { "en": "Windows (F18…F22, Shift+Alt+F13…F18)", "es": "Windows (F18…F22, Mayús+Alt+F13…F18)" } },
+        { "value": "linux", "label": { "en": "Linux (F7…F11, Shift+Alt+F1…F12)", "es": "Linux (F7…F11, Mayús+Alt+F1…F12)" } }
+      ]
+    },
+    { "id": "scenes", "type": "number", "default": 4, "min": 0, "max": 6, "step": 1, "label": { "en": "Scene buttons", "es": "Botones de escena" } },
+    { "id": "scene1", "type": "text", "maxLength": 24, "default": "", "label": { "en": "Scene 1 name", "es": "Nombre de la escena 1" } },
+    { "id": "scene2", "type": "text", "maxLength": 24, "default": "", "label": { "en": "Scene 2 name", "es": "Nombre de la escena 2" } },
+    { "id": "scene3", "type": "text", "maxLength": 24, "default": "", "label": { "en": "Scene 3 name", "es": "Nombre de la escena 3" } },
+    { "id": "scene4", "type": "text", "maxLength": 24, "default": "", "label": { "en": "Scene 4 name", "es": "Nombre de la escena 4" } },
+    { "id": "scene5", "type": "text", "maxLength": 24, "default": "", "label": { "en": "Scene 5 name", "es": "Nombre de la escena 5" } },
+    { "id": "scene6", "type": "text", "maxLength": 24, "default": "", "label": { "en": "Scene 6 name", "es": "Nombre de la escena 6" } }
+  ],
+  "permissions": {
+    "keys": [
+      "ctrl+shift+f18", "ctrl+shift+f19", "ctrl+shift+f20", "ctrl+shift+f21", "ctrl+shift+f22",
+      "shift+alt+f13", "shift+alt+f14", "shift+alt+f15", "shift+alt+f16", "shift+alt+f17", "shift+alt+f18",
+      "ctrl+shift+f7", "ctrl+shift+f8", "ctrl+shift+f9", "ctrl+shift+f10", "ctrl+shift+f11",
+      "shift+alt+f1", "shift+alt+f3", "shift+alt+f5", "shift+alt+f9", "shift+alt+f11", "shift+alt+f12"
+    ]
+  }
+}

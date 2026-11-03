@@ -1,0 +1,28 @@
+{
+  "id": "edicion-imagen",
+  "name": "Image editing",
+  "author": "LibreShard",
+  "version": "1.0.0",
+  "icon": "🎨",
+  "description": "Tools, brush size, zoom, undo and save for Photoshop, Affinity Photo, Krita or GIMP",
+  "apps": ["photoshop", "affinity", "krita", "gimp"],
+  "settings": [
+    {
+      "id": "program", "type": "select", "default": "photoshop",
+      "label": { "en": "Program", "es": "Programa" },
+      "options": [
+        { "value": "photoshop", "label": "Adobe Photoshop" },
+        { "value": "affinity", "label": "Affinity Photo" },
+        { "value": "krita", "label": "Krita" },
+        { "value": "gimp", "label": "GIMP" }
+      ]
+    }
+  ],
+  "permissions": {
+    "keys": [
+      "b", "e", "v", "l", "i", "t", "p", "m", "f", "o", "shift+e",
+      "lbracket", "rbracket", "ctrl+minus", "ctrl+equal", "numpadminus", "numpadplus",
+      "ctrl+z", "ctrl+shift+z", "ctrl+y", "ctrl+s", "space", "alt", "ctrl"
+    ]
+  }
+}

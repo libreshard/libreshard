@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image editing</title>
+<link rel="stylesheet" href="libreshard.css">
+<link rel="stylesheet" href="style.css">
+<script src="strings.js"></script>
+<script src="libreshard.js"></script>
+</head>
+<body>
+<main class="ls-app">
+  <header class="ls-head">
+    <h1 class="ls-title" data-i18n="title">Image editing</h1>
+    <span class="ls-spacer"></span>
+    <span class="ls-chip" id="program">Photoshop</span>
+    <button class="ls-btn ls-btn--quiet help" data-open="help" aria-label="Help"><span class="ls-i i-help"></span></button>
+  </header>
+  <!-- data-key / data-hold are filled in by shard.js from the chosen program's key map -->
+  <section class="ls-body tools">
+    <button class="ls-btn a-brush" data-act="brush"><span class="ls-i i-brush"></span><span data-i18n="brush">Brush</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-eraser" data-act="eraser"><span class="ls-i i-eraser"></span><span class="eraser-label" data-i18n="eraser">Eraser</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-move" data-act="move"><span class="ls-i i-move"></span><span data-i18n="move">Move</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-lasso" data-act="lasso"><span class="ls-i i-lasso"></span><span data-i18n="lasso">Lasso</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-picker" data-act="picker"><span class="ls-i i-eyedropper"></span><span data-i18n="picker">Eyedropper</span><span class="ls-key"></span></button>
+    <button class="ls-btn ls-btn--gold a-save" data-act="save"><span class="ls-i i-save"></span><span data-i18n="save">Save</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-sizedown" data-act="sizedown" data-repeat><span class="ls-i i-sizedown"></span><span data-i18n="sizedown">Size −</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-sizeup" data-act="sizeup" data-repeat><span class="ls-i i-sizeup"></span><span data-i18n="sizeup">Size +</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-zoomout" data-act="zoomout" data-repeat="250"><span class="ls-i i-zoomout"></span><span data-i18n="zoomout">Zoom −</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-zoomin" data-act="zoomin" data-repeat="250"><span class="ls-i i-zoom"></span><span data-i18n="zoomin">Zoom +</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-undo" data-act="undo" data-repeat="300"><span class="ls-i i-undo"></span><span data-i18n="undo">Undo</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-redo" data-act="redo" data-repeat="300"><span class="ls-i i-redo"></span><span data-i18n="redo">Redo</span><span class="ls-key"></span></button>
+    <button class="ls-btn ls-btn--accent a-pan" data-act="pan" data-as="hold"><span class="ls-i i-hand"></span><span data-i18n="pan">Hand (hold)</span><span class="ls-key"></span></button>
+    <button class="ls-btn ls-btn--accent a-sample" data-act="sample" data-as="hold"><span class="ls-i i-eyedropper"></span><span data-i18n="sample">Pick color (hold)</span><span class="ls-key"></span></button>
+  </section>
+</main>
+
+<div class="ls-sheet" id="help" hidden>
+  <button class="ls-btn ls-close" data-close aria-label="Close" data-i18n-aria="close"><span class="ls-i i-close"></span></button>
+  <h2 data-i18n="helpTitle">Image editing</h2>
+  <p id="helpProgram"></p>
+  <p data-i18n="helpChange"></p>
+  <p data-i18n="helpApps"></p>
+  <p data-i18n="helpHold"></p>
+</div>
+
+<script src="shard.js"></script>
+</body>
+</html>

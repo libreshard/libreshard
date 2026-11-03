@@ -1,0 +1,3 @@
+# Shell scripts run on Linux (containers, .deb install scripts): keep LF line endings
+*.sh text eol=lf
+*.tpl text eol=lf

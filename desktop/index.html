@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>LibreShard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <img class="mark" src="../viewer/brand/logo-mark.svg" alt="">
+  <div class="brand">
+    <h1><span class="libre">LIBRE</span><span class="shardword">SHARD</span></h1>
+    <div id="status" class="status"></div>
+  </div>
+  <button id="pause" class="btn"></button>
+</header>
+
+<div id="alert" class="alert" hidden></div>
+<div id="restart" class="banner" hidden>
+  <span data-i18n="settings.restartNeeded"></span>
+  <button id="restartBtn" class="btn small" data-i18n="settings.restartNow"></button>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" data-tab="connect" data-i18n="tab.connect"></button>
+  <button class="tab" data-tab="devices"><span data-i18n="tab.devices"></span><span class="count" id="devCount"></span></button>
+  <button class="tab" data-tab="shards"><span data-i18n="tab.shards"></span><span class="count warn" id="shardWarn"></span></button>
+  <button class="tab" data-tab="settings" data-i18n="tab.settings"></button>
+</nav>
+
+<main>
+  <section id="tab-connect" class="panel"></section>
+  <section id="tab-devices" class="panel" hidden></section>
+  <section id="tab-shards" class="panel" hidden></section>
+  <section id="tab-settings" class="panel" hidden></section>
+</main>
+
+<div id="drop" class="drop" hidden><div data-i18n="shards.dropHere"></div></div>
+<div id="modal" class="modal" hidden><div class="dialog" id="dialog" role="dialog" aria-modal="true"></div></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

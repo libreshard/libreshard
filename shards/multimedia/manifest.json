@@ -1,0 +1,9 @@
+{
+  "id": "multimedia",
+  "name": "Media",
+  "author": "LibreShard",
+  "version": "2.0.0",
+  "icon": "🎵",
+  "description": "Play, pause and skip tracks, and change the volume of whatever is playing",
+  "permissions": { "keys": ["prev", "playpause", "next", "voldown", "volup", "mute"] }
+}

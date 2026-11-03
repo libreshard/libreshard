@@ -1,0 +1,28 @@
+{
+  "id": "escritorio",
+  "name": "Desktop",
+  "author": "LibreShard",
+  "version": "1.0.0",
+  "icon": "🖥️",
+  "description": "Copy and paste, screenshots, switching windows and virtual desktops, on Windows or Linux",
+  "settings": [
+    {
+      "id": "system", "type": "select", "default": "auto",
+      "label": { "en": "System", "es": "Sistema" },
+      "options": [
+        { "value": "auto", "label": { "en": "Automatic (Windows, or GNOME on Linux)", "es": "Automático (Windows, o GNOME en Linux)" } },
+        { "value": "windows", "label": "Windows" },
+        { "value": "gnome", "label": "Linux · GNOME (Ubuntu)" },
+        { "value": "xfce", "label": "Linux · XFCE" }
+      ]
+    }
+  ],
+  "permissions": {
+    "keys": [
+      "ctrl+c", "ctrl+x", "ctrl+v", "ctrl+z", "alt", "tab",
+      "win+shift+s", "win+d", "win+tab", "ctrl+win+left", "ctrl+win+right",
+      "print", "win", "win+pageup", "win+pagedown", "win+l",
+      "shift+print", "ctrl+alt+d", "ctrl+alt+left", "ctrl+alt+right", "ctrl+alt+l"
+    ]
+  }
+}

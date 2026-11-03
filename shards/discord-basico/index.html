@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discord</title>
+<link rel="stylesheet" href="libreshard.css">
+<link rel="stylesheet" href="style.css">
+<script src="strings.js"></script>
+<script src="libreshard.js"></script>
+</head>
+<body>
+<main class="ls-app">
+  <header class="ls-head">
+    <h1 class="ls-title" data-i18n="title">Discord</h1>
+    <span class="ls-spacer"></span>
+    <span class="ls-chip" id="keyset"></span>
+    <button class="ls-btn ls-btn--quiet setup" data-open="help"><span class="ls-i ls-i--sm i-help"></span><span data-i18n="setup">Set up</span></button>
+  </header>
+  <!-- shard.js fills data-key / data-hold from the key set. Push to talk is held (data-hold). -->
+  <section class="ls-body discord">
+    <button class="ls-btn ls-btn--accent a-talk" data-act="talk" data-as="hold"><span class="ls-i ls-i--lg i-talk"></span><span data-i18n="talk">Push to talk</span><span class="ls-key hint" data-i18n="talkHint">Hold to talk</span></button>
+    <button class="ls-btn a-mute" data-act="mute"><span class="ls-i i-micoff"></span><span data-i18n="mute">Mute</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-deafen" data-act="deafen"><span class="ls-i i-deafen"></span><span data-i18n="deafen">Deafen</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-camera" data-act="camera"><span class="ls-i i-camera"></span><span data-i18n="camera">Camera</span><span class="ls-key"></span></button>
+    <!-- Disconnecting asks for a second tap, so it has no data-key: shard.js presses it -->
+    <button class="ls-btn ls-btn--danger a-disconnect" id="disconnect" data-i18n-label="disconnect" data-armed-i18n="disconnectConfirm"><span class="ls-i i-hangup"></span><span class="ls-label" data-i18n="disconnect">Disconnect</span><span class="ls-key"></span></button>
+  </section>
+</main>
+
+<div class="ls-sheet" id="help" hidden>
+  <button class="ls-btn ls-close" data-close aria-label="Close" data-i18n-aria="close"><span class="ls-i i-close"></span></button>
+  <h2 data-i18n="setupTitle">Set up Discord</h2>
+  <p id="keysFor"></p>
+  <ol>
+    <li data-i18n="step1"></li>
+    <li data-i18n="step2"></li>
+    <li data-i18n="step3"></li>
+  </ol>
+  <!-- One row per action: Discord's name for it, its combo and a button that sends it -->
+  <div class="binds" id="binds"></div>
+  <p class="ls-muted" data-i18n="note"></p>
+</div>
+
+<script src="shard.js"></script>
+</body>
+</html>

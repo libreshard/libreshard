@@ -1,0 +1,14 @@
+/* Landscape: editing on top, debugging in the middle, save below */
+.code {
+  display: grid; gap: var(--ls-gap);
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: 1fr 1fr .65fr;
+}
+.save { grid-column: 1 / -1; flex-direction: row; gap: .8em; }
+
+/* Portrait: three columns */
+@media (orientation: portrait) {
+  .code { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr) .6fr; }
+}
+
+.help { min-width: 48px; padding: 0; }

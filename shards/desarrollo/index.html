@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VS Code</title>
+<link rel="stylesheet" href="libreshard.css">
+<link rel="stylesheet" href="style.css">
+<script src="strings.js"></script>
+<script src="libreshard.js"></script>
+</head>
+<body>
+<main class="ls-app">
+  <header class="ls-head">
+    <h1 class="ls-title" data-i18n="title">VS Code</h1>
+    <span class="ls-spacer"></span>
+    <button class="ls-btn ls-btn--quiet help" data-open="help" aria-label="Help"><span class="ls-i i-help"></span></button>
+  </header>
+  <!-- Plain data-key buttons; only "Format" changes with the PC's system (shard.js) -->
+  <section class="ls-body code">
+    <button class="ls-btn" data-key="ctrl+shift+p"><span class="ls-i i-palette"></span><span data-i18n="palette">Commands</span><span class="ls-key"></span></button>
+    <button class="ls-btn" data-key="ctrl+p"><span class="ls-i i-file"></span><span data-i18n="quick">Open file</span><span class="ls-key"></span></button>
+    <button class="ls-btn" data-key="ctrl+shift+f"><span class="ls-i i-searchfiles"></span><span data-i18n="search">Find in files</span><span class="ls-key"></span></button>
+    <button class="ls-btn" data-key="ctrl+grave"><span class="ls-i i-terminal"></span><span data-i18n="terminal">Terminal</span><span class="ls-key"></span></button>
+    <button class="ls-btn" data-key="ctrl+slash"><span class="ls-i i-comment"></span><span data-i18n="comment">Comment</span><span class="ls-key"></span></button>
+    <button class="ls-btn" id="format" data-key="shift+alt+f"><span class="ls-i i-format"></span><span data-i18n="format">Format</span><span class="ls-key"></span></button>
+    <button class="ls-btn ls-btn--accent dbg" data-key="f5"><span class="ls-i i-play"></span><span data-i18n="start">Start / continue</span><span class="ls-key"></span></button>
+    <button class="ls-btn ls-btn--danger dbg" data-key="shift+f5"><span class="ls-i i-stop"></span><span data-i18n="stop">Stop</span><span class="ls-key"></span></button>
+    <button class="ls-btn dbg" data-key="f9"><span class="ls-i i-breakpoint"></span><span data-i18n="breakpoint">Breakpoint</span><span class="ls-key"></span></button>
+    <button class="ls-btn dbg" data-key="f10" data-repeat="300"><span class="ls-i i-stepover"></span><span data-i18n="over">Step over</span><span class="ls-key"></span></button>
+    <button class="ls-btn dbg" data-key="f11"><span class="ls-i i-stepinto"></span><span data-i18n="into">Step into</span><span class="ls-key"></span></button>
+    <button class="ls-btn dbg" data-key="shift+f11"><span class="ls-i i-stepout"></span><span data-i18n="out">Step out</span><span class="ls-key"></span></button>
+    <button class="ls-btn ls-btn--gold save" data-key="ctrl+s"><span class="ls-i i-save"></span><span data-i18n="save">Save</span><span class="ls-key"></span></button>
+  </section>
+</main>
+
+<div class="ls-sheet" id="help" hidden>
+  <button class="ls-btn ls-close" data-close aria-label="Close" data-i18n-aria="close"><span class="ls-i i-close"></span></button>
+  <h2 data-i18n="helpTitle">VS Code</h2>
+  <p data-i18n="helpApps"></p>
+  <p data-i18n="helpInto"></p>
+  <p data-i18n="helpKeys"></p>
+</div>
+
+<script src="shard.js"></script>
+</body>
+</html>

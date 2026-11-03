@@ -1,0 +1,25 @@
+{
+  "id": "discord-basico",
+  "name": "Discord",
+  "author": "LibreShard",
+  "version": "2.0.0",
+  "icon": "🎧",
+  "description": "Push to talk, mute, deafen, camera and disconnect, with Discord's global keybinds in any app",
+  "settings": [
+    {
+      "id": "keys", "type": "select", "default": "auto",
+      "label": { "en": "Key set", "es": "Juego de teclas" },
+      "options": [
+        { "value": "auto", "label": { "en": "Automatic (by system)", "es": "Automático (según el sistema)" } },
+        { "value": "windows", "label": { "en": "Windows (Ctrl+Shift+F13…F17)", "es": "Windows (Ctrl+Shift+F13…F17)" } },
+        { "value": "linux", "label": { "en": "Linux (Ctrl+Shift+F1…F6)", "es": "Linux (Ctrl+Shift+F1…F6)" } }
+      ]
+    }
+  ],
+  "permissions": {
+    "keys": [
+      "ctrl+shift+f13", "ctrl+shift+f14", "ctrl+shift+f15", "ctrl+shift+f16", "ctrl+shift+f17",
+      "ctrl+shift+f1", "ctrl+shift+f2", "ctrl+shift+f3", "ctrl+shift+f4", "ctrl+shift+f6"
+    ]
+  }
+}

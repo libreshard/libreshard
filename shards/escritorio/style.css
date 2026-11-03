@@ -1,0 +1,30 @@
+/* Landscape: editing on top, windows and desktops in the middle, Alt + Tab below */
+.desk {
+  display: grid; gap: var(--ls-gap);
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: 1fr 1fr 1fr;
+  grid-template-areas:
+    "copy cut paste undo shot"
+    "left task right desk lock"
+    "alt alt tab tab tab";
+}
+.a-copy { grid-area: copy; } .a-cut { grid-area: cut; } .a-paste { grid-area: paste; } .a-undo { grid-area: undo; }
+.a-shot { grid-area: shot; } .a-desk { grid-area: desk; } .a-task { grid-area: task; } .a-left { grid-area: left; }
+.a-right { grid-area: right; } .a-lock { grid-area: lock; } .a-alt { grid-area: alt; } .a-tab { grid-area: tab; }
+.switch-hint { white-space: normal; font-family: var(--ls-font); font-weight: 500; }
+
+/* Portrait: four columns */
+@media (orientation: portrait) {
+  .desk {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    grid-template-areas:
+      "copy cut paste undo"
+      "shot desk task lock"
+      "left left right right"
+      "alt alt tab tab";
+  }
+}
+
+.is-off { opacity: .35; pointer-events: none; }
+.help { min-width: 48px; padding: 0; }

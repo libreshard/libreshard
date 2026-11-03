@@ -1,0 +1,29 @@
+/* Landscape: actions on the left (record and stream big), scenes on the right */
+.obs { display: grid; gap: var(--ls-gap); grid-template-columns: 1.5fr 1fr; }
+.no-scenes .obs { grid-template-columns: 1fr; }
+.actions {
+  display: grid; gap: var(--ls-gap);
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1.4fr 1fr 1fr;
+  grid-template-areas: "record stream" "replay replay" "mic desktop";
+}
+.a-record { grid-area: record; } .a-stream { grid-area: stream; } .a-replay { grid-area: replay; }
+.a-mic { grid-area: mic; } .a-desktop { grid-area: desktop; }
+.a-record, .a-stream { font-size: clamp(16px, 3vmin, 26px); }
+.scenes { display: grid; gap: var(--ls-gap); grid-auto-rows: 1fr; }
+.scene { font-size: clamp(15px, 2.6vmin, 22px); }
+.scene span:first-child { overflow: hidden; text-overflow: ellipsis; max-width: 100%; white-space: nowrap; }
+
+/* Portrait: actions on top, scenes below in two columns */
+@media (orientation: portrait) {
+  .obs { grid-template-columns: 1fr; grid-template-rows: 1.4fr 1fr; }
+  .no-scenes .obs { grid-template-rows: 1fr; }
+  .scenes { grid-template-columns: 1fr 1fr; }
+}
+
+.setup { flex-direction: row; padding: 0 1em; }
+
+/* Setup sheet rows */
+.binds { display: grid; gap: .6em; margin: 1em 0; }
+.bind { display: grid; grid-template-columns: 1fr auto auto; gap: 1em; align-items: center; padding: .4em .8em; border: 1px solid var(--ls-line); border-radius: var(--ls-radius); }
+.bind-send { min-width: 96px; }

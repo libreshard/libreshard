@@ -1,0 +1,23 @@
+/* Landscape: a big play/pause between previous and next, the volume on the right */
+.media {
+  display: grid; gap: var(--ls-gap);
+  grid-template-columns: 1fr 2fr 1fr 1.25fr;
+  grid-template-rows: repeat(3, 1fr);
+  grid-template-areas: "prev play next volup" "prev play next mute" "prev play next voldown";
+}
+.prev { grid-area: prev; }
+.play { grid-area: play; border-radius: calc(var(--ls-radius) * 2); }
+.next { grid-area: next; }
+.volup { grid-area: volup; }
+.mute { grid-area: mute; }
+.voldown { grid-area: voldown; }
+.play .ls-i { width: clamp(72px, 26vmin, 220px); height: clamp(72px, 26vmin, 220px); }
+
+/* Portrait: play/pause on top, then previous and next, then the volume row */
+@media (orientation: portrait) {
+  .media {
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: 2.2fr 1fr 1fr;
+    grid-template-areas: "play play play play play play" "prev prev prev next next next" "voldown voldown mute mute volup volup";
+  }
+}

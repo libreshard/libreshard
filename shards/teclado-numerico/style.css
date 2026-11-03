@@ -1,0 +1,32 @@
+/* Laid out like a physical numeric keypad; in landscape it stays centered and not too wide */
+.pad {
+  height: 100%; width: 100%; max-width: calc((100vh - 64px) * 1.45); margin: 0 auto;
+  display: grid; gap: var(--ls-gap);
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  grid-template-areas:
+    "nl div mul minus"
+    "k7 k8 k9 plus"
+    "k4 k5 k6 plus"
+    "k1 k2 k3 enter"
+    "k0 k0 dot enter";
+}
+.phone .pad {
+  grid-template-areas:
+    "nl div mul minus"
+    "k1 k2 k3 plus"
+    "k4 k5 k6 plus"
+    "k7 k8 k9 enter"
+    "k0 k0 dot enter";
+}
+.pad .ls-btn { font-size: clamp(22px, 5.5vmin, 48px); }
+.pad .k-nl, .pad .k-enter { font-size: clamp(14px, 2.6vmin, 22px); }
+.digit { font-weight: 600; }
+.op { color: var(--ls-cyan); }
+.op:active { color: var(--ls-navy); }
+.k-nl { grid-area: nl; } .k-div { grid-area: div; } .k-mul { grid-area: mul; } .k-minus { grid-area: minus; }
+.k-plus { grid-area: plus; } .k-enter { grid-area: enter; } .k-dot { grid-area: dot; } .k0 { grid-area: k0; }
+.k1 { grid-area: k1; } .k2 { grid-area: k2; } .k3 { grid-area: k3; } .k4 { grid-area: k4; } .k5 { grid-area: k5; }
+.k6 { grid-area: k6; } .k7 { grid-area: k7; } .k8 { grid-area: k8; } .k9 { grid-area: k9; }
+.ls-head .k-bs { flex-direction: row; padding: 0 1em; min-height: 48px; }
+.help { min-width: 48px; padding: 0; }

@@ -1,0 +1,27 @@
+{
+  "id": "videollamadas",
+  "name": "Video calls",
+  "author": "LibreShard",
+  "version": "1.0.0",
+  "icon": "📞",
+  "description": "Microphone, camera, raise hand, share screen and leave in Zoom, Teams or Google Meet",
+  "apps": ["zoom", "teams", "chrome", "msedge", "firefox"],
+  "settings": [
+    {
+      "id": "program", "type": "select", "default": "zoom",
+      "label": { "en": "Program", "es": "Programa" },
+      "options": [
+        { "value": "zoom", "label": "Zoom" },
+        { "value": "teams", "label": "Microsoft Teams" },
+        { "value": "meet", "label": "Google Meet" }
+      ]
+    }
+  ],
+  "permissions": {
+    "keys": [
+      "alt+a", "alt+v", "alt+y", "alt+s", "alt+q",
+      "ctrl+shift+m", "ctrl+shift+o", "ctrl+shift+k", "ctrl+shift+e", "ctrl+shift+h",
+      "ctrl+d", "ctrl+e", "ctrl+alt+h", "ctrl+alt+t"
+    ]
+  }
+}

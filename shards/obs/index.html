@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OBS Studio</title>
+<link rel="stylesheet" href="libreshard.css">
+<link rel="stylesheet" href="style.css">
+<script src="strings.js"></script>
+<script src="libreshard.js"></script>
+</head>
+<body>
+<main class="ls-app">
+  <header class="ls-head">
+    <h1 class="ls-title" data-i18n="title">OBS Studio</h1>
+    <span class="ls-spacer"></span>
+    <span class="ls-chip" id="keyset"></span>
+    <button class="ls-btn ls-btn--quiet setup" data-open="help"><span class="ls-i ls-i--sm i-help"></span><span data-i18n="setup">Set up</span></button>
+  </header>
+  <!-- shard.js fills data-key from the key set and builds the scene buttons from the settings -->
+  <section class="ls-body obs">
+    <div class="actions">
+      <button class="ls-btn ls-btn--danger a-record" data-act="record"><span class="ls-i ls-i--lg i-record"></span><span data-i18n="record">Record</span><span class="ls-key"></span></button>
+      <button class="ls-btn ls-btn--accent a-stream" data-act="stream"><span class="ls-i ls-i--lg i-stream"></span><span data-i18n="stream">Stream</span><span class="ls-key"></span></button>
+      <button class="ls-btn ls-btn--gold a-replay" data-act="replay"><span class="ls-i i-replay"></span><span data-i18n="replay">Save replay</span><span class="ls-key"></span></button>
+      <button class="ls-btn a-mic" data-act="mic"><span class="ls-i i-micoff"></span><span data-i18n="mic">Microphone</span><span class="ls-key"></span></button>
+      <button class="ls-btn a-desktop" data-act="desktop"><span class="ls-i i-mute"></span><span data-i18n="desktop">Desktop audio</span><span class="ls-key"></span></button>
+    </div>
+    <div class="scenes" id="scenes"></div>
+  </section>
+</main>
+
+<div class="ls-sheet" id="help" hidden>
+  <button class="ls-btn ls-close" data-close aria-label="Close" data-i18n-aria="close"><span class="ls-i i-close"></span></button>
+  <h2 data-i18n="setupTitle">Set up OBS Studio</h2>
+  <p id="keysFor"></p>
+  <ol>
+    <li data-i18n="step1"></li>
+    <li data-i18n="step2"></li>
+    <li data-i18n="step3"></li>
+  </ol>
+  <!-- One row per hotkey: OBS's name for it, its combo and a button that sends it -->
+  <div class="binds" id="binds"></div>
+  <p class="ls-muted" data-i18n="note"></p>
+</div>
+
+<script src="shard.js"></script>
+</body>
+</html>

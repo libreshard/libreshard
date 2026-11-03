@@ -1,0 +1,137 @@
+{
+  "name": "libreshard",
+  "productName": "LibreShard",
+  "desktopName": "libreshard.desktop",
+  "version": "0.1.0",
+  "description": "Open-source control deck: turn a tablet into a touch panel for your PC with HTML/CSS shards",
+  "keywords": [
+    "control deck",
+    "tablet",
+    "macro pad",
+    "stream deck",
+    "electron",
+    "shards"
+  ],
+  "homepage": "https://github.com/libreshard/libreshard",
+  "bugs": {
+    "url": "https://github.com/libreshard/libreshard/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/libreshard/libreshard.git"
+  },
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Gabriel Hernandez",
+    "email": "libreshard@gmail.com"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test --test-timeout=10000 \"test/**/*.test.js\"",
+    "dist": "electron-builder",
+    "icons": "electron brand/render-icons.js",
+    "test:linux": "docker build -f test/linux/Dockerfile -t libreshard-linux-test . && docker run --rm libreshard-linux-test",
+    "shards:base": "node tools/build-shard-base.js"
+  },
+  "dependencies": {
+    "@nut-tree-fork/nut-js": "4.2.6",
+    "express": "4.22.3",
+    "qrcode": "1.5.4",
+    "ws": "8.22.0",
+    "yauzl": "3.4.0"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "optionalDependencies": {
+    "active-win": "8.2.1"
+  },
+  "allowScripts": {
+    "active-win@8.2.1": true,
+    "electron-winstaller": false
+  },
+  "build": {
+    "appId": "com.libreshard.app",
+    "copyright": "Copyright © 2026 Gabriel Hernandez",
+    "files": [
+      "main.js",
+      "server.js",
+      "pairing.js",
+      "manifest.js",
+      "net.js",
+      "shard-store.js",
+      "installer.js",
+      "shard-settings.js",
+      "keys.js",
+      "migrate.js",
+      "focus/**",
+      "i18n/**",
+      "desktop/**",
+      "viewer/**",
+      "shards/**",
+      "LICENSE",
+      "NOTICE",
+      "LICENSES/**"
+    ],
+    "asarUnpack": [
+      "node_modules/active-win/**"
+    ],
+    "npmRebuild": false,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
+    "fileAssociations": [
+      {
+        "ext": "libreshard",
+        "name": "LibreShard shard",
+        "description": "LibreShard shard",
+        "role": "Viewer"
+      }
+    ],
+    "icon": "build/icon.png",
+    "publish": {
+      "provider": "github",
+      "owner": "libreshard",
+      "repo": "libreshard",
+      "releaseType": "draft"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "oneClick": true,
+      "perMachine": false,
+      "include": "build/windows/installer.nsh",
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "synopsis": "Open-source control deck for your PC, driven from a tablet",
+      "syncDesktopName": true
+    },
+    "deb": {
+      "recommends": [
+        "x11-utils",
+        "x11-xserver-utils",
+        "libappindicator3-1"
+      ],
+      "afterInstall": "build/linux/after-install.tpl",
+      "afterRemove": "build/linux/after-remove.tpl"
+    }
+  }
+}

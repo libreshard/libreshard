@@ -1,0 +1,22 @@
+/* Landscape: microphone and camera big on the left, the rest on the right; leave is small, bottom right */
+.call {
+  display: grid; gap: var(--ls-gap);
+  grid-template-columns: 1.3fr 1.3fr 1fr;
+  grid-template-rows: 1fr 1fr .75fr;
+  grid-template-areas: "mic camera hand" "mic camera share" "mic camera leave";
+}
+.a-mic { grid-area: mic; } .a-camera { grid-area: camera; } .a-hand { grid-area: hand; }
+.a-share { grid-area: share; } .a-leave { grid-area: leave; }
+.a-mic, .a-camera { font-size: clamp(16px, 3vmin, 26px); }
+
+/* Portrait: two columns */
+@media (orientation: portrait) {
+  .call {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1.6fr 1fr .55fr;
+    grid-template-areas: "mic camera" "hand share" "leave leave";
+  }
+}
+
+.is-off { opacity: .35; pointer-events: none; }
+.help { min-width: 48px; padding: 0; }

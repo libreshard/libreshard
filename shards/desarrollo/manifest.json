@@ -1,0 +1,15 @@
+{
+  "id": "desarrollo",
+  "name": "VS Code",
+  "author": "LibreShard",
+  "version": "1.0.0",
+  "icon": "💻",
+  "description": "Command palette, quick open, terminal, comments, search, format and debugging in Visual Studio Code",
+  "apps": ["visual studio code", "code"],
+  "permissions": {
+    "keys": [
+      "ctrl+s", "ctrl+shift+p", "ctrl+p", "ctrl+grave", "ctrl+slash", "ctrl+shift+f", "shift+alt+f", "ctrl+shift+i",
+      "f5", "shift+f5", "f9", "f10", "f11", "shift+f11"
+    ]
+  }
+}

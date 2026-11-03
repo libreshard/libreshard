@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desktop</title>
+<link rel="stylesheet" href="libreshard.css">
+<link rel="stylesheet" href="style.css">
+<script src="strings.js"></script>
+<script src="libreshard.js"></script>
+</head>
+<body>
+<main class="ls-app">
+  <header class="ls-head">
+    <h1 class="ls-title" data-i18n="title">Desktop</h1>
+    <span class="ls-spacer"></span>
+    <span class="ls-chip" id="system">Windows</span>
+    <button class="ls-btn ls-btn--quiet help" data-open="help" aria-label="Help"><span class="ls-i i-help"></span></button>
+  </header>
+  <!-- data-key is filled in by shard.js for the chosen system; "Alt" is held (data-hold) while "Tab" is tapped -->
+  <section class="ls-body desk">
+    <button class="ls-btn a-copy" data-act="copy"><span class="ls-i i-copy"></span><span data-i18n="copy">Copy</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-cut" data-act="cut"><span class="ls-i i-cut"></span><span data-i18n="cut">Cut</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-paste" data-act="paste"><span class="ls-i i-paste"></span><span data-i18n="paste">Paste</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-undo" data-act="undo" data-repeat="300"><span class="ls-i i-undo"></span><span data-i18n="undo">Undo</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-shot" data-act="shot"><span class="ls-i i-screenshot"></span><span data-i18n="shot">Screenshot</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-desk" data-act="desk"><span class="ls-i i-desktop"></span><span data-i18n="desk">Show desktop</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-task" data-act="task"><span class="ls-i i-taskview"></span><span data-i18n="task">All windows</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-left" data-act="left"><span class="ls-i i-deskleft"></span><span data-i18n="left">Desktop ←</span><span class="ls-key"></span></button>
+    <button class="ls-btn a-right" data-act="right"><span class="ls-i i-deskright"></span><span data-i18n="right">Desktop →</span><span class="ls-key"></span></button>
+    <button class="ls-btn ls-btn--gold a-lock" data-act="lock"><span class="ls-i i-lock"></span><span data-i18n="lock">Lock</span><span class="ls-key"></span></button>
+    <button class="ls-btn ls-btn--accent a-alt" data-hold="alt"><span class="ls-i i-windows"></span><span data-i18n="alt">Alt (hold)</span><span class="ls-key">Alt</span></button>
+    <button class="ls-btn ls-btn--accent a-tab" data-key="tab"><span class="ls-i i-tab"></span><span data-i18n="tab">Tab</span><span class="ls-key switch-hint" data-i18n="switchHint">Hold Alt and tap Tab to switch windows</span></button>
+  </section>
+</main>
+
+<div class="ls-sheet" id="help" hidden>
+  <button class="ls-btn ls-close" data-close aria-label="Close" data-i18n-aria="close"><span class="ls-i i-close"></span></button>
+  <h2 data-i18n="helpTitle">Desktop</h2>
+  <p id="helpSystem"></p>
+  <p data-i18n="helpChange"></p>
+  <p data-i18n="helpSwitch"></p>
+  <p data-i18n="helpLock"></p>
+  <p data-i18n="helpRisk"></p>
+</div>
+
+<script src="shard.js"></script>
+</body>
+</html>

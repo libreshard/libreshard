@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My shard</title>
+<!-- Optional: LibreShard's look (navy, cyan, gold). Delete it and use your own styles if you like. -->
+<link rel="stylesheet" href="libreshard.css">
+<style>
+  .pad { display: grid; gap: var(--ls-gap); grid-template-columns: repeat(3, 1fr); }
+  @media (orientation: portrait) { .pad { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="ls-app">
+  <!-- The header starts after the top-left corner, where the viewer draws its floating button -->
+  <header class="ls-head"><h1 class="ls-title">My shard</h1></header>
+  <section class="ls-body pad">
+    <!-- data-key: pressed once on each tap -->
+    <button class="ls-btn" data-key="ctrl+c"><span class="ls-i i-copy"></span>Copy</button>
+    <button class="ls-btn" data-key="ctrl+v"><span class="ls-i i-paste"></span>Paste</button>
+    <!-- data-hold: held down while the finger stays on the button -->
+    <button class="ls-btn ls-btn--accent" data-hold="shift">Shift (hold)</button>
+  </section>
+</main>
+</body>
+</html>

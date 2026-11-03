@@ -1,0 +1,10 @@
+LibreShard
+Copyright 2026 Gabriel Hernandez
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The shared shard files in shard-base/, the shard template in docs/shard-template/ and the copies
+of libreshard.css and libreshard.js inside each shard folder are licensed under MIT No Attribution
+(see LICENSES/MIT-0.txt), so shard authors can copy them without any notice.
+
+The LibreShard name and logo are not licensed under these terms: see TRADEMARKS.md.

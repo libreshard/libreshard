@@ -1,0 +1,10 @@
+{
+  "id": "my-shard",
+  "name": "My shard",
+  "author": "Your name",
+  "version": "1.0.0",
+  "minAppVersion": "0.1.0",
+  "icon": "⭐",
+  "description": "One line for the tablet's menu",
+  "permissions": { "keys": ["ctrl+c", "ctrl+v", "shift"] }
+}

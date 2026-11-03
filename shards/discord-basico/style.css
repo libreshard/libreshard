@@ -1,0 +1,27 @@
+/* Landscape: a big push-to-talk on the left, the toggles on the right, disconnect small at the bottom */
+.discord {
+  display: grid; gap: var(--ls-gap);
+  grid-template-columns: 1.6fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr .7fr;
+  grid-template-areas: "talk mute deafen" "talk camera camera" "talk disconnect disconnect";
+}
+.a-talk { grid-area: talk; font-size: clamp(18px, 3.4vmin, 30px); border-radius: calc(var(--ls-radius) * 2); }
+.a-mute { grid-area: mute; } .a-deafen { grid-area: deafen; } .a-camera { grid-area: camera; }
+.a-disconnect { grid-area: disconnect; }
+.hint { font-family: var(--ls-font); font-weight: 500; }
+
+/* Portrait: push-to-talk on top */
+@media (orientation: portrait) {
+  .discord {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1.8fr 1fr .6fr;
+    grid-template-areas: "talk talk talk" "mute deafen camera" "disconnect disconnect disconnect";
+  }
+}
+
+.setup { flex-direction: row; padding: 0 1em; }
+
+/* Setup sheet rows */
+.binds { display: grid; gap: .6em; margin: 1em 0; }
+.bind { display: grid; grid-template-columns: 1fr auto auto; gap: 1em; align-items: center; padding: .4em .8em; border: 1px solid var(--ls-line); border-radius: var(--ls-radius); }
+.bind-send { min-width: 96px; }

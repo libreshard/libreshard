@@ -1,0 +1,24 @@
+{
+  "id": "teclado-numerico",
+  "name": "Numpad",
+  "author": "LibreShard",
+  "version": "1.0.0",
+  "icon": "🔢",
+  "description": "A full numeric keypad, handy on laptops that don't have one",
+  "settings": [
+    {
+      "id": "layout", "type": "select", "default": "calculator",
+      "label": { "en": "Layout", "es": "Distribución" },
+      "options": [
+        { "value": "calculator", "label": { "en": "Calculator (7 8 9 on top)", "es": "Calculadora (7 8 9 arriba)" } },
+        { "value": "phone", "label": { "en": "Phone (1 2 3 on top)", "es": "Teléfono (1 2 3 arriba)" } }
+      ]
+    }
+  ],
+  "permissions": {
+    "keys": [
+      "numpad0", "numpad1", "numpad2", "numpad3", "numpad4", "numpad5", "numpad6", "numpad7", "numpad8", "numpad9",
+      "numpaddot", "numpadplus", "numpadminus", "numpadmul", "numpaddiv", "numpadenter", "backspace", "numlock"
+    ]
+  }
+}

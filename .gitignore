@@ -1,0 +1,37 @@
+# Dependencies and build output
+node_modules/
+dist/
+out/
+
+# Logs and caches
+*.log
+npm-debug.log*
+.npm/
+.eslintcache
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local scratch and secrets (never commit them)
+scratch/
+tmp/
+*.tgz
+*.zip
+*.librepad
+*.libreshard
+.env
+.env.*
+
+# User data from a run of the app (it lives in the OS data folder, but never commit copies)
+config.json
+devices.json
+shards-state.json
+app-rules.json
+
+# Maintainer's local work plans (Spanish), not published
+docs/plans/
