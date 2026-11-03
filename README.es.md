@@ -170,6 +170,7 @@ npm run dist     # compila el instalador de este sistema en dist/
 ## Hoja de ruta
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"cScale0": "#0d1b2a", "cScaleLabel0": "#22d3ee", "cScaleInv0": "#22d3ee", "cScale1": "#fbbf24", "cScaleLabel1": "#0d1b2a", "cScaleInv1": "#f59e0b", "cScale2": "#22d3ee", "cScaleLabel2": "#0d1b2a", "cScaleInv2": "#06b6d4", "cScale3": "#1f3a55", "cScaleLabel3": "#9cc3e0", "cScaleInv3": "#7ea3c2", "cScaleLabel11": "#7ea3c2"}, "themeCSS": ".eventWrapper { filter: none; }"}}%%
 timeline
     section Publicada
         0.1 : Primera versión pública
