@@ -34,6 +34,11 @@ function changed(store, check, ms = 5000) {
   });
 }
 
+// Watchers start asynchronously: fs.watchFile takes its first stat later, and FSEvents (macOS)
+// ignores what happened before its stream started. A write made right after watching can be
+// missed on a slow machine, so the watch tests give the watchers a moment first.
+const settle = () => new Promise((r) => setTimeout(r, 1000));
+
 test('bundled shards are approved; user shards wait for approval', () => {
   const t = setup();
   try {
@@ -162,6 +167,7 @@ test('watching reloads when a shard folder appears in the user folder', async ()
   const t = setup();
   const s = t.make({ watch: true });
   try {
+    await settle();
     const appeared = changed(s, () => s.all().some((e) => e.id === 'dropped'));
     const dir = path.join(t.user, 'dropped');
     fs.mkdirSync(dir);
@@ -182,6 +188,7 @@ test('app rules reload on their own when watching', async () => {
   const s = t.make({ rulesFile, watch: true });
   try {
     assert.deepEqual(s.get('media').apps, []);
+    await settle();
     const reloaded = changed(s, () => s.get('media').apps.length > 0);
     fs.writeFileSync(rulesFile, JSON.stringify({ media: { mode: 'only', apps: [{ match: 'spotify' }] } }));
     await reloaded;
@@ -318,6 +325,7 @@ test('editing a linked shard emits "files"; editing its manifest reloads', async
   const s = t.make({ watch: true });
   try {
     s.link(path.join(dev, 'work'), { id: 'dev-two', keys: ['f15'] });
+    await settle();
     const files = new Promise((r) => s.once('files', r));
     fs.writeFileSync(path.join(dev, 'work', 'style.css'), 'body{}');
     assert.equal(await files, 'dev-two');

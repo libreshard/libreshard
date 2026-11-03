@@ -278,10 +278,20 @@ test('oversized messages close the connection', () => withServer({}, async (s) =
 
 test('key messages above the rate limit are dropped', () => withServer({}, async (s) => {
   const c = await authed(s);
-  for (let i = 0; i < 90; i++) c.send({ type: 'press', shard: 'demo', keys: 'win+r' });
-  await new Promise((r) => setTimeout(r, 300));
-  const denied = c.inbox.filter((m) => m.type === 'denied').length;
-  assert.ok(denied >= 45 && denied <= 70, `expected about 50 answers, got ${denied}`);
+  // The bucket refills with the clock, so on a slow machine more messages would get through. With
+  // the clock frozen (a second ahead, so the bucket starts full) exactly RATE (50) are answered.
+  const realNow = Date.now;
+  const frozen = realNow() + 1000;
+  Date.now = () => frozen;
+  try {
+    for (let i = 0; i < 90; i++) c.send({ type: 'press', shard: 'demo', keys: 'win+r' });
+    const denied = () => c.inbox.filter((m) => m.type === 'denied').length;
+    for (let i = 0; i < 300 && denied() < 50; i++) await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 200)); // nothing else may arrive
+    assert.equal(denied(), 50);
+  } finally {
+    Date.now = realNow;
+  }
 }));
 
 test("'up' is never dropped by the rate limit", () => withServer({}, async (s) => {
@@ -290,7 +300,15 @@ test("'up' is never dropped by the rate limit", () => withServer({}, async (s) =
   await waitFor(() => s.keyboard.events.length === 80, 3000);
 }));
 
-test('a flood of messages disconnects the client', () => withServer({}, async (s) => {
+// A flood is more queued messages than the server can handle, not a rate: with an instant fake
+// keyboard a slow machine could drain the queue between network reads. A keyboard that takes 50 ms
+// per key keeps the queue growing on any machine.
+const slowKeyboard = () => {
+  const wait = () => new Promise((r) => setTimeout(r, 50));
+  return { events: [], pressKey: wait, releaseKey: wait };
+};
+
+test('a flood of messages disconnects the client', () => withServer({ keyboard: slowKeyboard() }, async (s) => {
   const c = await authed(s);
   for (let i = 0; i < 150; i++) c.send({ type: 'up', shard: 'demo', keys: 'f13' });
   assert.equal(await c.closed, 1008);
