@@ -4,7 +4,7 @@
 
 ## 1. What it is
 
-LibreShard is a desktop app (Electron) that turns a tablet into an extra control panel for the PC, in the style of GameGlass. The tablet only shows a web page. The PC is what presses the keys.
+LibreShard is a desktop app (Electron) that turns a tablet into an extra control panel for the PC. The tablet only shows a web page. The PC is what presses the keys.
 
 What sets it apart: the panel's content is made of **shards**, folders with HTML, CSS and JS that anyone can write and share. Nothing needs to be compiled, and the app's code doesn't need to be touched.
 
