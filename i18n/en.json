@@ -140,7 +140,6 @@
   "viewer.pair": "Pair",
   "viewer.device": "Device",
   "viewer.browser": "Browser",
-  "viewer.repair": "LibreShard now pairs each device separately. Scan the QR on the PC or type the pairing code.",
   "viewer.pending": "Waiting for you to accept this device on the PC…",
   "viewer.blocked": "Not run. This shard only works in {apps}.",
   "viewer.activeNow": "The app in front is: {app}.",

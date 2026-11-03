@@ -102,7 +102,7 @@ function connect(mode) {
     authed = false;
     held.clear();
     $('focusbar').hidden = true;
-    if (e.code === 4001 || e.code === 4002) {
+    if (e.code === 4001) {
       if (mode.token) {
         // The PC no longer knows this device (revoked, or its data was reset)
         localStorage.removeItem(TOKEN_KEY);
@@ -532,9 +532,7 @@ window.addEventListener('pagehide', releaseHeld);
 // The QR carries a one-time pairing token: take it and remove it from the address bar
 const params = new URLSearchParams(location.search);
 const qrToken = params.get('pair');
-if (params.has('pair') || params.has('pin')) history.replaceState(null, '', location.pathname + location.hash);
-const oldPin = localStorage.getItem('pin'); // from before pairing existed
-localStorage.removeItem('pin');
+if (params.has('pair')) history.replaceState(null, '', location.pathname + location.hash);
 const savedToken = localStorage.getItem(TOKEN_KEY);
 stringsReady.then(() => {
   if (savedToken) {
@@ -543,6 +541,6 @@ stringsReady.then(() => {
   } else if (qrToken) {
     connect({ pairToken: qrToken });
   } else {
-    showLock(oldPin ? t('viewer.repair') : '');
+    showLock('');
   }
 });

@@ -172,7 +172,7 @@ test('app rules reload on their own when watching', async () => {
   try {
     assert.deepEqual(s.get('media').apps, []);
     const changed = new Promise((r) => s.once('change', r));
-    fs.writeFileSync(rulesFile, JSON.stringify({ media: ['spotify'] }));
+    fs.writeFileSync(rulesFile, JSON.stringify({ media: { mode: 'only', apps: [{ match: 'spotify' }] } }));
     await changed;
     assert.deepEqual(s.get('media').apps, [{ match: 'spotify' }]);
   } finally {
@@ -183,15 +183,14 @@ test('app rules reload on their own when watching', async () => {
 
 /* ---------- App rules ---------- */
 
-test('old rule lists still work: names become text rules, "*" or [] means any app', () => {
+test('rules that are not { mode } objects are ignored: the manifest apps apply', () => {
   const t = setup();
   const rulesFile = path.join(t.data, 'rules.json');
-  fs.writeFileSync(rulesFile, JSON.stringify({ media: ['spotify', 'vlc'], mine: ['*'] }));
+  fs.writeFileSync(rulesFile, JSON.stringify({ media: ['spotify'], mine: 'krita' }));
   try {
     const s = t.make({ rulesFile });
-    assert.deepEqual(s.get('media').apps, [{ match: 'spotify' }, { match: 'vlc' }]);
-    assert.deepEqual(s.get('mine').apps, []);
-    assert.equal(s.get('media').customApps, true);
+    assert.equal(s.get('media').customApps, false);
+    assert.equal(s.get('mine').customApps, false);
   } finally { t.cleanup(); }
 });
 
@@ -370,22 +369,3 @@ test('the menu is sorted by name until the user orders it, and favorites always 
   }
 });
 
-test('a renamed bundled shard keeps its app rule, favorite and order', () => {
-  const t = setup();
-  try {
-    const rulesFile = path.join(t.data, 'app-rules.json');
-    fs.writeFileSync(rulesFile, JSON.stringify({ 'photoshop-basico': { mode: 'only', apps: [{ exe: 'krita.exe' }] }, media: { mode: 'any' } }));
-    fs.writeFileSync(path.join(t.data, 'shards-state.json'), JSON.stringify({ 'photoshop-basico': { favorite: true, position: 2 } }));
-    t.make({ rulesFile });
-    const rules = JSON.parse(fs.readFileSync(rulesFile, 'utf8'));
-    assert.deepEqual(Object.keys(rules).sort(), ['edicion-imagen', 'media']);
-    assert.deepEqual(rules['edicion-imagen'].apps, [{ exe: 'krita.exe' }]);
-    const state = JSON.parse(fs.readFileSync(path.join(t.data, 'shards-state.json'), 'utf8'));
-    assert.deepEqual(state, { 'edicion-imagen': { favorite: true, position: 2 } });
-
-    // Never overwrites a rule the user already has under the new id
-    fs.writeFileSync(rulesFile, JSON.stringify({ 'photoshop-basico': { mode: 'any' }, 'edicion-imagen': { mode: 'only', apps: ['gimp'] } }));
-    t.make({ rulesFile });
-    assert.deepEqual(Object.keys(JSON.parse(fs.readFileSync(rulesFile, 'utf8'))).sort(), ['edicion-imagen', 'photoshop-basico']);
-  } finally { t.cleanup(); }
-});

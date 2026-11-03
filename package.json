@@ -65,7 +65,6 @@
       "installer.js",
       "shard-settings.js",
       "keys.js",
-      "migrate.js",
       "focus/**",
       "i18n/**",
       "desktop/**",

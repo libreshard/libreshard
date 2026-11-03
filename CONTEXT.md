@@ -14,7 +14,7 @@ Each shard can be limited to certain applications. For example, a Photoshop shar
 
 Project language: code, comments and this file are in English. All UI text (PC window and tablet viewer) lives in `i18n/es.json` and `i18n/en.json`, following the system language (the tablet's, for the viewer) with English as the fallback, unless a language is chosen in the PC's settings. `README.md` is in English with `README.es.md` alongside. The maintainer's work plans in `docs/plans/` are in Spanish and stay out of the repository (`.gitignore`).
 
-Identity: the project used to be called ShardPad, then LibrePad (renamed to LibreShard on 2026-11-02, before the first release, because other software already used that name). The logo is a cyan "L" with a double outline and a gold button sending out waves. Tagline: "Open-Source Control Deck". Palette: navy background `#0d1b2a`, cyan `#22d3ee`, gold `#fbbf24`. "Shard" is still the name of the panels.
+Identity: the logo is a cyan "L" with a double outline and a gold button sending out waves. Tagline: "Open-Source Control Deck". Palette: navy background `#0d1b2a`, cyan `#22d3ee`, gold `#fbbf24`. "Shard" is still the name of the panels.
 
 ## 2. Architecture
 
@@ -51,7 +51,6 @@ libreshard/
 ├── installer.js          prepares a shard from a folder or a .zip/.libreshard for the review screen
 ├── shard-settings.js     per-shard settings: schema validation, saved values, labels per language
 ├── pairing.js            pairing codes, paired devices (token hashes) and the attempt limiter
-├── migrate.js            copies the data folder over from the old names (LibrePad, ShardPad) on first run
 ├── manifest.js           shard manifest validation and key risk classification
 ├── net.js                allowed Host headers and private-network checks
 ├── keys.js               turns "ctrl+shift+m" into nut-js keys
@@ -101,8 +100,7 @@ Licensing: the project is Apache-2.0. `shard-base/` and `docs/shard-template/` (
 
 **main.js**
 - Only one instance runs (`requestSingleInstanceLock`). Opening the app again focuses the existing window and hands over any `.libreshard`/`.zip` it was opened with (`second-instance`; `open-file` on macOS; `process.argv` on the first launch).
-- On first run (no `config.json` in `userData`), `migrate.js` copies the data files (`config.json`, `devices.json`, `shards-state.json`, `app-rules.json`) and `shards/` from the newest old data folder (`LibrePad`, then `ShardPad`). Development shards (links) are recreated as links to the same folder; the old folder is left untouched.
-- `SETTINGS` defines the settings in `<userData>/config.json`, with defaults and validation: `port` (7878), `allowPublicNetworks` (false), `confirmDevices` (false), `allowAppsFromTablet` (true) and `language` (`auto`). `loadConfig()` fills in missing or invalid values and deletes the old `pin` field.
+- `SETTINGS` defines the settings in `<userData>/config.json`, with defaults and validation: `port` (7878), `allowPublicNetworks` (false), `confirmDevices` (false), `allowAppsFromTablet` (true) and `language` (`auto`). `loadConfig()` fills in missing or invalid values.
 - Creates the `Devices` store (`devices.json`), the `Pairing` codes and the `ShardStore` (bundled `shards/` first, then `<userData>/shards`, with `shards-state.json`, `app-rules.json` and `watch: true`), and starts the server with them. If the port is taken (`EADDRINUSE`) it shows a dialog and quits.
 - `confirmPairing`: when `confirmDevices` is on, a native dialog over the window asks before a new device gets its token.
 - `buildState()` gathers everything the desktop window shows (pairing code and QRs, devices, shards with `classifyKeys`, rejected shards, settings, pause, alert, strings for the language) and `push()` sends it on every change (store, devices, pairing, settings).
@@ -135,9 +133,8 @@ Licensing: the project is Apache-2.0. `shard-base/` and `docs/shard-template/` (
 - `get(id)` only returns enabled shards; `publicList()` is what the tablet gets (with `pending` when keys await approval, and `favorite`).
 - `install(sourceDir, manifest)` copies to `installDir/<id>` (skipping links), approves the reviewed keys and replaces an installed copy. It refuses bundled ids, linked shards and ids installed somewhere else.
 - `uninstall(id)` removes a user shard. A linked shard only loses its link (`removeShardFolder` never follows links, and `fs.rmSync` doesn't follow links inside a copied shard either).
-- **App rules** (`app-rules.json`): `{ id: { mode: 'any' } | { mode: 'only', apps: [entries] } }`; the old list format (strings, `"*"` = any) is still read. Entries expose `apps` (effective entries), `customApps` (the user has a rule) and `suggestedApps` (the manifest's). `setRule(id, rule)`, `resetRule(id)` and `addApp(id, { exe, name })` write the file through `writeRules()`, which keeps every other rule and refuses to overwrite a file with invalid JSON.
+- **App rules** (`app-rules.json`): `{ id: { mode: 'any' } | { mode: 'only', apps: [entries] } }`. Entries expose `apps` (effective entries), `customApps` (the user has a rule) and `suggestedApps` (the manifest's). `setRule(id, rule)`, `resetRule(id)` and `addApp(id, { exe, name })` write the file through `writeRules()`, which keeps every other rule and refuses to overwrite a file with invalid JSON.
 - **Settings:** `entry.settings` holds every declared setting with a valid value (saved in `shards-state.json` under `settings`, else the default). `setSettings(id, values)` checks each value against the manifest and emits `settings` (id, values); `resetSettings(id)` goes back to the defaults.
-- **Renamed bundled shards:** `RENAMED` (`photoshop-basico` → `edicion-imagen`). At startup `migrateIds()` moves the old id's entry in `shards-state.json` (favorite, order…) and its rule in `app-rules.json` to the new id, only when nothing is saved under the new id yet; a rules file with invalid JSON is left alone.
 - **Development links:** `link(sourceDir, manifest)` puts a folder in the user's shard folder as a junction (Windows) or symlink, and approves the reviewed keys. `watchLinked()` watches each linked shard's real folder: a `manifest.json` change reloads the store (new keys stay pending), any other change emits `files` (id).
 - `watch()` reloads (debounced) when the user's shard folder changes, re-applies `app-rules.json` when it changes, and watches linked shards.
 
@@ -167,7 +164,7 @@ Licensing: the project is Apache-2.0. `shard-base/` and `docs/shard-template/` (
 - WebSocket on `/ws`: `verifyClient` requires an allowed `Host`, `Origin` equal to `http://<host>`, a private remote address and fewer than 32 connections. Messages are limited to 4 KB (`maxPayload`); an unauthenticated socket is closed after 10 s.
 - Authentication: `{type:'auth', token}` is checked against `devices`; `{type:'pair', code|token, name}` consumes the current pairing code and creates a device. Only pairing attempts go through the `RateLimiter`; a wrong device token just closes the socket (tokens are 256 random bits, and limiting them would let an attacker lock real devices out). When the limiter's global threshold is crossed, `onAlert` is called. Removing a device (`devices.remove`) closes its sockets at once.
 - Key messages: `shard` and `keys` must be strings of 1–64 characters. A token bucket allows 50 key messages per second per connection, but **`up` is never dropped**; more than 100 queued messages close the connection (1008). At most 10 combos can be held at once per connection.
-- A key is typed only if it's in the shard's `allowed` set (declared **and** approved). App rules are resolved by the store (`resolveApps`: the user's rule in `app-rules.json`, otherwise the manifest's, otherwise none; an empty list or one with `"*"` means no restriction).
+- A key is typed only if it's in the shard's `allowed` set (declared **and** approved). App rules are resolved by the store (`resolveApps`: the user's rule in `app-rules.json`, otherwise the manifest's, otherwise none; `{ mode: 'any' }`, or a manifest list that is empty or has `"*"`, means no restriction).
 - Before running `press` or `down`, if `shard.apps` isn't empty, it calls `focus.check()`. If it doesn't match it replies `blocked` and doesn't touch the keyboard. `up` is never blocked.
 - Each connection's messages are handled **in order** (one promise queue per socket). Without it, an `up` (which doesn't wait for `focus.check`) could run before its `down` on a quick tap and leave the key stuck.
 - Every server-side WebSocket has an `error` listener: `ws` emits protocol errors (an oversized message, for example) there, and without one a single bad message would crash the app.
@@ -212,8 +209,7 @@ State: `ws`, `authed`, `shards`, `current` (id of the open shard or `null`) and 
 Behavior:
 - **Strings first:** `viewer/app.js` fetches `/api/strings` before showing anything (`stringsReady`); static text in `index.html` uses `data-i18n` / `data-i18n-aria`, and everything else goes through `t()`.
 - **Pairing and authentication:** a paired viewer keeps its device token in `localStorage` (`device-token`) and sends `{type:'auth', token}`. Without one, it pairs with the QR token (`?pair=…` in the URL, removed from the address bar with `history.replaceState`) or with the code typed in `#lock`, sending a readable `deviceName()` such as "iPad · Safari". On `paired` it saves the token.
-- **Close codes:** `4001` with a token means the device was revoked: the token is deleted and, if a QR token arrived with the URL, it pairs with that instead. `4001` while pairing means a wrong or expired code or QR. `4002` means the old PIN login. `4029` shows "Demasiados intentos" with the wait from the preceding `error` message. Any other close shows the offline notice and retries every 1.5 s, but only with a saved token.
-- **Migration:** a viewer that still has the old `pin` in `localStorage` deletes it and shows a message asking to scan the QR again.
+- **Close codes:** `4001` with a token means the device was revoked: the token is deleted and, if a QR token arrived with the URL, it pairs with that instead. `4001` while pairing means a wrong or expired code or QR. `4029` shows "Demasiados intentos" with the wait from the preceding `error` message. Any other close shows the offline notice and retries every 1.5 s, but only with a saved token.
 - **Live updates:** `shards-changed` refetches the list (and leaves a shard that disappeared); `paused` (also in `ok`/`paired`) shows a gold strip and releases held keys; `pending` shows "waiting for the PC" on the pairing screen; close code 4003 means the PC rejected the device. Shards with `pending` show "Permisos pendientes" on their card.
 - **Favorites:** menu cards of favorite shards show a gold ★; the menu and the floating panel follow the server's order.
 - **Live indicator:** the viewer sends `open` when a shard opens or the menu shows (and again after reconnecting); `focus` with `ok: false` shows a gold strip at the bottom (`#focusbar`) naming the shard's apps and the app in front.
@@ -282,7 +278,7 @@ Server to client:
 | `{ "type": "error", "code": "allow-failed" }` | Nothing to allow (setting off, no recent block, another shard) |
 | `{ "type": "blocked", "shard", "keys", "apps", "active", "reason", "canAllow"?, "app"? }` | The shard is limited to other apps (`apps` are readable labels). With `canAllow`, the tablet may answer `allow-app`; `app` is the detected program's name. `active` is what's in the foreground and `reason` is `wrong-app` or `unknown` |
 
-Close codes: `4001` unknown or revoked device, wrong pairing code, or a message before authenticating; `4002` old PIN login (pair again); `4003` the PC rejected the device; `4008` no authentication within 10 s; `4029` rate limited; `1008` message flood; `1009` message too large.
+Close codes: `4001` unknown or revoked device, wrong pairing code, or a message before authenticating; `4003` the PC rejected the device; `4008` no authentication within 10 s; `4029` rate limited; `1008` message flood; `1009` message too large.
 
 Full flow of a tap:
 
@@ -328,7 +324,6 @@ A folder with at least `manifest.json` and `index.html`. It can include CSS, ima
 - `settings` (optional): settings the user can change on the PC, read by the shard with `Shard.settings()` and `Shard.onSettings(cb)`. Up to 30, each `{ id, type, label, default, ... }` with type `toggle`, `select` (`options`: texts or `{ value, label }`), `number` (`min`, `max`, `step`), `text` (`maxLength`, up to 200) or `color` (`#rrggbb`). A label is a text or `{ "en": "...", "es": "..." }`. Values are always checked against the declaration; an invalid declaration rejects the shard.
 - **Development mode:** "Load in development…" links a folder instead of copying it. Saving any file reloads the shard on the tablets showing it; changing `manifest.json` reloads its declaration (new keys need approval again).
 - The manifest is validated when it loads: unknown keys, wrong types or a bad id make the shard be skipped (the PC window lists it). Text fields are trimmed to their limits (name 60, description 300…) and unknown fields are dropped.
-- `size` is **deprecated**: it used to define cells in a grid, but now every shard takes the whole screen. It's ignored and dropped at load.
 
 Usage from HTML/JS:
 
@@ -376,7 +371,7 @@ So that a shard only acts in the apps it was designed for, add `apps` to the man
 
 ```json
 {
-  "photoshop-basico": {
+  "edicion-imagen": {
     "mode": "only",
     "apps": [
       { "exe": "Photoshop.exe", "name": "Adobe Photoshop 2025" },
@@ -388,7 +383,6 @@ So that a shard only acts in the apps it was designed for, add `apps` to the man
 ```
 
 - The key is the shard's `id`. The user's rule **replaces** the manifest's; deleting it (or "Restore suggestions") goes back to the manifest.
-- The old format (`"photoshop-basico": ["photoshop", "krita"]`, with `["*"]` or `[]` for any app) is still read.
 - The file reloads on save; no restart needed. If it ends up with invalid JSON, the previous rules are kept, a warning is logged, and the editor refuses to save until it's fixed.
 
 ### Design rules for shard authors
@@ -416,7 +410,7 @@ All of them use `shard-base/` (`libreshard.css`, `libreshard.js`, copied in by `
 |---|---|---|---|
 | `multimedia` | Media | `data-repeat` (volume) | No apps restriction. |
 | `teclado-numerico` | Numpad | `settings` (calculator/phone layout) | Numpad keys type digits only with Num Lock on (Windows and X11 turn them into navigation keys otherwise), so it has a Num Lock key. |
-| `edicion-imagen` | Image editing | `settings` with a key map per program, `apps`, `data-hold` (hand, pick color) | Program: Photoshop, Affinity Photo, Krita, GIMP. GIMP 3.2 and Krita 5 checked; Photoshop and Affinity use their documented defaults, unchecked. Actions a program has no shortcut for are shown disabled (Krita's lasso). Replaces `photoshop-basico`. |
+| `edicion-imagen` | Image editing | `settings` with a key map per program, `apps`, `data-hold` (hand, pick color) | Program: Photoshop, Affinity Photo, Krita, GIMP. GIMP 3.2 and Krita 5 checked; Photoshop and Affinity use their documented defaults, unchecked. Actions a program has no shortcut for are shown disabled (Krita's lasso). |
 | `videollamadas` | Video calls | `settings` per program, two-tap confirm | Zoom (checked in its shortcut settings, not in a meeting), Teams and Meet (checked in meetings). Meet has no leave shortcut, so that button is off for it. |
 | `escritorio` | Desktop | the risk review (`win`, `ctrl+alt`), `data-hold` + `data-key` (Alt + Tab), `Shard.platform` | System: auto/Windows/GNOME/XFCE. Windows ignores an injected Win+L, so "Lock" is off there. |
 | `discord-basico` | Discord | global keybinds the user records with a "Send" button, `data-hold` push to talk | Key sets: Windows `ctrl+shift+F13–F17`, Linux `ctrl+shift+F1–F4, F6`. |
@@ -478,7 +472,7 @@ What needs a restart:
 
 Tests (`test/`):
 
-- `keys.test.js`, `focus.test.js`, `net.test.js`, `pairing.test.js`, `manifest.test.js` and `migrate.test.js`: unit tests.
+- `keys.test.js`, `focus.test.js`, `net.test.js`, `pairing.test.js` and `manifest.test.js`: unit tests.
 - `server.test.js`: starts the real server on a random port with a fake keyboard, a fake `focus` and an in-memory paired device (from `test/helpers.js`), and talks to it over WebSocket and HTTP: tokens, pairing, rate limiting, revocation, `Origin` and `Host` checks, headers, denied keys, blocked apps, `up` never blocked, release on disconnect and on quit, every protocol limit, manifest validation, repeated ids, path traversal through links and dotfiles, user rules and `EADDRINUSE`.
 - When a test needs symlinks it creates junctions (`fs.symlinkSync(target, path, 'junction')`), which Windows allows without administrator rights.
 - `bundled-shards.test.js` loads every bundled shard and checks manifests, keys, base copies (`tools/build-shard-base.js --check` does the same from the command line) and translations.
@@ -512,7 +506,7 @@ npm run dist
 - **Linux:** `desktopName` (`libreshard.desktop`) plus `linux.syncDesktopName` make the window's `WM_CLASS` match the `.desktop` entry, so docks group it with its icon.
 - **Releases:** pushing a tag `v<version>` (it must match `package.json`) runs `.github/workflows/release.yml`: tests and installers on Windows, Linux and macOS (macOS may fail without blocking), then a **draft** GitHub release with the installers, `SHA256SUMS.txt` and the CHANGELOG section. A maintainer publishes the draft by hand. GitHub Actions are pinned by commit SHA. Code signing (SignPath) would slot in between the build and the draft.
 - **CI:** `.github/workflows/ci.yml` runs `npm test` on Windows, Linux and macOS (macOS doesn't fail the run), `npm run test:linux`, and the DCO check on pull requests.
-- **Testing a build without touching your data:** run `dist/win-unpacked/LibreShard.exe --user-data-dir=<empty folder> --remote-debugging-port=9225`. With an empty folder the app migrates a copy of the real data (see `migrate.js`); put a `config.json` there first (another port) to start clean.
+- **Testing a build without touching your data:** run `dist/win-unpacked/LibreShard.exe --user-data-dir=<test folder> --remote-debugging-port=9225`. Put a `config.json` with another port in the folder first, so it doesn't clash with a running LibreShard.
 
 ### Creating a new shard (recipe)
 
@@ -547,11 +541,10 @@ npm run dist
 - **Windows 11 Notepad:** `notepad.exe` is only a launcher; killing it leaves the real Notepad window open (and it restores the user's tabs). Close test windows gracefully (`CloseMainWindow`).
 - **`replaceChildren(null)` inserts the text "null":** in `desktop/app.js`, use `fill()` (or `h()`), which skip null/false optional parts.
 - **Desktop CSP:** the window forbids inline scripts and inline styles (no `style` attributes).
-- **Pending approvals after updating:** shards that were in the user's folder before approvals existed (like the Star Citizen junction) start with every key pending. Approve them once in the Shards tab.
 - **Viewer CSP:** the viewer forbids inline scripts. Put viewer code in `viewer/app.js`, never in a `<script>` block or an `onclick` attribute.
 - **`ws` error events:** every server-side socket needs an `error` listener (see server.js), and so does the `WebSocketServer`. Without them, an oversized message or a listen error crashes the app.
 - **Multiple IPs:** a PC usually has several interfaces (Wi-Fi, LAN, VPN, virtual adapters). That's why the window shows one QR per interface instead of guessing which one to use.
-- **`user-select: none` on iOS:** the viewer disables text selection so long presses don't get in the way, and re-enables it only on `input`. If you remove it, the PIN can no longer be typed in Safari.
+- **`user-select: none` on iOS:** the viewer disables text selection so long presses don't get in the way, and re-enables it only on `input`. If you remove it, the pairing code can no longer be typed in Safari.
 - **URL hash:** it must contain only the shard id (lowercase letters, digits and hyphens). The viewer doesn't use other route formats.
 - **Reserved corner:** the floating button covers the shard's top-left corner; it's a dead zone for the shard's taps.
 - **`active-win` is optional and native:** it's an `optionalDependency` (`active-win@8`; v9 is ESM-only). On Windows its install script downloads a prebuilt N-API binary (it works in Node and Electron alike). On Linux it installs (no binary needed) and uses `xprop`/`xwininfo`; verified under Xvfb by `npm run test:linux`. It needs the window to declare `_NET_WM_PID` and `WM_CLASS`, which normal apps do. Without it, `focus/` falls back to window titles.
@@ -559,11 +552,11 @@ npm run dist
 - **npm audit:** what remains are build tools (electron-builder's chain), jimp's `file-type` (nut-js uses jimp for screen capture, which LibreShard never calls on outside files) and active-win's `node-gyp`/`tar`, which only run while installing. They're packaged (node-pre-gyp is needed at runtime to find active-win's binary), but never executed by the app.
 - **Linux session end:** when the user logs out with LibreShard running, Chromium aborts ("D-Bus connection was disconnected", or "GPU process isn't usable" when every process gets SIGTERM at once) and Ubuntu records a crash report. It happened with the Electron 33 builds too. Data is safe (settings are written immediately); a clean fix (quitting when the session ends) is pending.
 - **Title-based detection:** without `active-win`, only the window title is known, which can contain misleading text (a browser tab with "Photoshop" in the title). The apps editor then hides "Pick from open apps" and text rules match the title.
-- **macOS and Wayland:** on macOS, reading the active window may need the Screen Recording permission, and on Wayland it may not work. In both cases, shards with apps are blocked (fail closed) until it's fixed or the restriction is removed with `["*"]`.
+- **macOS and Wayland:** on macOS, reading the active window may need the Screen Recording permission, and on Wayland it may not work. In both cases, shards with apps are blocked (fail closed) until it's fixed or the user picks "In any app" in the apps editor.
 - **`mask-image` and `localStorage` in shards:** the iframe has no `allow-same-origin`, so its origin is opaque. `localStorage` throws (wrap it in `try`), and `mask-image` with a file from the shard may fail because it's requested with CORS; embed those masks as `data:` (as the external Star Citizen MFD shard does in its `icons.css`). `<img>` and `background-image` work with local files.
 - **Combos in nut-js:** don't use `keyboard.pressKey(mod, key)` with several keys. nut-js sends modifiers as libnut "flags", which send RCtrl as the left Ctrl, and `releaseKey` reverses the order on its own, so reversing it again left the main key pressed. `server.js` presses and releases each key separately (`makeTyper`).
 - **Press duration:** `press` holds the key for `TAP_MS` (60 ms, in `server.js`). At 0 ms, press and release arrived together and games that read the keyboard once per frame (Star Citizen) didn't see the key. For the game's "hold" actions use `data-hold`, which lasts as long as the finger is on it.
-- **Game shards with unbound actions:** the `Star Citizen MFD` shard (separate repository, `libreshard-star-citizen`; not bundled with the app because it uses assets from CIG's fankit) maps each button to a game action (`layout.js`) and uses `tools/build-profile.js` to generate a control profile (still `LibrePad_MFD.xml` there, renamed when that repository is published) that binds the actions without a default key, plus the manifest's `permissions.keys`. It's the pattern to follow for other games with importable profiles.
+- **Game shards with unbound actions:** the `Star Citizen MFD` shard (separate repository, `libreshard-star-citizen`; not bundled with the app because it uses assets from CIG's fankit) maps each button to a game action (`layout.js`) and uses `tools/build-profile.js` to generate a control profile that binds the actions without a default key, plus the manifest's `permissions.keys`. It's the pattern to follow for other games with importable profiles.
 - **100 ms cache:** if you switch apps and tap within that window, it may be evaluated against the previous app.
 - **Two fingers in a shard:** a second finger's tap fires no `click` (only the primary pointer does); `shard-api.js` presses `[data-key]` on that pointer's `pointerup` instead. And `touch-action: manipulation` still allows pinch zoom, which cancels both pointers when a second finger lands: shard buttons need `touch-action: none` (the base styles set it on `.lp-btn`). Both were only visible with real multi-touch; CDP touch events reproduce them (in `Input.dispatchTouchEvent`, `touchEnd` lists the points that lift, not the ones that stay).
 - **Win+L can't be injected on Windows:** the lock is handled by the logon process, which ignores synthetic input; the L arrives as a letter. Other Win combos (Win+D, Win+Tab, Ctrl+Win+arrows, Win+Shift+S) work.
@@ -597,7 +590,7 @@ The work before the first release (security, shard installation, allowed-apps ed
 - **Tablet as a browser, no app of its own:** works on iPad, Android or any device with a browser, and there's no mobile app to publish or maintain.
 - **Shards in iframes with `sandbox` and CSP:** lets the community write HTML/CSS/JS freely without giving it access to the PC or the network.
 - **Validation in the agent:** the list of allowed keys is declared in the manifest and enforced by the server.
-- **Full-screen shards with a menu:** replaced the first version, which showed every shard at once in a grid of small cells. That's why `size` is deprecated.
+- **Full-screen shards with a menu:** replaced the first version, which showed every shard at once in a grid of small cells.
 - **One QR per network interface:** a tablet can't probe IPs until it reaches the PC, so every plausible one is shown and the user scans whichever works.
 - **Hash as the route:** simple, works with the Back button and needs no server logic.
 - **Allowed apps per shard, validated on the PC and failing closed:** avoids firing shortcuts into the wrong app. Detection goes through providers: `active-win` (program and executable) when available, window titles otherwise.

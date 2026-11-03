@@ -69,11 +69,11 @@ test('an unknown token closes the socket with 4001', () => withServer({}, async 
   assert.equal(await c.closed, 4001);
 }));
 
-test('the old PIN login asks the viewer to pair again (4002)', () => withServer({}, async ({ port }) => {
+test('an auth message without a token closes the socket with 4001', () => withServer({}, async ({ port }) => {
   const c = connect(port);
   await c.opened;
-  c.send({ type: 'auth', pin: '123456' });
-  assert.equal(await c.closed, 4002);
+  c.send({ type: 'auth' });
+  assert.equal(await c.closed, 4001);
 }));
 
 test('any key message before auth closes the socket with 4001', () => withServer({}, async ({ port, keyboard }) => {
@@ -369,9 +369,9 @@ test('a shard whose folder is a link still loads', () => withServer({}, async ({
 
 /* ---------- Rules ---------- */
 
-test('user rules replace the manifest apps, and "*" removes the restriction', async () => {
+test('user rules replace the manifest apps, and mode "any" removes the restriction', async () => {
   const rulesFile = path.join(os.tmpdir(), `libreshard-rules-${process.pid}.json`);
-  fs.writeFileSync(rulesFile, JSON.stringify({ restricted: ['*'], demo: ['krita'] }));
+  fs.writeFileSync(rulesFile, JSON.stringify({ restricted: { mode: 'any' }, demo: { mode: 'only', apps: [{ match: 'krita' }] } }));
   try {
     await withServer({ rulesFile }, async ({ base }) => {
       const list = await (await fetch(base + '/api/shards')).json();

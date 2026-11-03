@@ -22,7 +22,6 @@ scratch/
 tmp/
 *.tgz
 *.zip
-*.librepad
 *.libreshard
 .env
 .env.*
