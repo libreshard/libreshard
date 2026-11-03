@@ -162,16 +162,17 @@ Licensing: the project is Apache-2.0. `shard-base/` and `docs/shard-template/` (
 - `GET /shards/:id/*`: serves the shard's files with the shard CSP (which adds `frame-ancestors 'self'`). Paths with a segment starting with `.` (`..`, dotfiles) are refused, the path must stay inside the folder, and its **real path** must stay inside `realRoot`, so a link inside a shard can't expose other files while a shard folder that is itself a link (a development junction) still works. When serving `index.html` it appends `<script src="/shard-api.js">`.
 - `GET /shard-api.js` and the static files in `viewer/` (dotfiles ignored).
 - WebSocket on `/ws`: `verifyClient` requires an allowed `Host`, `Origin` equal to `http://<host>`, a private remote address and fewer than 32 connections. Messages are limited to 4 KB (`maxPayload`); an unauthenticated socket is closed after 10 s.
-- Authentication: `{type:'auth', token}` is checked against `devices`; `{type:'pair', code|token, name}` consumes the current pairing code and creates a device. Only pairing attempts go through the `RateLimiter`; a wrong device token just closes the socket (tokens are 256 random bits, and limiting them would let an attacker lock real devices out). When the limiter's global threshold is crossed, `onAlert` is called. Removing a device (`devices.remove`) closes its sockets at once.
+- Authentication: `{type:'auth', token}` is checked against `devices`; `{type:'pair', code|token, name}` consumes the current pairing code and creates a device. Only pairing attempts go through the `RateLimiter`; a wrong device token just closes the socket (tokens are 256 random bits, and limiting them would let an attacker lock real devices out). When the limiter's global threshold is crossed, `onAlert` is called. Removing a device (`devices.remove`) closes its sockets at once. A `local` device (the panel inside the app) is only accepted from a loopback address (`net.isLoopback`); from anywhere else its token closes the socket like an unknown one.
 - Key messages: `shard` and `keys` must be strings of 1–64 characters. A token bucket allows 50 key messages per second per connection, but **`up` is never dropped**; more than 100 queued messages close the connection (1008). At most 10 combos can be held at once per connection.
 - A key is typed only if it's in the shard's `allowed` set (declared **and** approved). App rules are resolved by the store (`resolveApps`: the user's rule in `app-rules.json`, otherwise the manifest's, otherwise none; `{ mode: 'any' }`, or a manifest list that is empty or has `"*"`, means no restriction).
 - Before running `press` or `down`, if `shard.apps` isn't empty, it calls `focus.check()`. If it doesn't match it replies `blocked` and doesn't touch the keyboard. `up` is never blocked.
+- **Never into LibreShard itself (local device only):** before `press`/`down` from the `local` device, if `focus.active()` is LibreShard (option `isSelf`, default `focus/apps` `isSelfApp`: the executable equals `process.execPath`, so Electron in development), it replies `blocked` with `reason: 'self'` and types nothing. The keys would otherwise land in the app's own window (reload, developer tools…). Tablets get no extra detection, and a failed detection doesn't block for this reason.
 - Each connection's messages are handled **in order** (one promise queue per socket). Without it, an `up` (which doesn't wait for `focus.check`) could run before its `down` on a quick tap and leave the key stuck.
 - Every server-side WebSocket has an `error` listener: `ws` emits protocol errors (an oversized message, for example) there, and without one a single bad message would crash the app.
 
 **pairing.js**
 - `Pairing`: the current 6-digit code and QR token (16 random bytes). Both expire after 10 minutes or when used, rotate together, and emit `change`. `consume({ token } | { code })` compares in constant time.
-- `Devices`: paired devices in a JSON file, `[{ id, name, tokenHash, createdAt, lastSeen, lastIp }]`. `add()` returns the device's token once and stores only its SHA-256; `verify()` compares every stored hash in constant time; `rename()` and `remove()` emit `change` (and `removed`).
+- `Devices`: paired devices in a JSON file, `[{ id, name, tokenHash, createdAt, lastSeen, lastIp, local? }]`. `add(name, ip, { local })` returns the device's token once and stores only its SHA-256; `verify()` compares every stored hash in constant time; `rename()` and `remove()` emit `change` (and `removed`). There is at most one `local` device: adding one removes the previous. Public info carries `local` (boolean).
 - `RateLimiter`: per IP, 5 failures block for 30 s, doubling on each new block up to 15 min; a success resets the IP. Globally, more than 20 failures in a minute pause pairing for everyone for a minute and report an alert once.
 - `cleanName()`: device names are plain text, without control characters, at most 60 characters, "Dispositivo" if empty.
 
@@ -180,7 +181,7 @@ Licensing: the project is Apache-2.0. `shard-base/` and `docs/shard-template/` (
 - `classifyKeys(keys)` sorts keys for the future install review: `dangerous` (combos with `win`/`meta`/`cmd`, `alt+f4`, any ctrl+alt), `canType` (10 or more plain characters plus `enter`) and `warning` (both at once, for example `win+r` plus typing).
 
 **net.js**
-- `hostAllowed(host)` and `isPrivateAddress(ip)` (loopback, 10/8, 172.16/12, 192.168/16, 169.254/16, 100.64/10 for Tailscale, `::1`, fc00::/7, fe80::/10, and IPv4-mapped IPv6). The PC's addresses are cached for 5 seconds.
+- `hostAllowed(host)` and `isPrivateAddress(ip)` (loopback, 10/8, 172.16/12, 192.168/16, 169.254/16, 100.64/10 for Tailscale, `::1`, fc00::/7, fe80::/10, and IPv4-mapped IPv6). The PC's addresses are cached for 5 seconds. `isLoopback(ip)`: 127/8, `::1` and their IPv4-mapped form.
 
 **keys.js**
 - `normalize(combo)`: lowercase, no whitespace.
@@ -230,7 +231,7 @@ Behavior:
 - **This device's settings:** a gear button `#devBtn` in the menu header opens `#devSheet` (closed by `#devScrim`, Escape or opening a shard) with the checkbox "Abrir los shards en pantalla completa", on by default. Only the opt-out is stored, as `localStorage` `auto-fullscreen` = `off`. Hidden where there is no Fullscreen API.
 - **Shard → PC bridge:** the `message` listener requires `e.source === frame.contentWindow`, `t` in `press|down|up` and a string `keys`. The shard id comes from `current`, never from the message. It records `down`/`up` in `held` and vibrates with `navigator.vibrate`.
 - **Safe release:** `visibilitychange` (screen hidden) and `pagehide` call `releaseHeld()`, which sends `up` for every held key.
-- **Blocked action notice:** on `blocked` it shows a notice (`#toast`, 4.5 s) with the allowed apps and the active app, and vibrates with a different pattern. Menu cards show "Solo en …" when the shard is restricted.
+- **Blocked action notice:** on `blocked` it shows a notice (`#toast`, 4.5 s) with the allowed apps and the active app, and vibrates with a different pattern. Menu cards show "Solo en …" when the shard is restricted. A `blocked` with `reason: 'self'` (local panel, LibreShard in front) shows "No se pulsó nada: LibreShard está delante…" instead.
 - **Untrusted content:** name, author, icon and description come from community manifests. The viewer renders them with `textContent` (never `innerHTML`), trims the description to 120 characters and uses only the first 2 characters of the icon.
 
 **viewer/shard-api.js**
@@ -278,7 +279,7 @@ Server to client:
 | `{ "type": "settings", "shard", "values" }` | The user changed that shard's settings on the PC |
 | `{ "type": "shard-files-changed", "shard" }` | A development shard's files changed: reload it if open |
 | `{ "type": "error", "code": "allow-failed" }` | Nothing to allow (setting off, no recent block, another shard) |
-| `{ "type": "blocked", "shard", "keys", "apps", "active", "reason", "canAllow"?, "app"? }` | The shard is limited to other apps (`apps` are readable labels). With `canAllow`, the tablet may answer `allow-app`; `app` is the detected program's name. `active` is what's in the foreground and `reason` is `wrong-app` or `unknown` |
+| `{ "type": "blocked", "shard", "keys", "apps", "active", "reason", "canAllow"?, "app"? }` | The shard is limited to other apps (`apps` are readable labels). With `canAllow`, the tablet may answer `allow-app`; `app` is the detected program's name. `active` is what's in the foreground and `reason` is `wrong-app` or `unknown`. `reason: 'self'` (local device only, `apps` empty): LibreShard itself is in front |
 
 Close codes: `4001` unknown or revoked device, wrong pairing code, or a message before authenticating; `4003` the PC rejected the device; `4008` no authentication within 10 s; `4029` rate limited; `1008` message flood; `1009` message too large.
 

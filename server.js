@@ -4,10 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
 const { parse, normalize, unavailable } = require('./keys');
-const { hostAllowed, isPrivateAddress } = require('./net');
+const { hostAllowed, isLoopback, isPrivateAddress } = require('./net');
 const { Pairing, Devices, RateLimiter, cleanName } = require('./pairing');
 const { ShardStore } = require('./shard-store');
-const { appLabel } = require('./focus/apps');
+const { appLabel, isSelfApp } = require('./focus/apps');
 const i18n = require('./i18n');
 
 // How long a 'press' is held down. Without it, press and release arrive at the same instant
@@ -84,12 +84,13 @@ const validField = (v) => typeof v === 'string' && v.length > 0 && v.length <= M
 // - unavailableKeys(combo): keys this system can't press safely (keys.unavailable; injectable for tests).
 // - language: 'auto' | 'es' | 'en', or a function returning it: the viewer's language (auto follows the tablet).
 // - platform: the PC's system as shards see it (Shard.platform); defaults to this process's.
+// - isSelf(app): whether a detected app is LibreShard itself (focus/apps isSelfApp; injectable for tests).
 // The returned server also has releaseAll(), setPaused(on) and isPaused().
 function startServer({
   port, host = '0.0.0.0', store, shardDirs, rulesFile, appVersion,
   keyboard, focus, devices, pairing, limiter, allowPublic = false, onAlert, confirmPairing,
   allowAppsFromTablet = false, unavailableKeys = unavailable, language = 'auto',
-  platform = shardPlatform(process.platform),
+  platform = shardPlatform(process.platform), isSelf = isSelfApp,
 }) {
   const canAllow = () => (typeof allowAppsFromTablet === 'function' ? allowAppsFromTablet() : allowAppsFromTablet) === true;
   const typer = makeTyper(keyboard || nutKeyboard());
@@ -327,7 +328,8 @@ function startServer({
         // attacker can't lock real devices out by failing on purpose)
         if (msg.type === 'auth' && typeof msg.token === 'string') {
           const device = devices.verify(msg.token, c.ip);
-          if (device) return authOk(device);
+          // The local panel's device only exists for this PC: from anywhere else it is unknown
+          if (device && (!device.local || isLoopback(c.ip))) return authOk(device);
           return ws.close(CLOSE.unknownDevice, 'Unknown device');
         }
         if (msg.type === 'pair') return pair(msg);
@@ -372,6 +374,13 @@ function startServer({
       // It can't have been pressed, so there's nothing to release either.
       const missing = unavailableKeys(combo);
       if (missing.length) return send({ type: 'error', code: 'key-unavailable', keys: missing.join('+') });
+
+      // The local panel runs on this PC: with LibreShard itself in front, its keys would land in the
+      // app (reload, developer tools…). Tablets are left alone and get no extra detection. A failed
+      // detection doesn't block here; the app check below still fails closed.
+      if (msg.type !== 'up' && c.device.local && isSelf(await focus.active())) {
+        return send({ type: 'blocked', shard: msg.shard, keys: combo, apps: [], active: '', reason: 'self' });
+      }
 
       // If the shard is limited to certain apps, it only acts while one of them is in the foreground.
       // Releasing keys ('up') is never blocked, so no key is left stuck.

@@ -11,7 +11,7 @@ const { ShardStore } = require('./shard-store');
 const { classifyKeys } = require('./manifest');
 const installer = require('./installer');
 const focus = require('./focus');
-const { appLabel, exeKey } = require('./focus/apps');
+const { appLabel, isSelfApp } = require('./focus/apps');
 const i18n = require('./i18n');
 const { labelFor } = require('./shard-settings');
 
@@ -370,16 +370,15 @@ async function start() {
   handle('shard:open', (id) => { shell.openPath(entry(id).root); });
 
   // Apps editor. LibreShard itself is never offered: the user is looking at it while choosing.
-  const isSelf = (a) => !!a && exeKey(a.exe) === exeKey(process.execPath);
   handle('apps:open', async () => {
     const list = await focus.openApps();
     if (!list) return { ok: true, apps: null };
-    return { ok: true, apps: await withIcons(list.filter((a) => !isSelf(a))) };
+    return { ok: true, apps: await withIcons(list.filter((a) => !isSelfApp(a))) };
   });
   handle('apps:detect', async () => {
     const a = await focus.active();
     if (!a) throw new Error(t('apps.detectFailed'));
-    if (isSelf(a)) throw new Error(t('apps.detectSelf'));
+    if (isSelfApp(a)) throw new Error(t('apps.detectSelf'));
     const found = a.exe ? { exe: a.exe, name: a.name || a.exe, path: a.path } : { match: a.title.slice(0, 100) };
     return { ok: true, app: (await withIcons([found]))[0] };
   });

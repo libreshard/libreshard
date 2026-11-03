@@ -84,7 +84,10 @@ function connect(mode) {
     if (m.type === 'focus' && m.shard === current) showFocus(m);
     if (m.type === 'error') lastError = m;
     if (m.type === 'denied') console.warn('Key not allowed by the shard:', m.keys);
-    if (m.type === 'blocked') {
+    if (m.type === 'blocked' && m.reason === 'self') {
+      showToast(t('viewer.blockedSelf'));
+      if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
+    } else if (m.type === 'blocked') {
       const where = (m.apps || []).join(', ');
       const now = m.active ? t('viewer.activeNow', { app: m.active }) : t('viewer.activeUnknown');
       // The PC offers to add the program it detected; the tablet only says "yes" for this shard

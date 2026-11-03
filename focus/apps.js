@@ -36,4 +36,7 @@ function appMatches(active, entry) {
   return ids.some((id) => typeof id === 'string' && id.toLowerCase().includes(needle));
 }
 
-module.exports = { normalizeApp, appLabel, appMatches, exeKey };
+// Whether a detected app ({ exe }) is LibreShard itself: the packaged app, or Electron in development
+const isSelfApp = (a, execPath = process.execPath) => !!a && !!exeKey(a.exe) && exeKey(a.exe) === exeKey(execPath);
+
+module.exports = { normalizeApp, appLabel, appMatches, exeKey, isSelfApp };

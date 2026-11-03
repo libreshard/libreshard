@@ -57,7 +57,8 @@ class Pairing extends EventEmitter {
   stop() { clearTimeout(this.timer); }
 }
 
-// Paired devices, saved in a JSON file: [{ id, name, tokenHash, createdAt, lastSeen, lastIp }].
+// Paired devices, saved in a JSON file: [{ id, name, tokenHash, createdAt, lastSeen, lastIp, local? }].
+// `local` marks the panel that runs inside the app on this PC; there is at most one.
 // Emits 'change' when a device is added, renamed or removed, and 'removed' (with the id) on removal.
 class Devices extends EventEmitter {
   constructor(file) {
@@ -76,8 +77,10 @@ class Devices extends EventEmitter {
     fs.writeFileSync(this.file, JSON.stringify(this.list, null, 2) + '\n');
   }
 
-  // Returns the new device's public info and its token, which is only ever given to that device
-  add(name, ip) {
+  // Returns the new device's public info and its token, which is only ever given to that device.
+  // A new local device replaces the previous one (its token can't be recovered: only hashes are kept).
+  add(name, ip, { local = false } = {}) {
+    if (local) for (const d of this.list.filter((x) => x.local)) this.remove(d.id);
     const token = crypto.randomBytes(32).toString('base64url');
     const now = new Date().toISOString();
     const device = {
@@ -87,6 +90,7 @@ class Devices extends EventEmitter {
       createdAt: now,
       lastSeen: now,
       lastIp: String(ip || ''),
+      ...(local ? { local: true } : {}),
     };
     this.list.push(device);
     this.save();
@@ -132,7 +136,7 @@ class Devices extends EventEmitter {
   all() { return this.list.map(publicInfo); }
 }
 
-const publicInfo = ({ id, name, createdAt, lastSeen, lastIp }) => ({ id, name, createdAt, lastSeen, lastIp });
+const publicInfo = ({ id, name, createdAt, lastSeen, lastIp, local }) => ({ id, name, createdAt, lastSeen, lastIp, local: local === true });
 
 // Device names come from the tablet: plain text, trimmed and short
 function cleanName(name) {

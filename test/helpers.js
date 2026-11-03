@@ -30,9 +30,13 @@ function fakeKeyboard() {
   };
 }
 
-// focus.check() always answers with whatever `result` currently holds
-function fakeFocus(result = { ok: true }) {
-  const f = { result, calls: [], check: async (apps) => { f.calls.push(apps); return f.result; } };
+// focus.check() always answers with whatever `result` currently holds, and focus.active() with `app`
+function fakeFocus(result = { ok: true }, app = null) {
+  const f = {
+    result, app, calls: [], activeCalls: 0,
+    check: async (apps) => { f.calls.push(apps); return f.result; },
+    active: async () => { f.activeCalls++; return f.app; },
+  };
   return f;
 }
 

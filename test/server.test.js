@@ -6,7 +6,7 @@ const path = require('path');
 const { Key } = require('@nut-tree-fork/nut-js');
 const { startServer } = require('../server');
 const { ShardStore, loadRules, resolveApps } = require('../shard-store');
-const { RateLimiter } = require('../pairing');
+const { RateLimiter, Devices } = require('../pairing');
 const { makeShardDir, fakeFocus, start, connect, closeClients, authed, waitFor, rawGet } = require('./helpers');
 
 const shardDir = makeShardDir({
@@ -235,6 +235,74 @@ test('shards without apps never ask for the foreground app', () => {
     c.send({ type: 'press', shard: 'demo', keys: 'f13' });
     await waitFor(() => s.keyboard.events.length === 2);
     assert.equal(focus.calls.length, 0);
+  });
+});
+
+/* ---------- The local panel never types into LibreShard itself ---------- */
+
+// In the tests this process (node) plays LibreShard: isSelfApp compares with process.execPath
+const SELF = { exe: path.basename(process.execPath), name: 'LibreShard', title: 'LibreShard' };
+const OTHER = { exe: 'notepad.exe', name: 'Notepad', title: 'Untitled - Notepad' };
+
+// Connects with a local device ("this PC") created on the server's device list
+async function localPanel(s) {
+  const { token } = s.devices.add('This PC', '127.0.0.1', { local: true });
+  return authed({ port: s.port, token });
+}
+
+test('the local panel is blocked while LibreShard itself is in front, and only then', () => {
+  const focus = fakeFocus({ ok: true }, SELF);
+  return withServer({ focus }, async (s) => {
+    const c = await localPanel(s);
+    c.send({ type: 'press', shard: 'demo', keys: 'f13' });
+    assert.deepEqual(await c.next(), { type: 'blocked', shard: 'demo', keys: 'f13', apps: [], active: '', reason: 'self' });
+    c.send({ type: 'down', shard: 'demo', keys: 'shift' });
+    assert.equal((await c.next()).reason, 'self');
+    assert.equal(s.keyboard.events.length, 0);
+
+    // Releasing still works, so nothing is left stuck
+    c.send({ type: 'up', shard: 'demo', keys: 'shift' });
+    await waitFor(() => s.keyboard.events.length === 1);
+
+    focus.app = OTHER;
+    c.send({ type: 'press', shard: 'demo', keys: 'f13' });
+    await waitFor(() => s.keyboard.events.length === 3);
+
+    // A failed detection doesn't block for this reason
+    focus.app = null;
+    c.send({ type: 'press', shard: 'demo', keys: 'f13' });
+    await waitFor(() => s.keyboard.events.length === 5);
+  });
+});
+
+test('tablets are never checked for LibreShard in front', () => {
+  const focus = fakeFocus({ ok: true }, SELF);
+  return withServer({ focus }, async (s) => {
+    const c = await authed(s);
+    c.send({ type: 'press', shard: 'demo', keys: 'f13' });
+    await waitFor(() => s.keyboard.events.length === 2);
+    assert.equal(focus.activeCalls, 0);
+  });
+});
+
+// A real non-loopback connection: the server listens everywhere and the client uses the LAN address
+const lanAddress = Object.values(os.networkInterfaces()).flat().find((i) => i && i.family === 'IPv4' && !i.internal)?.address;
+test('the local device is refused from any address but loopback', { skip: !lanAddress && 'no LAN address' }, () => {
+  const devices = new Devices(null);
+  const { token } = devices.add('This PC', '127.0.0.1', { local: true });
+  return withServer({ devices, host: '0.0.0.0' }, async (s) => {
+    const WebSocket = require('ws');
+    const ws = new WebSocket(`ws://${lanAddress}:${s.port}/ws`, { origin: `http://${lanAddress}:${s.port}` });
+    // A device that gets in is never closed: give up after a while instead of waiting forever
+    const closed = new Promise((resolve) => {
+      ws.on('close', (code) => resolve(code));
+      setTimeout(() => { resolve('still open'); ws.terminate(); }, 2000);
+    });
+    await new Promise((resolve, reject) => { ws.on('open', resolve); ws.on('error', reject); });
+    ws.send(JSON.stringify({ type: 'auth', token }));
+    assert.equal(await closed, 4001);
+    // The same token works from this machine
+    assert.ok(await authed({ port: s.port, token }));
   });
 });
 
