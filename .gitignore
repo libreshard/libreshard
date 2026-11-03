@@ -34,3 +34,6 @@ app-rules.json
 
 # Maintainer's local work plans (Spanish), not published
 docs/plans/
+
+# Maintainer's guides for manual processes (Spanish), not published
+docs/guides/
