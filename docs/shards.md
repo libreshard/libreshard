@@ -248,8 +248,9 @@ Two side effects: `mask-image` with a file from the shard may fail (embed masks 
 - **Choose a license.** Your shard is your own work: LibreShard doesn't impose any license on it.
   Add a `LICENSE` file so others know what they may do with it. The template and LibreShard's base
   files are MIT-0, so copying them adds no obligations.
-- **Respect other people's material.** Only include images, logos, fonts and sounds you have the
-  right to share. For example, the Star Citizen MFD shard is published on its own, outside the app,
-  because it uses material from the game's fan kit.
+- **Respect other people's material.** Only include images, logos, icons, fonts and sounds you have
+  the right to share. Game fan kits and icon packs often allow personal use but not redistribution:
+  the [SC MFD](https://github.com/libreshard/libreshard-sc-mfd) game shard draws its own
+  icons and uses no game artwork for that reason.
 - **Name it clearly.** "Photo tools for LibreShard" is fine; see [TRADEMARKS.md](../TRADEMARKS.md).
 - Then tell people about it: open a discussion in the LibreShard repository.
