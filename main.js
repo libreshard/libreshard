@@ -14,7 +14,6 @@ const focus = require('./focus');
 const { appLabel, exeKey } = require('./focus/apps');
 const i18n = require('./i18n');
 const { labelFor } = require('./shard-settings');
-const { migrateData } = require('./migrate');
 
 const DEFAULT_PORT = 7878;
 const VPN = /tailscale|zerotier|hamachi|vpn|wireguard|openvpn|nord|proton/i;
@@ -41,13 +40,11 @@ function saveConfig(cfg) {
   fs.writeFileSync(dataFile('config.json'), JSON.stringify(cfg, null, 2) + '\n');
 }
 
-// Missing or invalid values are filled in and saved. The old permanent PIN is removed: devices pair
-// with codes now.
+// Missing or invalid values are filled in and saved
 function loadConfig() {
   let cfg = {};
   try { cfg = JSON.parse(fs.readFileSync(dataFile('config.json'), 'utf8')) || {}; } catch { /* first run */ }
-  let changed = 'pin' in cfg;
-  delete cfg.pin;
+  let changed = false;
   for (const [key, s] of Object.entries(SETTINGS)) {
     if (!s.valid(cfg[key])) {
       cfg[key] = s.default;
@@ -123,7 +120,6 @@ function applyOpenAtLogin(on) {
 }
 
 async function start() {
-  migrateData(app.getPath('appData'), app.getPath('userData'));
   const cfg = loadConfig();
   const started = { port: cfg.port, allowPublicNetworks: cfg.allowPublicNetworks };
   let locale = i18n.pickLocale(cfg.language, app.getLocale());

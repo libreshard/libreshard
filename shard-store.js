@@ -11,9 +11,6 @@ const { validateManifest } = require('./manifest');
 const { normalizeApp, appLabel, exeKey } = require('./focus/apps');
 const { resolveValues, checkValues } = require('./shard-settings');
 
-// Bundled shards that changed id: the user's rule, favorite and order follow the new id
-const RENAMED = { 'photoshop-basico': 'edicion-imagen' };
-
 // Clean list of app entries (see focus/apps.js), at most 20
 function cleanApps(v) {
   if (typeof v === 'string') v = [v];
@@ -21,15 +18,9 @@ function cleanApps(v) {
   return v.map(normalizeApp).filter(Boolean).slice(0, 20);
 }
 
-// One user rule: { mode: 'any' } or { mode: 'only', apps: [...] }. The old format, a list where "*"
-// (or an empty list) meant any app, is still read. "only" with no usable apps means any.
+// One user rule: { mode: 'any' } or { mode: 'only', apps: [...] }. "only" with no usable apps means any.
 function cleanRule(v) {
-  if (typeof v === 'string' || Array.isArray(v)) {
-    const list = typeof v === 'string' ? [v] : v;
-    const apps = list.includes('*') ? [] : cleanApps(list);
-    return apps.length ? { mode: 'only', apps } : { mode: 'any', apps: [] };
-  }
-  if (!v || typeof v !== 'object') return null;
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
   if (v.mode === 'any') return { mode: 'any', apps: [] };
   if (v.mode === 'only') {
     const apps = cleanApps(v.apps) || [];
@@ -79,7 +70,6 @@ class ShardStore extends EventEmitter {
     this.rules = new Map();
     this.entries = new Map();
     this.rejected = [];
-    this.migrateIds();
     this.readRules();
     this.load();
     if (watch) this.watch();
@@ -96,28 +86,6 @@ class ShardStore extends EventEmitter {
     if (!this.stateFile) return;
     fs.mkdirSync(path.dirname(this.stateFile), { recursive: true });
     fs.writeFileSync(this.stateFile, JSON.stringify(this.state, null, 2) + '\n');
-  }
-
-  // Moves state and app rules from a bundled shard's old id to its new one, once (only when nothing
-  // is saved under the new id yet). A rules file with invalid JSON is left alone.
-  migrateIds() {
-    let stateChanged = false;
-    for (const [from, to] of Object.entries(RENAMED)) {
-      if (this.state[from] && !this.state[to]) {
-        this.state[to] = this.state[from];
-        delete this.state[from];
-        stateChanged = true;
-      }
-    }
-    if (stateChanged) this.saveState();
-    if (!this.rulesFile || !fs.existsSync(this.rulesFile)) return;
-    try {
-      const raw = JSON.parse(fs.readFileSync(this.rulesFile, 'utf8'));
-      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
-      const moves = Object.entries(RENAMED).filter(([from, to]) => from in raw && !(to in raw));
-      if (!moves.length) return;
-      this.writeRules((r) => { for (const [from, to] of moves) { r[to] = r[from]; delete r[from]; } });
-    } catch { /* invalid JSON: readRules() warns about it */ }
   }
 
   // Keeps the previous rules if the file has invalid JSON
@@ -398,8 +366,11 @@ class ShardStore extends EventEmitter {
     this.watchers = [];
     for (const { dir, bundled } of this.dirs) {
       if (bundled || !dir || !fs.existsSync(dir)) continue;
-      try { this.watchers.push(fs.watch(dir, { recursive: true }, reload)); } catch {
-        this.watchers.push(fs.watch(dir, reload)); // recursive isn't supported everywhere
+      // Watch the real path: on macOS, FSEvents reports real paths and Node drops the events of a
+      // folder watched through a link (os.tmpdir() is under /var, a link to /private/var)
+      const real = fs.realpathSync(dir);
+      try { this.watchers.push(fs.watch(real, { recursive: true }, reload)); } catch {
+        this.watchers.push(fs.watch(real, reload)); // recursive isn't supported everywhere
       }
     }
     if (this.rulesFile) {

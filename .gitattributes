@@ -1,3 +1,6 @@
-# Shell scripts run on Linux (containers, .deb install scripts): keep LF line endings
-*.sh text eol=lf
-*.tpl text eol=lf
+# Every text file is checked out with LF on every system, so generated copies (shard-base) and
+# scripts compare and run the same on Windows, Linux and macOS
+* text=auto eol=lf
+
+*.png binary
+*.webm binary

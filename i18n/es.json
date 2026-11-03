@@ -140,7 +140,6 @@
   "viewer.pair": "Vincular",
   "viewer.device": "Dispositivo",
   "viewer.browser": "Navegador",
-  "viewer.repair": "LibreShard ahora vincula cada dispositivo por separado. Escanea el QR de la PC o escribe el código de vinculación.",
   "viewer.pending": "Esperando a que aceptes este dispositivo en la PC…",
   "viewer.blocked": "No se ejecutó. Este shard solo funciona en {apps}.",
   "viewer.activeNow": "Ahora tienes en primer plano: {app}.",

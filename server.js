@@ -29,7 +29,7 @@ const ALLOW_WINDOW_MS = 60000; // how long after a block the tablet may answer "
 const FOCUS_POLL_MS = 500; // how often the foreground app is checked while a restricted shard is open
 
 // WebSocket close codes the viewer understands
-const CLOSE = { unknownDevice: 4001, pairingRequired: 4002, pairingRejected: 4003, authTimeout: 4008, rateLimited: 4029 };
+const CLOSE = { unknownDevice: 4001, pairingRejected: 4003, authTimeout: 4008, rateLimited: 4029 };
 
 const SHARD_CSP = "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; " +
   "img-src 'self' data:; font-src 'self' data:; connect-src 'none'; form-action 'none'; frame-ancestors 'self'";
@@ -330,8 +330,6 @@ function startServer({
           if (device) return authOk(device);
           return ws.close(CLOSE.unknownDevice, 'Unknown device');
         }
-        // Viewers from before pairing existed still send the old PIN
-        if (msg.type === 'auth') return ws.close(CLOSE.pairingRequired, 'Pairing required');
         if (msg.type === 'pair') return pair(msg);
         return ws.close(CLOSE.unknownDevice, 'Authentication required');
       }

@@ -16,6 +16,7 @@ jobs:
   test:
     name: Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     # macOS is experimental: its failures are shown but don't fail the run
     continue-on-error: ${{ matrix.os == 'macos-latest' }}
     strategy:
@@ -39,6 +40,7 @@ jobs:
   linux-injection:
     name: Real key injection (Linux, Xvfb)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,6 +51,7 @@ jobs:
     name: DCO sign-off
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
