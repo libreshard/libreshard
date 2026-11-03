@@ -568,21 +568,77 @@ npm run dist
 
 ## 9. Roadmap
 
-The work before the first release (security, shard installation, allowed-apps editor, distribution and bundled shards) was planned in the maintainer's local notes (`docs/plans/`, not published). The list below is the general roadmap, ordered by impact. Where to work is in parentheses.
+The maintainer plans the work in local notes (`docs/plans/`, not published). The list below is the public roadmap, grouped by the version it's aimed at. Versions and their contents can still move. Where to work is in parentheses.
 
-1. ~~Shard hot reload~~: done (`ShardStore.watch`).
-2. **Installing shards from a URL**: installing from `.zip`/`.libreshard`/folder with a review is done; a URL (and the gallery) would reuse `installer.prepare`.
-3. **PWA mode** (`viewer/index.html`): `manifest.webmanifest` and icons already exist; installing still needs HTTPS. Full screen, zoom and keeping the screen on already exist.
-4. **Menu improvements** (`viewer/index.html`): favorites and custom order are done (set on the PC); last shard used, search and categories remain.
-5. **Live data for shards** (CPU, volume, active window): the server sends events and `shard-api.js` exposes them with `Shard.on('state', cb)`. Keep the principle that a shard only receives what it declares in its manifest (for example `permissions.telemetry`).
-6. **HTTPS with a local certificate** (optional): pairing, attempt limits and per-device tokens are done; encrypting the local traffic is what remains.
-7. ~~System tray icon~~: done, with open at login.
-8. **Fixed network name** (`main.js`): advertise `libreshard.local` over mDNS (for example `bonjour-service`) alongside the QRs. Android doesn't always resolve it, so the QRs stay the main way in.
-9. **Configurable floating button**: position, auto-hide after a few seconds, and size.
-10. **Community gallery**: a GitHub repository with shards and a JSON index the app can list.
-11. ~~Visual per-app rules editor~~: done (apps editor in the PC window, "allow here too" from the tablet).
-12. ~~Live indicator~~: done (`open` / `focus`).
-13. ~~Apps visible at install time~~: done (the review shows them and says when there are none).
+**0.2: full screen and the "This PC" panel** (in progress)
+
+- Shards open full screen from the menu, and touch screens on the PC get a panel that never takes the focus. Remaining: testing on Linux, Windows 10, several monitors and games in exclusive full screen.
+
+**0.3: robustness and trust**
+
+- **Logs on disk** (`<userData>/logs/`, rotated) and a "Copy diagnostics" button in Settings, for bug reports.
+- **Elevated apps on Windows:** when the foreground app runs as administrator and LibreShard doesn't, the keys are lost silently. Detect it and warn on the tablet.
+- **Version in the viewer**, with "Reload to update" when it doesn't match the PC's.
+- **Linux session end:** quit cleanly when the session ends instead of letting Chromium abort (see §8).
+- **Windows CI:** find the handle leak that `--test-force-exit` masks.
+- Close the pairing confirmation dialog when the tablet gives up or the 60 s pass.
+- **Never press keys into LibreShard from any device:** extend the `self` block, today only for "This PC", to every tablet.
+- **Signed Windows builds** (SignPath) and then **automatic updates** (`electron-updater` with GitHub Releases). Tentative: signing depends on SignPath approving the project; if it isn't ready in time, both move to a later version.
+
+**0.4: panels without code**
+
+- **Panel editor** in the PC window: a grid with pages, buttons with a label, icon, color and press type, and a live preview on the tablet. The result is a normal shard that can be exported and shared.
+- **Import Stream Deck profiles** into the editor: layout, labels, images and hotkey actions, with a summary of what couldn't be imported (plugin actions, opening programs). Nothing from the other product is bundled; the importer only reads the user's own exported files.
+- A guide to **making a shard with an AI assistant**, based on `docs/shards.md` and the template.
+
+**0.5: shard ecosystem and sustainability**
+
+- **Installing shards from a URL**, reusing `installer.prepare` and the review screen, plus a `libreshard://install?url=…` link for one-click installs.
+- **Community gallery**: a GitHub repository with shards and a JSON index the app can list, with a review process for new shards.
+- Notice when an installed shard has a new version, always through the review of changes.
+- Ways to fund the project (donations or alternatives), to be evaluated at that point.
+- **French and Brazilian Portuguese**, machine translated and marked as such, and translations opened to the community (more languages and fixes).
+
+**0.6: tablet experience**
+
+- **Menu** (`viewer/`): last shard used, search and categories.
+- **Configurable floating button**: position, size and auto-hide.
+- **Automatic shard switching:** the tablet opens the shard tied to the app that comes to the foreground, using the existing `apps` (per-device setting).
+- Haptic feedback on taps (`navigator.vibrate`), per device.
+- **Fixed network name** (`main.js`): advertise `libreshard.local` over mDNS alongside the QRs. Android doesn't always resolve it, so the QRs stay the main way in.
+- **Optional HTTPS with a local certificate**, which also allows installing the viewer as a PWA (`manifest.webmanifest` and icons already exist).
+
+**1.0: first stable version**
+
+- No big new features: a full security review against §6, testing on every supported platform and on real tablets, complete docs, and fixes for what 0.3–0.6 bring up.
+- From 1.0 on, the shard format, the `shard-api.js` API and the protocol don't break without moving to 2.0.
+
+**1.1: more capable shards** (tentative)
+
+This version will be evaluated further after 1.0, before committing to it; nothing before it depends on it.
+
+- **Actions instead of keys**: the manifest declares named actions with a default key (per system if needed), and the user rebinds them on the PC (panels from the editor could use them too). It would replace the per-system key sets that shards build by hand today and fix shortcuts taken by other programs.
+- **Live data for shards** (volume, active window…): the server sends events and `shard-api.js` exposes them with `Shard.on('state', cb)`. A shard only receives what it declares in its manifest (for example `permissions.telemetry`), shown at install time.
+- **Built-in sources** for that live data: CPU/RAM, master volume and what's playing (with artwork).
+- **Macros:** an action that is a sequence of keys, waits and text, with limits on steps and duration, stopped by the pause.
+- **"Open" action** (apps, files or web pages): the targets are set only on the PC; a shard names a target, never a path. A separate permission shown at install time (§6.4).
+- **Mouse and scroll** (a touchpad shard, and scroll areas in any shard): its own permission shown at install time, blocked over LibreShard for every device, stopped by the pause.
+
+**1.2: connectors** (tentative)
+
+Integrations with other programs through their APIs, with live state on the buttons (the record button turns red while OBS records). It builds on the actions and live data of 1.1.
+
+- **Pilot: a built-in OBS integration** (scenes, sources, recording and streaming, and their state), to validate the design.
+- **Third-party connectors, sandboxed:** they run on the PC in a hidden Chromium process without Node or file access, can only reach the hosts they declare, and are installed and configured only on the PC. Credentials never leave their connector. Running code with full access (like other products' plugins) is ruled out.
+- More built-in integrations: per-app volume, switching the audio device, muting the system microphone, locking the PC, GPU.
+- A generic "HTTP request" connector for webhooks (Home Assistant, n8n, Node-RED…), with the URLs set only on the PC.
+- New principles in §6 before any of this ships.
+
+**Research, no version yet**
+
+- macOS from experimental to supported (permissions, signing and notarization).
+- Wayland: key injection (libei or the RemoteDesktop portal) and foreground app detection.
+- One tablet controlling several PCs.
 
 ## 10. Design decisions (so they aren't undone by accident)
 

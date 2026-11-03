@@ -164,13 +164,34 @@ npm run dist     # build the installer for this system into dist/
 
 [CONTEXT.md](CONTEXT.md) explains the architecture, every file and the protocol.
 
+## Roadmap
+
+```mermaid
+timeline
+    section Released
+        0.1 : First public release
+    section In progress
+        0.2 : Full-screen shards : Touch panel on the PC itself
+    section Planned
+        0.3 : Robustness and trust : Diagnostics, clearer warnings and fixes
+        0.4 : Panels without code : Visual editor and Stream Deck import
+        0.5 : Shard ecosystem : Community gallery and more languages
+        0.6 : Tablet experience : Smarter menu, auto-switching and HTTPS
+        1.0 : First stable version
+    section Tentative
+        1.1 : More capable shards : Actions, macros, live data and mouse
+        1.2 : Connectors : OBS and other apps, with live state
+```
+
+Versions and their contents can still change. 1.1 and 1.2 are tentative and will be evaluated after
+1.0. The full list is in [CONTEXT.md](CONTEXT.md#9-roadmap).
+
 ## Contributing
 
 Bug reports, shards, translations and code are welcome. See **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 Commits must be signed off (`git commit -s`, the [DCO](https://developercertificate.org/)).
 
-Help wanted on the roadmap: a community shard gallery, installing shards from a URL, and live data
-for shards (volume, CPU…) with explicit permissions.
+Help is welcome on anything in the [roadmap](#roadmap).
 
 ## Code signing
 
