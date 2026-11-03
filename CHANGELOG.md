@@ -6,6 +6,15 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### App
+
+- **This PC** panel, for touch screens on the PC: a card next to the QR codes opens the shards in a
+  window that never takes the focus, so the keys still go to the app in front. It remembers where
+  it was left and can stay on top. It signs in as a "This PC" device, without a code, and only from
+  this machine. While LibreShard itself is in front, its taps press nothing and it says so.
+- The "Open on this PC" button (the viewer in the system browser) is gone: the browser takes the
+  focus, so the keys landed in it.
+
 ### Tablet viewer
 
 - Picking a shard from the menu opens it full screen. A gear in the menu header opens "This

@@ -108,6 +108,11 @@ Open the `.dmg` and drag LibreShard to Applications. It isn't signed: right-clic
 Each code works once and for 10 minutes. Paired devices are listed in the **Devices** tab, where you
 can rename or unpair them.
 
+**Touch screen on the PC?** The **This PC** card next to the QR codes opens the shards in a window of
+their own on this screen, no tablet needed. Tapping it never takes the focus from the app you are
+controlling. Drag it to the touch monitor, and turn on "Keep this PC's panel on top" in Settings if
+you like.
+
 ## Make your own shard
 
 A shard is a folder with a `manifest.json`:

@@ -109,6 +109,10 @@ necesitar **Grabación de pantalla** para detectar la app activa.
 Cada código sirve una vez y durante 10 minutos. Los dispositivos vinculados aparecen en la pestaña
 **Dispositivos**, donde puedes renombrarlos o desvincularlos.
 
+**¿Pantalla táctil en la PC?** La tarjeta **Esta PC**, junto a los QR, abre los shards en una ventana
+propia en esta pantalla, sin tablet. Tocarla nunca le quita el foco a la app que estás controlando.
+Llévala al monitor táctil y, si quieres, activa "Panel de esta PC siempre visible" en Ajustes.
+
 ## Crea tu propio shard
 
 Un shard es una carpeta con un `manifest.json`:

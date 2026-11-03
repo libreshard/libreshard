@@ -51,6 +51,10 @@ h2:first-child { margin-top: 0; }
 .qr { background: var(--cell); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 6px; justify-items: center; }
 .qr img { border-radius: 8px; background: #fff; width: 180px; height: 180px; }
 .qr span { color: var(--accent); font-size: 13px; }
+.qr.here { width: 206px; color: var(--text); text-align: center; }
+.qr.here:hover { border-color: var(--accent); }
+.qr.here img { background: none; }
+.qr.here span { color: var(--muted); }
 .code { font-size: 32px; letter-spacing: .22em; color: var(--gold); margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
@@ -69,6 +73,7 @@ h2:first-child { margin-top: 0; }
 .badge { font-size: 11px; border-radius: 999px; padding: 2px 8px; background: var(--cell2); color: var(--muted); margin-left: 6px; white-space: nowrap; }
 .badge.warn { background: var(--gold); color: var(--bg); font-weight: 600; }
 .badge.off { background: #2a2f3a; }
+.badge.local { margin: 0 8px 0 0; color: var(--accent); }
 .badge.danger { background: var(--danger); color: var(--bg); font-weight: 600; }
 .device-name { width: 100%; max-width: 320px; font-weight: 600; }
 .empty { color: var(--muted); padding: 10px 0; }

@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('libreshard', {
   onReview: (cb) => ipcRenderer.on('install:review', (_e, r) => cb(r)),
 
   setPaused: invoke('app:pause'),
-  openViewer: invoke('app:open-viewer'),
+  openPanel: invoke('panel:open'),
   openPath: invoke('app:open-path'),
   restart: invoke('app:restart'),
   setSetting: invoke('settings:set'),

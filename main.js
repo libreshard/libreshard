@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Notification, Tray, dialog, ipcMain, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, Tray, dialog, ipcMain, nativeImage, screen, session, shell } = require('electron');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
@@ -33,6 +33,12 @@ const SETTINGS = {
   closeToTray: { default: true, valid: (v) => typeof v === 'boolean' },
   openAtLogin: { default: false, valid: (v) => typeof v === 'boolean' },
   language: { default: 'auto', valid: (v) => v === 'auto' || i18n.languages.includes(v) },
+  panelAlwaysOnTop: { default: false, valid: (v) => typeof v === 'boolean' },
+  // Where the local panel window was last left; saved by the app, never set from the page
+  panelBounds: {
+    default: null, internal: true,
+    valid: (v) => v === null || (!!v && typeof v === 'object' && ['x', 'y', 'width', 'height'].every((k) => Number.isInteger(v[k])) && v.width >= 200 && v.height >= 150),
+  },
 };
 
 function saveConfig(cfg) {
@@ -183,8 +189,6 @@ async function start() {
     return;
   }
 
-  const localUrl = () => `http://localhost:${cfg.port}/?pair=${pairing.current().token}`;
-
   // QR images only change when the pairing token does
   let qrCache = { token: null, list: [] };
   async function qrs(token) {
@@ -239,7 +243,7 @@ async function start() {
       settings: {
         port: cfg.port, allowPublicNetworks: cfg.allowPublicNetworks, confirmDevices: cfg.confirmDevices,
         allowAppsFromTablet: cfg.allowAppsFromTablet, language: cfg.language,
-        closeToTray: cfg.closeToTray, openAtLogin: cfg.openAtLogin,
+        closeToTray: cfg.closeToTray, openAtLogin: cfg.openAtLogin, panelAlwaysOnTop: cfg.panelAlwaysOnTop,
       },
     };
   }
@@ -304,7 +308,7 @@ async function start() {
 
   handle('state:get', buildState);
   handle('app:pause', async (on) => { await server.setPaused(on === true); updateTray(); push(); });
-  handle('app:open-viewer', () => { shell.openExternal(localUrl()); });
+  handle('panel:open', () => { openPanel(); });
   handle('app:open-path', (kind, p) => {
     if (kind === 'shards') shell.openPath(userShards);
     else if (kind === 'data') shell.openPath(app.getPath('userData'));
@@ -314,7 +318,7 @@ async function start() {
 
   handle('settings:set', (key, value) => {
     const s = SETTINGS[key];
-    if (!s || !s.valid(value)) throw new Error('Invalid value');
+    if (!s || s.internal || !s.valid(value)) throw new Error('Invalid value');
     cfg[key] = value;
     saveConfig(cfg);
     if (key === 'language') {
@@ -323,6 +327,7 @@ async function start() {
       updateTray();
     }
     if (key === 'openAtLogin') applyOpenAtLogin(value);
+    if (key === 'panelAlwaysOnTop' && panel) panel.setAlwaysOnTop(value);
     push();
   });
 
@@ -395,6 +400,120 @@ async function start() {
     if (await confirmBox(t('dialog.uninstall.message', { name: e.manifest.name || e.id }), detail, t('dialog.uninstallButton'))) store.uninstall(e.id);
   });
 
+  /* ---------- Local panel ("This PC") ---------- */
+
+  // For a touch screen on this PC: the viewer in its own window that never takes the focus, so the
+  // keys still land in the app in front (WS_EX_NOACTIVATE on Windows, a non-activating panel on
+  // macOS). It signs in as the single local device, created anew each time the window opens: only
+  // token hashes are stored, so an old token can't be handed out again.
+  let panel = null;
+  let panelToken = null; // given once to the panel's preload, then forgotten
+  const panelOrigin = () => `http://localhost:${cfg.port}`;
+  const panelSession = session.fromPartition('persist:panel');
+  // The viewer may only go full screen (the panel's own window); everything else is refused
+  panelSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'fullscreen'));
+  panelSession.setPermissionCheckHandler((_wc, permission) => permission === 'fullscreen');
+
+  ipcMain.on('panel:token', (e) => {
+    const ok = !!panel && e.sender === panel.webContents && !!e.senderFrame?.url.startsWith(panelOrigin() + '/');
+    e.returnValue = ok ? panelToken : null;
+    if (ok) panelToken = null;
+  });
+
+  // Saved bounds, if they still fall on a screen (a monitor may have been unplugged since)
+  function savedPanelBounds() {
+    const b = cfg.panelBounds;
+    if (!b) return null;
+    const a = screen.getDisplayMatching(b).workArea;
+    return b.x < a.x + a.width && b.x + b.width > a.x && b.y < a.y + a.height && b.y + b.height > a.y ? b : null;
+  }
+
+  function openPanel() {
+    if (panel) {
+      if (panel.isMinimized()) panel.restore();
+      panel.showInactive();
+      return;
+    }
+    panelToken = devices.add(t('devices.thisPc'), '127.0.0.1', { local: true }).token;
+    panel = new BrowserWindow({
+      ...(savedPanelBounds() || { width: 900, height: 640 }),
+      minWidth: 360, minHeight: 280,
+      focusable: false,
+      ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
+      alwaysOnTop: cfg.panelAlwaysOnTop,
+      title: t('panel.title'), autoHideMenuBar: true,
+      backgroundColor: '#0d1b2a', icon: path.join(__dirname, 'viewer', 'brand', 'icon-512.png'),
+      webPreferences: {
+        preload: path.join(__dirname, 'desktop', 'panel-preload.js'),
+        partition: 'persist:panel',
+        contextIsolation: true,
+        sandbox: true,
+        nodeIntegration: false,
+      },
+    });
+    const wc = panel.webContents;
+    panel.on('page-title-updated', (e) => e.preventDefault()); // keep "LibreShard · This PC"
+    wc.on('will-navigate', (e, url) => { if (new URL(url).origin !== panelOrigin()) e.preventDefault(); });
+    wc.setWindowOpenHandler(() => ({ action: 'deny' }));
+
+    let saveTimer = null;
+    const saveBounds = () => {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        if (!panel || panel.isDestroyed() || panel.isFullScreen() || panel.isMaximized() || panel.isMinimized()) return;
+        cfg.panelBounds = panel.getBounds();
+        saveConfig(cfg);
+      }, 500);
+    };
+    panel.on('move', saveBounds);
+    panel.on('resize', saveBounds);
+
+    // Windows can't move or resize with the mouse a window that never activates (a finger on the title
+    // bar can). While the mouse moves over the frame, the panel may take the focus so it drags like any
+    // window. It lets go when the drag or resize ends and when the pointer is back on the shard, and
+    // Windows returns the focus to the app that had it.
+    let frameTimer = null;
+    if (process.platform === 'win32') {
+      const inside = (p, r) => p.x >= r.x && p.x < r.x + r.width && p.y >= r.y && p.y < r.y + r.height;
+      const letGo = () => { if (panel.isFocusable()) panel.setFocusable(false); };
+      const same = (a, b) => !!a && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+      let last = null, lastBounds = null, hovering = 0;
+      frameTimer = setInterval(() => {
+        if (!panel.isVisible()) return;
+        const p = screen.getCursorScreenPoint();
+        const b = panel.getBounds();
+        const moving = !!last && (p.x !== last.x || p.y !== last.y);
+        const still = same(lastBounds, b);
+        last = p;
+        lastBounds = b;
+        if (panel.isFocusable()) {
+          if (inside(p, panel.getContentBounds())) letGo();
+          return;
+        }
+        // Only a mouse: it moves over the frame for a while with the window still. A finger jumps there
+        // once, then rests or drags the window (which needs no focus), and a touch on the shard doesn't
+        // move the pointer at all, so a finger must never make the panel focusable.
+        hovering = moving && still && inside(p, b) && !inside(p, panel.getContentBounds()) ? hovering + 1 : 0;
+        if (hovering >= 2) {
+          hovering = 0;
+          panel.setFocusable(true);
+          panel.setSkipTaskbar(true); // focusable windows get a taskbar button; the panel never has one
+        }
+      }, 50);
+      wc.on('input-event', (_e, input) => { if (input.type === 'mouseMove') letGo(); });
+      panel.on('moved', letGo);
+      panel.on('resized', letGo);
+    }
+
+    panel.on('closed', () => {
+      clearInterval(frameTimer);
+      clearTimeout(saveTimer);
+      panel = null;
+      panelToken = null;
+    });
+    panel.loadURL(panelOrigin() + '/?embedded=1');
+  }
+
   /* ---------- Tray ---------- */
 
   // The tray keeps LibreShard (and the server) running with the window closed. Some Linux desktops
@@ -405,6 +524,7 @@ async function start() {
     tray.setToolTip(server.isPaused() ? `LibreShard · ${t('status.paused')}` : 'LibreShard');
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: t('tray.open'), click: showWindow },
+      { label: t('tray.panel'), click: openPanel },
       { label: server.isPaused() ? t('action.resume') : t('action.pause'), click: () => togglePause() },
       { type: 'separator' },
       { label: t('tray.quit'), click: () => app.quit() },
@@ -439,7 +559,7 @@ async function start() {
       nodeIntegration: false,
     },
   });
-  // The page never navigates or opens windows; links to the viewer go through shell.openExternal
+  // The page never navigates or opens windows
   win.webContents.on('will-navigate', (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.once('did-finish-load', () => {
@@ -458,6 +578,8 @@ async function start() {
       new Notification({ title: 'LibreShard', body: t('tray.stillRunning') }).show();
     }
   });
+  // Closing the window for real (no tray, or quitting) takes the panel with it
+  win.on('closed', () => { if (panel) panel.destroy(); });
   win.loadFile(DESKTOP_PAGE);
 }
 

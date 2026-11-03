@@ -95,13 +95,16 @@ function renderConnect() {
     h('span', null, q.url)));
   fill(p,
     h('p', null, t('connect.intro')),
-    qrs.length ? h('div', { class: 'qrs' }, qrs) : h('p', { class: 'empty' }, t('connect.noNetwork')),
+    qrs.length ? null : h('p', { class: 'empty' }, t('connect.noNetwork')),
+    // The shards on this PC's own screen (a touch monitor), in a window that never takes the focus
+    h('div', { class: 'qrs' }, qrs,
+      h('button', { class: 'qr here', onclick: () => call(api.openPanel) },
+        h('img', { src: 'monitor.svg', alt: '' }),
+        h('b', null, t('connect.thisPc')),
+        h('span', null, t('connect.thisPcHint')))),
     h('h2', null, t('connect.codeTitle')),
     h('div', { class: 'code' }, state.pairing.code),
     h('p', { class: 'hint small', id: 'countdown' }),
-    h('div', { class: 'row' },
-      h('button', { class: 'btn primary', onclick: () => api.openViewer() }, t('connect.openHere')),
-      h('span', { class: 'hint small' }, t('connect.openHereHint'))),
   );
   tick();
 }
@@ -128,7 +131,9 @@ function renderDevices() {
           onchange: (e) => call(api.renameDevice, d.id, e.target.value),
           onkeydown: (e) => { if (e.key === 'Enter') e.target.blur(); },
         }),
-        h('div', { class: 'meta' }, t('devices.meta', { created: fmtDate(d.createdAt), seen: fmtDate(d.lastSeen), ip: d.lastIp || '—' }))),
+        h('div', { class: 'meta' },
+          d.local ? h('span', { class: 'badge local' }, t('devices.localBadge')) : null,
+          t('devices.meta', { created: fmtDate(d.createdAt), seen: fmtDate(d.lastSeen), ip: d.lastIp || '—' }))),
       h('button', { class: 'btn danger small', onclick: () => call(api.removeDevice, d.id) }, t('devices.remove')))));
   fill(p,
     h('p', null, t('devices.intro')),
@@ -454,6 +459,7 @@ function renderSettings() {
     toggle('closeToTray', t('settings.closeToTray'), t('settings.closeToTrayHint')),
     toggle('openAtLogin', t('settings.openAtLogin'), t('settings.openAtLoginHint')),
     toggle('allowAppsFromTablet', t('settings.allowAppsFromTablet'), t('settings.allowAppsFromTabletHint')),
+    toggle('panelAlwaysOnTop', t('settings.panelAlwaysOnTop'), t('settings.panelAlwaysOnTopHint')),
     toggle('allowPublicNetworks', t('settings.publicNetworks'), t('settings.publicNetworksHint')),
     h('h2', null, t('settings.folders')),
     h('div', { class: 'row' },

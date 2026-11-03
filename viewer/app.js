@@ -5,6 +5,9 @@ const ZOOM_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" st
 const FS_OFF_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
 
 let ws, authed = false, shards = [], current = null;
+// ?embedded=1: the local panel window inside LibreShard on the PC. Only the interface changes:
+// no automatic full screen, no screen wake, no pairing form (the app gives it its token).
+const embedded = new URLSearchParams(location.search).has('embedded');
 let wasAuthed = false; // after the first sign-in, a reconnection refetches the list (it may have changed meanwhile)
 
 // UI strings come from the PC (i18n/*.json), in the tablet's language unless the PC chose one
@@ -47,6 +50,11 @@ function deviceName() {
 }
 
 function showLock(message) {
+  if (embedded) {
+    // The app signs the panel in by itself: a code typed here can't help, reopening the panel does
+    message = t('viewer.panelReopen');
+    for (const el of $('pairForm').querySelectorAll('input, button, [data-i18n="viewer.pairPrompt"]')) el.hidden = true;
+  }
   $('msg').textContent = message || '';
   $('code').value = '';
   $('lock').classList.add('on');
@@ -198,7 +206,7 @@ function enterFullscreen(report) {
 /* ---------- This device's settings ---------- */
 // Open shards full screen when picked from the menu: on by default, only the opt-out is stored
 const AUTO_FS_KEY = 'auto-fullscreen';
-const autoFullscreen = () => localStorage.getItem(AUTO_FS_KEY) !== 'off';
+const autoFullscreen = () => !embedded && localStorage.getItem(AUTO_FS_KEY) !== 'off';
 
 function setDeviceSheet(open) {
   $('devSheet').hidden = $('devScrim').hidden = !open;
@@ -211,7 +219,7 @@ $('autoFs').onchange = (e) => {
   if (e.target.checked) localStorage.removeItem(AUTO_FS_KEY); else localStorage.setItem(AUTO_FS_KEY, 'off');
 };
 // Full screen is the only setting so far: without the API there is nothing to show
-$('devBtn').hidden = !fsSupported;
+$('devBtn').hidden = !fsSupported || embedded;
 
 // Fills a button with the icon and text for the current state
 function fillFsButton(b) {
@@ -233,6 +241,7 @@ function updateFs() {
 // It must start inside the user's tap, which is why keepAwake(true) is called from toggleFullscreen.
 let wakeLock = null, wakeVideo = null;
 async function keepAwake(on) {
+  if (embedded) return; // the PC manages its own screen
   if (!on) {
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
     if (wakeVideo) wakeVideo.pause();
