@@ -366,8 +366,11 @@ class ShardStore extends EventEmitter {
     this.watchers = [];
     for (const { dir, bundled } of this.dirs) {
       if (bundled || !dir || !fs.existsSync(dir)) continue;
-      try { this.watchers.push(fs.watch(dir, { recursive: true }, reload)); } catch {
-        this.watchers.push(fs.watch(dir, reload)); // recursive isn't supported everywhere
+      // Watch the real path: on macOS, FSEvents reports real paths and Node drops the events of a
+      // folder watched through a link (os.tmpdir() is under /var, a link to /private/var)
+      const real = fs.realpathSync(dir);
+      try { this.watchers.push(fs.watch(real, { recursive: true }, reload)); } catch {
+        this.watchers.push(fs.watch(real, reload)); // recursive isn't supported everywhere
       }
     }
     if (this.rulesFile) {
