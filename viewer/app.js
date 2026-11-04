@@ -178,6 +178,38 @@ function hideToast() {
   document.body.classList.remove('toasting');
 }
 
+/* ---------- Panel bar (Linux "This PC" panel) ---------- */
+// There the panel window has no frame, and its preload offers this instead: the bar moves the window,
+// the corner resizes it and the button closes it. The PC reads the cursor itself; the page only says
+// when a drag starts, goes on and ends.
+const panelApi = embedded ? window.libreshardPanel : undefined;
+if (panelApi) {
+  document.body.classList.add('panel-bar');
+  $('panelBar').hidden = $('panelGrip').hidden = false;
+  $('panelClose').onclick = () => panelApi.close();
+  const dragWith = (el, kind) => {
+    let frame = 0;
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      el.setPointerCapture(e.pointerId);
+      panelApi.gesture(kind, 'start');
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (frame || !el.hasPointerCapture(e.pointerId)) return;
+      frame = requestAnimationFrame(() => { frame = 0; panelApi.gesture(kind, 'update'); });
+    });
+    const end = (e) => {
+      if (!el.hasPointerCapture(e.pointerId)) return;
+      el.releasePointerCapture(e.pointerId);
+      panelApi.gesture(kind, 'end');
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+  };
+  dragWith($('panelDrag'), 'move');
+  dragWith($('panelGrip'), 'resize');
+}
+
 /* ---------- Full screen ---------- */
 // iPhone has no Fullscreen API: the option is hidden there
 const fsSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);

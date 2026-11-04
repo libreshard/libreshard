@@ -147,6 +147,8 @@
   "viewer.pending": "Esperando a que aceptes este dispositivo en la PC…",
   "viewer.blocked": "No se ejecutó. Este shard solo funciona en {apps}.",
   "viewer.blockedSelf": "No se pulsó nada: LibreShard está delante. Cambia primero a la app que quieres controlar.",
+  "viewer.panelTitle": "LibreShard · Esta PC",
+  "viewer.panelClose": "Cerrar el panel",
   "viewer.panelReopen": "El panel perdió su conexión con LibreShard. Ciérralo y vuelve a abrirlo desde la tarjeta \"Esta PC\".",
   "viewer.activeNow": "Ahora tienes en primer plano: {app}.",
   "viewer.activeUnknown": "No se pudo detectar la app activa.",

@@ -459,7 +459,8 @@ function renderSettings() {
     toggle('closeToTray', t('settings.closeToTray'), t('settings.closeToTrayHint')),
     toggle('openAtLogin', t('settings.openAtLogin'), t('settings.openAtLoginHint')),
     toggle('allowAppsFromTablet', t('settings.allowAppsFromTablet'), t('settings.allowAppsFromTabletHint')),
-    toggle('panelAlwaysOnTop', t('settings.panelAlwaysOnTop'), t('settings.panelAlwaysOnTopHint')),
+    // On Linux the panel always stays on top (see openPanel in main.js), so the choice is hidden
+    state.platform === 'linux' ? null : toggle('panelAlwaysOnTop', t('settings.panelAlwaysOnTop'), t('settings.panelAlwaysOnTopHint')),
     toggle('allowPublicNetworks', t('settings.publicNetworks'), t('settings.publicNetworksHint')),
     h('h2', null, t('settings.folders')),
     h('div', { class: 'row' },

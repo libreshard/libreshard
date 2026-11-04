@@ -12,6 +12,8 @@ All notable changes to LibreShard are listed here. The format follows
   window that never takes the focus, so the keys still go to the app in front. It remembers where
   it was left and can stay on top. It signs in as a "This PC" device, without a code, and only from
   this machine. While LibreShard itself is in front, its taps press nothing and it says so.
+- On Linux the panel has its own title bar to move it, a corner to resize it and a close button
+  (the desktop can't manage a window that never takes the focus there), and always stays on top.
 - The "Open on this PC" button (the viewer in the system browser) is gone: the browser takes the
   focus, so the keys landed in it.
 

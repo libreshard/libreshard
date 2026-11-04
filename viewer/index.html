@@ -115,9 +115,32 @@
   .check input { flex:none; width:22px; height:22px; margin:2px 0 0; accent-color:var(--accent); }
   .check small { display:block; margin-top:4px; color:var(--muted); font-size:13px; line-height:1.4; }
   #msg { color:var(--danger); min-height:1.2em; text-align:center; margin:0; }
+  /* Linux panel: its own title bar and resize grip, since the window has no frame. Moving --st (the
+     top safe area) pushes the menu, the floating button and the notices below the bar. */
+  body.panel-bar { --st:32px; }
+  body.panel-bar #stage { top:32px; }
+  /* In full screen the panel covers the display and the bar steps aside */
+  :root:fullscreen body.panel-bar { --st:env(safe-area-inset-top,0px); }
+  :root:fullscreen body.panel-bar #stage { top:0; }
+  :root:fullscreen #panelBar, :root:fullscreen #panelGrip { display:none; }
+  #panelBar { position:fixed; z-index:50; top:0; left:0; right:0; height:32px; display:flex; align-items:center; background:var(--cell); border-bottom:1px solid var(--line); }
+  #panelDrag { flex:1; height:100%; display:flex; align-items:center; gap:8px; padding:0 12px; font-size:13px; color:var(--muted); cursor:move; touch-action:none; }
+  #panelDrag img { width:16px; height:16px; }
+  #panelClose { width:46px; height:100%; display:grid; place-items:center; padding:0; border:0; background:none; cursor:pointer; }
+  #panelClose:hover, #panelClose:active { background:#7f1d1d; }
+  #panelGrip { position:fixed; z-index:50; right:0; bottom:0; width:24px; height:24px; cursor:nwse-resize; touch-action:none;
+    background:linear-gradient(135deg, transparent 55%, var(--muted) 55%, var(--muted) 62%, transparent 62%, transparent 72%, var(--muted) 72%, var(--muted) 79%, transparent 79%); opacity:.7; }
 </style>
 </head>
 <body>
+<!-- Linux panel only: the window has no frame, so these replace its title bar and resize border -->
+<div id="panelBar" hidden>
+  <div id="panelDrag"><img src="/brand/logo-mark.svg" alt=""><span data-i18n="viewer.panelTitle">LibreShard</span></div>
+  <button id="panelClose" type="button" data-i18n-aria="viewer.panelClose">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+</div>
+<div id="panelGrip" hidden aria-hidden="true"></div>
 
 <main id="menu">
   <header class="menu-head">

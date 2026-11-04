@@ -21,6 +21,7 @@ const VIRTUAL = /vethernet|virtualbox|vmware|hyper-v|wsl|docker|vbox|loopback/i;
 const DESKTOP_PAGE = path.join(__dirname, 'desktop', 'index.html');
 const DESKTOP_URL = pathToFileURL(DESKTOP_PAGE).href;
 const SHARD_FILE = /\.(libreshard|zip)$/i;
+const PANEL_MIN = { width: 360, height: 280 };
 
 const dataFile = (name) => path.join(app.getPath('userData'), name);
 
@@ -75,6 +76,13 @@ function lanInterfaces() {
 let win = null;
 let server = null;
 let pendingFile = null; // a .libreshard opened before the window was ready
+
+// Linux: Chromium encrypts its cookie store with a key kept in the desktop keyring. The panel's web
+// page wakes that up, and where the keyring is locked (automatic login) GNOME asks to create one,
+// without saying which app wants it. LibreShard keeps no secrets in Chromium's storage (the panel's
+// token lives in localStorage, which that key never covers), so the keyring isn't used at all.
+// Revisit if secrets ever go through safeStorage, which relies on the same keyring.
+if (process.platform === 'linux') app.commandLine.appendSwitch('password-store', 'basic');
 
 // A second instance would fail to take the port: it focuses the open window instead, and hands over
 // any shard file it was opened with (double-clicking a .libreshard while LibreShard runs)
@@ -218,6 +226,7 @@ async function start() {
     return {
       now: Date.now(),
       version: app.getVersion(),
+      platform: process.platform,
       locale,
       strings: i18n.strings(locale),
       paused: server.isPaused(),
@@ -414,11 +423,31 @@ async function start() {
   panelSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'fullscreen'));
   panelSession.setPermissionCheckHandler((_wc, permission) => permission === 'fullscreen');
 
+  const fromPanel = (e) => !!panel && e.sender === panel.webContents && !!e.senderFrame?.url.startsWith(panelOrigin() + '/');
   ipcMain.on('panel:token', (e) => {
-    const ok = !!panel && e.sender === panel.webContents && !!e.senderFrame?.url.startsWith(panelOrigin() + '/');
+    const ok = fromPanel(e);
     e.returnValue = ok ? panelToken : null;
     if (ok) panelToken = null;
   });
+
+  // Linux: the panel has no frame (see openPanel), so the viewer draws a bar that moves, resizes and
+  // closes it through these messages. Positions come from the real cursor, never from the page.
+  let gesture = null; // { kind, cursor, bounds } while a drag or resize is going on
+  ipcMain.on('panel:gesture', (e, kind, phase) => {
+    if (!fromPanel(e) || !['move', 'resize'].includes(kind) || !['start', 'update', 'end'].includes(phase)) return;
+    if (phase === 'start') {
+      gesture = { kind, cursor: screen.getCursorScreenPoint(), bounds: panel.getBounds() };
+      return;
+    }
+    if (!gesture || gesture.kind !== kind) return;
+    const p = screen.getCursorScreenPoint();
+    const dx = p.x - gesture.cursor.x, dy = p.y - gesture.cursor.y;
+    const b = gesture.bounds;
+    if (kind === 'move') panel.setPosition(b.x + dx, b.y + dy);
+    else panel.setSize(Math.max(PANEL_MIN.width, b.width + dx), Math.max(PANEL_MIN.height, b.height + dy));
+    if (phase === 'end') gesture = null;
+  });
+  ipcMain.on('panel:close', (e) => { if (fromPanel(e)) panel.close(); });
 
   // Saved bounds, if they still fall on a screen (a monitor may have been unplugged since)
   function savedPanelBounds() {
@@ -435,9 +464,14 @@ async function start() {
       return;
     }
     panelToken = devices.add(t('devices.thisPc'), '127.0.0.1', { local: true }).token;
+    // focusable: false keeps the focus on the app in front when the panel is tapped. On Linux, Electron
+    // does that with an override-redirect window: the window manager never focuses it (checked on GNOME,
+    // where every managed window type took the focus on a click), but it also gets no frame, can't be
+    // moved, resized or closed by the desktop and always stays on top. The viewer's own bar replaces
+    // the frame there (panel-preload.js and the panel:gesture / panel:close messages).
     panel = new BrowserWindow({
       ...(savedPanelBounds() || { width: 900, height: 640 }),
-      minWidth: 360, minHeight: 280,
+      minWidth: PANEL_MIN.width, minHeight: PANEL_MIN.height,
       focusable: false,
       ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
       alwaysOnTop: cfg.panelAlwaysOnTop,
@@ -456,11 +490,37 @@ async function start() {
     wc.on('will-navigate', (e, url) => { if (new URL(url).origin !== panelOrigin()) e.preventDefault(); });
     wc.setWindowOpenHandler(() => ({ action: 'deny' }));
 
+    // Linux: the window manager can't make the frameless panel full screen either, so the panel covers
+    // the display here and gets its bounds back when the viewer leaves full screen. By the time the
+    // event arrives Electron already reports the display's bounds, so the windowed ones are tracked
+    // beforehand. It also believes the window sits at the display's corner while X still has it where
+    // it was, so a first nudge makes it really move.
+    let windowedBounds = null; // set while the panel covers the display
+    let lastWindowed = panel.getBounds();
+    if (process.platform === 'linux') {
+      const track = () => { if (!windowedBounds && !panel.isFullScreen()) lastWindowed = panel.getBounds(); };
+      panel.on('move', track);
+      panel.on('resize', track);
+      panel.on('enter-html-full-screen', () => {
+        windowedBounds = lastWindowed;
+        const b = screen.getDisplayMatching(windowedBounds).bounds;
+        setTimeout(() => {
+          if (!panel || panel.isDestroyed()) return;
+          panel.setBounds({ ...b, x: b.x + 1 });
+          panel.setBounds(b);
+        }, 0);
+      });
+      panel.on('leave-html-full-screen', () => {
+        const b = windowedBounds;
+        if (b) setTimeout(() => { if (panel && !panel.isDestroyed()) panel.setBounds(b); windowedBounds = null; }, 0);
+      });
+    }
+
     let saveTimer = null;
     const saveBounds = () => {
       clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
-        if (!panel || panel.isDestroyed() || panel.isFullScreen() || panel.isMaximized() || panel.isMinimized()) return;
+        if (!panel || panel.isDestroyed() || windowedBounds || panel.isFullScreen() || panel.isMaximized() || panel.isMinimized()) return;
         cfg.panelBounds = panel.getBounds();
         saveConfig(cfg);
       }, 500);
