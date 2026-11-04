@@ -170,14 +170,36 @@ npm run dist     # compila el instalador de este sistema en dist/
 
 [CONTEXT.md](CONTEXT.md) explica la arquitectura, cada archivo y el protocolo.
 
+## Hoja de ruta
+
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "26px", "cScale0": "#0d1b2a", "cScaleLabel0": "#22d3ee", "cScaleInv0": "#22d3ee", "cScale1": "#fbbf24", "cScaleLabel1": "#0d1b2a", "cScaleInv1": "#f59e0b", "cScale2": "#22d3ee", "cScaleLabel2": "#0d1b2a", "cScaleInv2": "#06b6d4", "cScale3": "#1f3a55", "cScaleLabel3": "#9cc3e0", "cScaleInv3": "#7ea3c2", "cScaleLabel11": "#7ea3c2"}, "themeCSS": ".eventWrapper { filter: none; }"}}%%
+timeline
+    section Publicada
+        0.1 : Primera versión pública
+    section En curso
+        0.2 : Shards a pantalla completa : Panel táctil en la propia PC
+    section Prevista
+        0.3 : Robustez y confianza : Diagnóstico, avisos más claros y arreglos
+        0.4 : Paneles sin programar : Editor visual e importación de Stream Deck
+        0.5 : Ecosistema de shards : Galería comunitaria y más idiomas
+        0.6 : Experiencia en la tablet : Menú mejorado, cambio automático y HTTPS
+        1.0 : Primera versión estable
+    section Tentativa
+        1.1 : Shards más potentes : Acciones, macros, datos en vivo y ratón
+        1.2 : Conectores : OBS y otras apps, con estado en vivo
+```
+
+Las versiones y su contenido todavía pueden cambiar. La 1.1 y la 1.2 son tentativas y se evaluarán
+después de la 1.0. La lista completa (en inglés) está en [CONTEXT.md](CONTEXT.md#9-roadmap).
+
 ## Contribuir
 
 Se agradecen reportes de errores, shards, traducciones y código. Lee
 **[CONTRIBUTING.md](CONTRIBUTING.md)**. Los commits deben llevar la firma del
 [DCO](https://developercertificate.org/) (`git commit -s`).
 
-Dónde hace falta ayuda: una galería comunitaria de shards, instalar shards desde una URL y datos en
-vivo para los shards (volumen, CPU…) con permisos explícitos.
+Se agradece ayuda con cualquier punto de la [hoja de ruta](#hoja-de-ruta).
 
 ## Firma de código
 
