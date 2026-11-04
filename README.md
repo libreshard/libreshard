@@ -180,10 +180,10 @@ npm run dist     # build the installer for this system into dist/
 timeline
     section Released
         0.1 : First public release
-    section In progress
         0.2 : Full-screen shards : Touch panel on the PC itself
-    section Planned
+    section Next
         0.3 : Robustness and trust : Diagnostics, clearer warnings and fixes
+    section Planned
         0.4 : Panels without code : Visual editor and Stream Deck import
         0.5 : Shard ecosystem : Community gallery and more languages
         0.6 : Tablet experience : Smarter menu, auto-switching and HTTPS

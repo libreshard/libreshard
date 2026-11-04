@@ -183,10 +183,10 @@ npm run dist     # compila el instalador de este sistema en dist/
 timeline
     section Publicada
         0.1 : Primera versión pública
-    section En curso
         0.2 : Shards a pantalla completa : Panel táctil en la propia PC
-    section Prevista
+    section Siguiente
         0.3 : Robustez y confianza : Diagnóstico, avisos más claros y arreglos
+    section Prevista
         0.4 : Paneles sin programar : Editor visual e importación de Stream Deck
         0.5 : Ecosistema de shards : Galería comunitaria y más idiomas
         0.6 : Experiencia en la tablet : Menú mejorado, cambio automático y HTTPS

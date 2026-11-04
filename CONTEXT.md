@@ -579,11 +579,11 @@ npm run dist
 
 The maintainer plans the work in local notes (`docs/plans/`, not published). The list below is the public roadmap, grouped by the version it's aimed at. Versions and their contents can still move. Where to work is in parentheses.
 
-**0.2: full screen and the "This PC" panel** (in progress)
+**0.2: full screen and the "This PC" panel** (released 2026-11-04)
 
-- Shards open full screen from the menu, and touch screens on the PC get a panel that never takes the focus. Remaining: testing on Linux and with a game in exclusive full screen, and refreshing the website automatically when a version is published.
+- Shards open full screen from the menu, and touch screens on the PC get a panel that never takes the focus. The website refreshes by itself when a version is published.
 
-**0.3: robustness and trust**
+**0.3: robustness and trust** (next)
 
 - **Logs on disk** (`<userData>/logs/`, rotated) and a "Copy diagnostics" button in Settings, for bug reports.
 - **Elevated apps on Windows:** when the foreground app runs as administrator and LibreShard doesn't, the keys are lost silently. Detect it and warn on the tablet.
