@@ -56,4 +56,13 @@ function isPrivateAddress(addr) {
   return /^f[cd][0-9a-f]{2}:/.test(a) || /^fe[89ab][0-9a-f]:/.test(a); // fc00::/7 and fe80::/10
 }
 
-module.exports = { hostAllowed, hostname, isPrivateAddress, localAddresses };
+// This machine only (127.0.0.0/8, ::1, and their IPv4-mapped form)
+function isLoopback(addr) {
+  if (typeof addr !== 'string') return false;
+  let a = addr.toLowerCase().split('%')[0];
+  if (a.startsWith('::ffff:')) a = a.slice(7);
+  const n = ipv4ToInt(a);
+  return n !== null ? n >>> 24 === 127 : a === '::1';
+}
+
+module.exports = { hostAllowed, hostname, isLoopback, isPrivateAddress, localAddresses };

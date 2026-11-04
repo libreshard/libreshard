@@ -58,6 +58,21 @@ test('devices store only token hashes and survive a reload', () => {
   fs.rmSync(path.dirname(file), { recursive: true, force: true });
 });
 
+test('there is at most one local device, and it is marked as such', () => {
+  const d = new Devices(null);
+  const tablet = d.add('iPad · Safari', '192.168.0.20');
+  const first = d.add('This PC', '127.0.0.1', { local: true });
+  assert.equal(first.device.local, true);
+  assert.equal(tablet.device.local, false);
+  const removed = [];
+  d.on('removed', (id) => removed.push(id));
+  const second = d.add('This PC', '127.0.0.1', { local: true });
+  assert.deepEqual(removed, [first.device.id]);
+  assert.equal(d.verify(first.token), null, 'the old local token stops working');
+  assert.equal(d.verify(second.token).local, true);
+  assert.deepEqual(d.all().map((x) => x.name), ['iPad · Safari', 'This PC']);
+});
+
 test('devices can be renamed and removed', () => {
   const d = new Devices(null);
   const events = [];

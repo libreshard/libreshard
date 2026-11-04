@@ -29,7 +29,7 @@ npm test           # the test suite (node:test, no extra tools)
 npm run test:linux # real key injection under Xvfb, needs Docker
 ```
 
-To try it without a tablet, click "Open on this PC" in the app window.
+To try it without a tablet, click the **This PC** card in the app window.
 
 [CONTEXT.md](CONTEXT.md) explains the architecture, every file, the protocol and the security
 model. Please read its sections 6 (security model) and 11 (conventions) before changing code.

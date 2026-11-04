@@ -10,9 +10,9 @@
 #   - a "clean" snapshot once everything is installed, to roll back between test runs
 #
 # Run it on the Proxmox host, as root:
-#   scp test/linux/proxmox-ubuntu-desktop-vm.sh ~/.ssh/id_rsa.pub root@<proxmox>:/root/
+#   scp test/linux/proxmox-ubuntu-desktop-vm.sh ~/.ssh/<your-key>.pub root@<proxmox>:/root/
 #   ssh root@<proxmox>
-#   SSH_PUBKEY_FILE=/root/id_rsa.pub bash /root/proxmox-ubuntu-desktop-vm.sh
+#   SSH_PUBKEY_FILE=/root/<your-key>.pub bash /root/proxmox-ubuntu-desktop-vm.sh
 #
 # It takes 15-25 minutes. Run it inside tmux or screen (or from the Proxmox web shell, kept open):
 # if the terminal closes, the script stops before the snapshot and the summary with the VM's IP.
@@ -30,8 +30,8 @@ BRIDGE="${BRIDGE:-vmbr0}"
 MEMORY="${MEMORY:-6144}"                 # MiB
 CORES="${CORES:-4}"
 DISK_SIZE="${DISK_SIZE:-40G}"
-VM_USER="${VM_USER:-gabriel}"
-SSH_PUBKEY_FILE="${SSH_PUBKEY_FILE:-/root/.ssh/id_rsa.pub}"
+VM_USER="${VM_USER:-tester}"
+SSH_PUBKEY_FILE="${SSH_PUBKEY_FILE:-}"     # the public key you'll SSH into the VM with (required)
 IMAGE_URL="${IMAGE_URL:-https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img}"
 CACHE_DIR="${CACHE_DIR:-/var/tmp/libreshard-vm}"
 
@@ -41,7 +41,8 @@ step() { echo; echo "== $*"; }
 [ "$(id -u)" = 0 ] || die "run as root on the Proxmox host"
 command -v qm >/dev/null || die "qm not found: this must run on a Proxmox VE host"
 qm status "$VMID" >/dev/null 2>&1 && die "VM $VMID already exists (set VMID=... or remove it: qm destroy $VMID --purge)"
-[ -f "$SSH_PUBKEY_FILE" ] || die "public key not found: $SSH_PUBKEY_FILE (copy your id_rsa.pub to the host and set SSH_PUBKEY_FILE)"
+[ -n "$SSH_PUBKEY_FILE" ] || die "set SSH_PUBKEY_FILE to the public key you'll SSH into the VM with (copy it to the host first)"
+[ -f "$SSH_PUBKEY_FILE" ] || die "public key not found: $SSH_PUBKEY_FILE"
 pvesm status --content snippets 2>/dev/null | awk 'NR>1{print $1}' | grep -qx "$SNIPPETS" || die \
   "storage '$SNIPPETS' doesn't allow snippets. Enable it in Datacenter > Storage > $SNIPPETS > Content > Snippets
        (or: pvesm set $SNIPPETS --content <current types>,snippets), or set SNIPPETS=<another storage>"
@@ -169,11 +170,10 @@ Done.
   Desktop:   Proxmox console (noVNC), GNOME on Xorg, logged in automatically
   AppArmor:  kernel.apparmor_restrict_unprivileged_userns = ${USERNS:-?} (1 is what we want to test against)
 
-On the Windows PC, add to ~/.ssh/config:
+On the machine you test from, you can add to ~/.ssh/config:
   Host libreshard-vm
       HostName ${IP:-<vm-ip>}
       User $VM_USER
-      IdentityFile ~/.ssh/id_rsa
 
 Roll back after a test run:  qm rollback $VMID clean
 EOF

@@ -30,6 +30,7 @@ JavaScript, written by anyone, that run inside the viewer.
 | A shard installed from someone else does something dangerous | Before installing, the PC shows every key, marks system shortcuts (Windows key, Ctrl+Alt) in red and warns when a shard can both open a system dialog and type text. |
 | A shard tries to reach the internet, your PC, other shards or the tablet's saved token | Shards run in a sandboxed iframe without `allow-same-origin`, under a Content Security Policy with no network access. They can only send "press this key" messages to the viewer. |
 | Another device on your network tries to connect | Each tablet pairs with a single-use code (or QR) that expires in 10 minutes, then gets its own token. The PC stores only a hash of each token. Failed pairing attempts are rate limited, and any device can be unpaired on its own. You can also require confirming every new device on the PC. |
+| The **This PC** panel, which signs in without a pairing code | The app creates that one device itself, and the server only accepts it from the same machine (a loopback address), so its token is useless from anywhere else. While LibreShard's own window is in front, the panel's taps press nothing, so they can't change LibreShard's settings or approve keys. |
 | A web page open in your PC's browser tries to control LibreShard | The server only answers requests addressed to its own hostnames and addresses (this stops DNS rebinding), and the WebSocket requires the viewer's own `Origin`. |
 | Connections from outside your home network | By default only private addresses (LAN, link-local, Tailscale's range) can connect. On Windows, the installer offers a firewall rule for private networks only. |
 | Oversized or flooding messages | Messages are limited in size and rate; floods close the connection. Releasing a key is never dropped, so no key stays stuck. |
@@ -56,6 +57,12 @@ These are documented on purpose. Keep them in mind:
   one layer of protection. Only use it behind a VPN or a firewall you trust.
 - **Killing the app abruptly** while a key is held can leave that key pressed. A normal quit releases
   every key.
+- **Tablets can type into LibreShard's own window.** Only the This PC panel is stopped while
+  LibreShard is in front. A tablet whose shard has keys like Tab and Enter approved could press
+  buttons in LibreShard's window if it's the app in front (its dialogs default to Cancel or Reject).
+  Extending the block to every device is planned for 0.3.
+- **On Linux, Chromium's storage isn't encrypted with the desktop keyring** (`--password-store=basic`),
+  so opening the panel never asks to create one. LibreShard keeps no secrets there.
 - **Wayland (Linux) and macOS** are not fully supported: detecting the app in front may fail there,
   in which case shards limited to certain apps are blocked rather than allowed.
 

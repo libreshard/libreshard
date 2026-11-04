@@ -5,6 +5,9 @@ const ZOOM_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" st
 const FS_OFF_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
 
 let ws, authed = false, shards = [], current = null;
+// ?embedded=1: the local panel window inside LibreShard on the PC. Only the interface changes:
+// no automatic full screen, no screen wake, no pairing form (the app gives it its token).
+const embedded = new URLSearchParams(location.search).has('embedded');
 let wasAuthed = false; // after the first sign-in, a reconnection refetches the list (it may have changed meanwhile)
 
 // UI strings come from the PC (i18n/*.json), in the tablet's language unless the PC chose one
@@ -47,6 +50,11 @@ function deviceName() {
 }
 
 function showLock(message) {
+  if (embedded) {
+    // The app signs the panel in by itself: a code typed here can't help, reopening the panel does
+    message = t('viewer.panelReopen');
+    for (const el of $('pairForm').querySelectorAll('input, button, [data-i18n="viewer.pairPrompt"]')) el.hidden = true;
+  }
   $('msg').textContent = message || '';
   $('code').value = '';
   $('lock').classList.add('on');
@@ -84,7 +92,10 @@ function connect(mode) {
     if (m.type === 'focus' && m.shard === current) showFocus(m);
     if (m.type === 'error') lastError = m;
     if (m.type === 'denied') console.warn('Key not allowed by the shard:', m.keys);
-    if (m.type === 'blocked') {
+    if (m.type === 'blocked' && m.reason === 'self') {
+      showToast(t('viewer.blockedSelf'));
+      if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
+    } else if (m.type === 'blocked') {
       const where = (m.apps || []).join(', ');
       const now = m.active ? t('viewer.activeNow', { app: m.active }) : t('viewer.activeUnknown');
       // The PC offers to add the program it detected; the tablet only says "yes" for this shard
@@ -167,22 +178,80 @@ function hideToast() {
   document.body.classList.remove('toasting');
 }
 
+/* ---------- Panel bar (Linux "This PC" panel) ---------- */
+// There the panel window has no frame, and its preload offers this instead: the bar moves the window,
+// the corner resizes it and the button closes it. The PC reads the cursor itself; the page only says
+// when a drag starts, goes on and ends.
+const panelApi = embedded ? window.libreshardPanel : undefined;
+if (panelApi) {
+  document.body.classList.add('panel-bar');
+  $('panelBar').hidden = $('panelGrip').hidden = false;
+  $('panelClose').onclick = () => panelApi.close();
+  const dragWith = (el, kind) => {
+    let frame = 0;
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      el.setPointerCapture(e.pointerId);
+      panelApi.gesture(kind, 'start');
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (frame || !el.hasPointerCapture(e.pointerId)) return;
+      frame = requestAnimationFrame(() => { frame = 0; panelApi.gesture(kind, 'update'); });
+    });
+    const end = (e) => {
+      if (!el.hasPointerCapture(e.pointerId)) return;
+      el.releasePointerCapture(e.pointerId);
+      panelApi.gesture(kind, 'end');
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+  };
+  dragWith($('panelDrag'), 'move');
+  dragWith($('panelGrip'), 'resize');
+}
+
 /* ---------- Full screen ---------- */
 // iPhone has no Fullscreen API: the option is hidden there
 const fsSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
 const isFullscreen = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
 
+// Both must run inside the user's tap: browsers refuse full screen (and the wake video) otherwise
 function toggleFullscreen() {
+  if (!isFullscreen()) return enterFullscreen(true);
+  keepAwake(false);
+  const p = (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  if (p && p.catch) p.catch(() => keepAwake(isFullscreen()));
+}
+
+// report: say so if the browser refuses (the automatic entry from the menu stays quiet)
+function enterFullscreen(report) {
+  if (!fsSupported || isFullscreen()) return;
   const root = document.documentElement;
-  keepAwake(!isFullscreen());
-  const p = isFullscreen()
-    ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
-    : (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+  keepAwake(true);
+  const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
   if (p && p.catch) p.catch(() => {
     keepAwake(isFullscreen());
-    showToast(t('viewer.fullscreenFailed'));
+    if (report) showToast(t('viewer.fullscreenFailed'));
   });
 }
+
+/* ---------- This device's settings ---------- */
+// Open shards full screen when picked from the menu: on by default, only the opt-out is stored
+const AUTO_FS_KEY = 'auto-fullscreen';
+const autoFullscreen = () => !embedded && localStorage.getItem(AUTO_FS_KEY) !== 'off';
+
+function setDeviceSheet(open) {
+  $('devSheet').hidden = $('devScrim').hidden = !open;
+  $('devBtn').setAttribute('aria-expanded', String(open));
+  if (open) $('autoFs').checked = autoFullscreen();
+}
+$('devBtn').onclick = () => setDeviceSheet($('devSheet').hidden);
+$('devScrim').onclick = () => setDeviceSheet(false);
+$('autoFs').onchange = (e) => {
+  if (e.target.checked) localStorage.removeItem(AUTO_FS_KEY); else localStorage.setItem(AUTO_FS_KEY, 'off');
+};
+// Full screen is the only setting so far: without the API there is nothing to show
+$('devBtn').hidden = !fsSupported || embedded;
 
 // Fills a button with the icon and text for the current state
 function fillFsButton(b) {
@@ -204,6 +273,7 @@ function updateFs() {
 // It must start inside the user's tap, which is why keepAwake(true) is called from toggleFullscreen.
 let wakeLock = null, wakeVideo = null;
 async function keepAwake(on) {
+  if (embedded) return; // the PC manages its own screen
   if (!on) {
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
     if (wakeVideo) wakeVideo.pause();
@@ -294,7 +364,10 @@ function renderMenu() {
       desc.textContent = String(s.description).slice(0, 120);
       b.append(desc);
     }
-    b.onclick = () => { location.hash = s.id; };
+    b.onclick = () => {
+      if (autoFullscreen()) enterFullscreen(false);
+      location.hash = s.id;
+    };
     list.append(b);
   }
 }
@@ -397,6 +470,7 @@ function showShard(s) {
   releaseHeld();
   current = s.id;
   closePanel();
+  setDeviceSheet(false);
   $('menu').hidden = true;
   $('stage').hidden = false;
   $('frame').title = label(s);
@@ -492,7 +566,9 @@ function closePanel() { setPanel(false); }
 
 $('fab').onclick = () => setPanel($('panel').hidden);
 $('scrim').onclick = closePanel;
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closePanel(); setDeviceSheet(false); }
+});
 
 /* ---------- Shard → PC bridge ---------- */
 const DATA_MAX = 64 * 1024; // limit on the data each shard can save

@@ -1,0 +1,28 @@
+name: Website
+
+# libreshard.com reads the newest release from GitHub when it's built, so publishing a release
+# (drafts don't count) rebuilds it through a Cloudflare Pages deploy hook. The hook's URL is the
+# repository secret WEBSITE_DEPLOY_HOOK. It can also be run by hand from the Actions tab.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  rebuild:
+    name: Rebuild the website
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the deploy hook
+        env:
+          HOOK: ${{ secrets.WEBSITE_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::WEBSITE_DEPLOY_HOOK isn't set: the website wasn't rebuilt"
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "The website is rebuilding."

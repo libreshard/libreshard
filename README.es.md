@@ -105,11 +105,17 @@ necesitar **Grabación de pantalla** para detectar la app activa.
 1. Abre LibreShard en la PC. La pestaña **Conectar** muestra un código QR por cada red de la PC.
 2. Escanea uno con la cámara de la tablet (el que se abra es el bueno), o abre la dirección en la
    tablet y escribe el código de 6 dígitos.
-3. Elige un shard en el menú y a tocar. El botón flotante de la esquina superior izquierda cambia de
-   shard y pone la pantalla completa.
+3. Elige un shard en el menú: se abre en pantalla completa (se desactiva con el engranaje del menú,
+   en cada tablet). El botón flotante de la esquina superior izquierda cambia de shard y quita o pone
+   la pantalla completa.
 
 Cada código sirve una vez y durante 10 minutos. Los dispositivos vinculados aparecen en la pestaña
 **Dispositivos**, donde puedes renombrarlos o desvincularlos.
+
+**¿Pantalla táctil en la PC?** La tarjeta **Esta PC**, junto a los QR, abre los shards en una ventana
+propia en esta pantalla, sin tablet. Tocarla nunca le quita el foco a la app que estás controlando.
+Llévala al monitor táctil y, si quieres, activa "Panel de esta PC siempre visible" en Ajustes. En
+Linux siempre queda encima y tiene su propia barra para moverla, cambiar su tamaño y cerrarla.
 
 ## Crea tu propio shard
 
