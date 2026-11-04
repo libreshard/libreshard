@@ -22,6 +22,9 @@ const DESKTOP_PAGE = path.join(__dirname, 'desktop', 'index.html');
 const DESKTOP_URL = pathToFileURL(DESKTOP_PAGE).href;
 const SHARD_FILE = /\.(libreshard|zip)$/i;
 const PANEL_MIN = { width: 360, height: 280 };
+// Windows never makes a window that doesn't activate topmost at Electron's default 'floating' level
+// (checked with a game in front, 2026-11-04); an explicit level does
+const PANEL_TOP_LEVEL = 'pop-up-menu';
 
 const dataFile = (name) => path.join(app.getPath('userData'), name);
 
@@ -336,7 +339,7 @@ async function start() {
       updateTray();
     }
     if (key === 'openAtLogin') applyOpenAtLogin(value);
-    if (key === 'panelAlwaysOnTop' && panel) panel.setAlwaysOnTop(value);
+    if (key === 'panelAlwaysOnTop' && panel) panel.setAlwaysOnTop(value, PANEL_TOP_LEVEL);
     push();
   });
 
@@ -474,7 +477,6 @@ async function start() {
       minWidth: PANEL_MIN.width, minHeight: PANEL_MIN.height,
       focusable: false,
       ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
-      alwaysOnTop: cfg.panelAlwaysOnTop,
       title: t('panel.title'), autoHideMenuBar: true,
       backgroundColor: '#0d1b2a', icon: path.join(__dirname, 'viewer', 'brand', 'icon-512.png'),
       webPreferences: {
@@ -485,6 +487,9 @@ async function start() {
         nodeIntegration: false,
       },
     });
+    // Set here, not as a window option: the option is ignored on a window that never activates
+    const keepOnTop = () => { if (cfg.panelAlwaysOnTop) panel.setAlwaysOnTop(true, PANEL_TOP_LEVEL); };
+    keepOnTop();
     const wc = panel.webContents;
     panel.on('page-title-updated', (e) => e.preventDefault()); // keep "LibreShard · This PC"
     wc.on('will-navigate', (e, url) => { if (new URL(url).origin !== panelOrigin()) e.preventDefault(); });
@@ -535,7 +540,8 @@ async function start() {
     let frameTimer = null;
     if (process.platform === 'win32') {
       const inside = (p, r) => p.x >= r.x && p.x < r.x + r.width && p.y >= r.y && p.y < r.y + r.height;
-      const letGo = () => { if (panel.isFocusable()) panel.setFocusable(false); };
+      // setFocusable() drops always-on-top, so it's applied again after each switch
+      const letGo = () => { if (panel.isFocusable()) { panel.setFocusable(false); keepOnTop(); } };
       const same = (a, b) => !!a && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
       let last = null, lastBounds = null, hovering = 0;
       frameTimer = setInterval(() => {
@@ -557,6 +563,7 @@ async function start() {
         if (hovering >= 2) {
           hovering = 0;
           panel.setFocusable(true);
+          keepOnTop();
           panel.setSkipTaskbar(true); // focusable windows get a taskbar button; the panel never has one
         }
       }, 50);
