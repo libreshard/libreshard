@@ -6,6 +6,10 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### Project
+
+- Code of conduct (Contributor Covenant 3.0), with reports to conduct@libreshard.com.
+
 ## [0.2.0] - 2026-11-04
 
 ### App

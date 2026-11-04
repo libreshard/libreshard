@@ -72,7 +72,7 @@ libreshard/
 │   └── windows/installer.nsh  NSIS additions: optional firewall rule, file type cleanup on uninstall
 ├── .github/workflows/    ci.yml (tests on 3 OSes, Linux injection, DCO), release.yml (tag v* → draft release) and website.yml (published release → rebuild libreshard.com)
 ├── LICENSE, NOTICE       Apache-2.0; LICENSES/MIT-0.txt for shard-base/ and docs/shard-template/
-├── README*.md, SECURITY.md, CONTRIBUTING.md, CHANGELOG.md, TRADEMARKS.md   public docs
+├── README*.md, SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CHANGELOG.md, TRADEMARKS.md   public docs
 ├── viewer/
 │   ├── index.html        tablet viewer markup and styles (pairing, menu, full-screen shard, floating button)
 │   ├── app.js            the viewer's script (kept out of the HTML so the CSP can forbid inline scripts)
@@ -95,7 +95,7 @@ libreshard/
 
 Dependencies in `package.json`: `express`, `ws`, `qrcode`, `yauzl` (reads shard zips), `@nut-tree-fork/nut-js` (production) and `electron` (45), `electron-builder` (26) (development). Optional: `active-win@8` (recognizes the program and its executable; installed by default, see section 8). Every version is exact (`.npmrc` has `save-exact=true`).
 
-Licensing: the project is Apache-2.0. `shard-base/` and `docs/shard-template/` (and the `libreshard.css`/`libreshard.js` copies in each shard) are MIT-0, so shard authors can copy them freely; their source files carry `SPDX-License-Identifier: MIT-0`. The name and logo are covered by `TRADEMARKS.md`, not by the license. Contributions are inbound=outbound plus a DCO sign-off (`git commit -s`), checked by CI on pull requests.
+Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contributor Covenant 3.0 text, under CC BY-SA 4.0). `shard-base/` and `docs/shard-template/` (and the `libreshard.css`/`libreshard.js` copies in each shard) are MIT-0, so shard authors can copy them freely; their source files carry `SPDX-License-Identifier: MIT-0`. The name and logo are covered by `TRADEMARKS.md`, not by the license. Contributions are inbound=outbound plus a DCO sign-off (`git commit -s`), checked by CI on pull requests.
 
 ### What each file does
 
