@@ -111,7 +111,7 @@ can rename or unpair them.
 **Touch screen on the PC?** The **This PC** card next to the QR codes opens the shards in a window of
 their own on this screen, no tablet needed. Tapping it never takes the focus from the app you are
 controlling. Drag it to the touch monitor, and turn on "Keep this PC's panel on top" in Settings if
-you like.
+you like. On Linux it always stays on top and has its own bar to move, resize and close it.
 
 ## Make your own shard
 
