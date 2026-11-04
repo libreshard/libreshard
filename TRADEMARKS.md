@@ -27,7 +27,7 @@ people always know whether what they install comes from this project.
 - Suggesting that the project endorses, certifies or is made by you when it isn't.
 - Changing the logo and presenting the result as LibreShard's.
 
-To ask, open an issue or write to libreshard@gmail.com.
+To ask, open an issue or write to hello@libreshard.com.
 
 Names of other programs that appear in LibreShard (Photoshop, Discord, OBS Studio, VS Code…) belong
 to their owners. They're only used to say which program a shard works with.
