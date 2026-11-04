@@ -12,6 +12,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-22d3ee" alt="License: Apache-2.0"></a>
 </p>
 
+<p align="center"><a href="https://libreshard.com"><b>libreshard.com</b></a></p>
+
 <p align="center"><b>English</b> · <a href="README.es.md">Español</a></p>
 
 LibreShard turns any tablet, phone or spare screen into a touch control panel for your PC, in the
@@ -57,7 +59,8 @@ The tablet side works in any modern browser (Android, iPad, phones, another comp
 
 ## Install
 
-Download the latest version from [Releases](https://github.com/libreshard/libreshard/releases).
+Download the latest version from [libreshard.com](https://libreshard.com/download/) or from
+[Releases](https://github.com/libreshard/libreshard/releases).
 
 ### Windows
 

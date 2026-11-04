@@ -12,6 +12,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-22d3ee" alt="Licencia: Apache-2.0"></a>
 </p>
 
+<p align="center"><a href="https://libreshard.com/es/"><b>libreshard.com</b></a></p>
+
 <p align="center"><a href="README.md">English</a> · <b>Español</b></p>
 
 LibreShard convierte cualquier tablet, teléfono o pantalla que te sobre en un panel de control
@@ -57,7 +59,8 @@ En la tablet sirve cualquier navegador actual (Android, iPad, teléfonos u otro 
 
 ## Instalación
 
-Descarga la última versión desde [Releases](https://github.com/libreshard/libreshard/releases).
+Descarga la última versión desde [libreshard.com](https://libreshard.com/es/download/) o desde
+[Releases](https://github.com/libreshard/libreshard/releases).
 
 ### Windows
 

@@ -9,7 +9,7 @@ Please **don't open a public issue** for a security problem. Instead:
 
 - Use GitHub's private reporting: **Security → Report a vulnerability** in the
   [repository](https://github.com/libreshard/libreshard/security/advisories/new), or
-- write to **libreshard@gmail.com** with "Security" in the subject.
+- write to **security@libreshard.com**.
 
 Include the LibreShard version, your operating system and the steps to reproduce it. You'll get an
 answer within a week. LibreShard is maintained by volunteers, so fixes may take a while, but we'll
