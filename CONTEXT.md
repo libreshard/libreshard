@@ -572,7 +572,7 @@ The maintainer plans the work in local notes (`docs/plans/`, not published). The
 
 **0.2: full screen and the "This PC" panel** (in progress)
 
-- Shards open full screen from the menu, and touch screens on the PC get a panel that never takes the focus. Remaining: testing on Linux, Windows 10, several monitors and games in exclusive full screen.
+- Shards open full screen from the menu, and touch screens on the PC get a panel that never takes the focus. Remaining: testing on Linux and with a game in exclusive full screen, and refreshing the website automatically when a version is published.
 
 **0.3: robustness and trust**
 
