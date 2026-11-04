@@ -200,6 +200,7 @@ Versions and their contents can still change. 1.1 and 1.2 are tentative and will
 
 Bug reports, shards, translations and code are welcome. See **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 Commits must be signed off (`git commit -s`, the [DCO](https://developercertificate.org/)).
+Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 Help is welcome on anything in the [roadmap](#roadmap).
 

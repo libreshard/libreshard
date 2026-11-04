@@ -106,5 +106,6 @@ By making a contribution to this project, I certify that:
 
 ## Code of conduct
 
-Be kind and assume good faith. Harassment or personal attacks aren't tolerated; the maintainers may
-remove comments or block accounts that cross that line.
+Everyone taking part in the project follows the **[code of conduct](CODE_OF_CONDUCT.md)**
+(Contributor Covenant 3.0). In short: be kind and assume good faith; harassment or personal attacks
+aren't tolerated. To report a problem, write to conduct@libreshard.com.

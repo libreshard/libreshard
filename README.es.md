@@ -203,7 +203,8 @@ después de la 1.0. La lista completa (en inglés) está en [CONTEXT.md](CONTEXT
 
 Se agradecen reportes de errores, shards, traducciones y código. Lee
 **[CONTRIBUTING.md](CONTRIBUTING.md)**. Los commits deben llevar la firma del
-[DCO](https://developercertificate.org/) (`git commit -s`).
+[DCO](https://developercertificate.org/) (`git commit -s`). Quien participa sigue el
+[código de conducta](CODE_OF_CONDUCT.md) (en inglés).
 
 Se agradece ayuda con cualquier punto de la [hoja de ruta](#hoja-de-ruta).
 
