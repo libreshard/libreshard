@@ -6,6 +6,8 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-04
+
 ### App
 
 - **This PC** panel, for touch screens on the PC: a card next to the QR codes opens the shards in a
@@ -21,6 +23,12 @@ All notable changes to LibreShard are listed here. The format follows
 
 - Picking a shard from the menu opens it full screen. A gear in the menu header opens "This
   device", where each tablet can turn that off.
+
+### Project
+
+- Website at [libreshard.com](https://libreshard.com), with the downloads for each system. Security
+  reports go to security@libreshard.com.
+- The README shows the roadmap.
 
 ## [0.1.0] - 2026-11-03
 
@@ -64,5 +72,6 @@ First public release.
 - Linux `.deb` (with an AppArmor profile for Ubuntu 24.04 and newer) and AppImage.
 - Electron Fuses: no `ELECTRON_RUN_AS_NODE`, no inspector flags, and `app.asar` integrity checks.
 
-[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/libreshard/libreshard/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/libreshard/libreshard/releases/tag/v0.1.0
