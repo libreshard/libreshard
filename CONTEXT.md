@@ -605,7 +605,9 @@ The maintainer plans the work in local notes (`docs/plans/`, not published). The
 - **Installing shards from a URL**, reusing `installer.prepare` and the review screen, plus a `libreshard://install?url=…` link for one-click installs.
 - **Community gallery**: a GitHub repository with shards and a JSON index the app can list, with a review process for new shards.
 - Notice when an installed shard has a new version, always through the review of changes.
-- Ways to fund the project (donations or alternatives), to be evaluated at that point.
+- **Paid shards:** `license` and `url` in the manifest (shown in the install review and on the PC's shard card, never on the tablet), paid listings in the gallery that link to the author's store, and a "Selling your shard" guide. No DRM in the app: a shard's code reaches the tablet in the clear anyway, and its safety never depended on reading it.
+- **Shard files only for paired devices:** today any device on the private network can download them.
+- **Donations:** a Sponsor button, the website, "About" and release notes in the PC window, and a single dismissible ask after real use. Never on the tablet.
 - **French and Brazilian Portuguese**, machine translated and marked as such, and translations opened to the community (more languages and fixes).
 
 **0.6: tablet experience**
