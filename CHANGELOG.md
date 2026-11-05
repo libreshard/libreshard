@@ -10,6 +10,13 @@ All notable changes to LibreShard are listed here. The format follows
 
 - Code of conduct (Contributor Covenant 3.0), with reports to conduct@libreshard.com.
 
+### Security
+
+- The PC answers at most 1000 HTTP requests per minute from each address (the viewer and shard
+  files); past that it replies 429 until the minute is over. Keys over the WebSocket aren't
+  affected.
+- The script injected into shards ignores replies whose id it isn't waiting for.
+
 ## [0.2.0] - 2026-11-04
 
 ### App

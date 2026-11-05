@@ -15,8 +15,11 @@
       return;
     }
     if (d.t !== 'data' && d.t !== 'settings') return;
+    // d.id comes from the message: only an id this script is waiting for calls anything
+    if (typeof d.id !== 'number' || !waiting.has(d.id)) return;
     const done = waiting.get(d.id);
-    if (done) { waiting.delete(d.id); done(d.t === 'data' ? d.data : d.values); }
+    waiting.delete(d.id);
+    if (typeof done === 'function') done(d.t === 'data' ? d.data : d.values);
   });
 
   // Asks the viewer and waits for its answer; without a viewer (shard opened on its own) there is none

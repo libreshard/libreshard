@@ -3,6 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
+const { rateLimit } = require('express-rate-limit');
 const { parse, normalize, unavailable } = require('./keys');
 const { hostAllowed, isLoopback, isPrivateAddress } = require('./net');
 const { Pairing, Devices, RateLimiter, cleanName } = require('./pairing');
@@ -27,6 +28,10 @@ const MAX_HELD = 10; // combos held at once per connection
 const MAX_FIELD = 64; // length of "shard" and "keys"
 const ALLOW_WINDOW_MS = 60000; // how long after a block the tablet may answer "allow here too"
 const FOCUS_POLL_MS = 500; // how often the foreground app is checked while a restricted shard is open
+// HTTP requests per minute per address. A shard loads all its files at once and a tablet may open
+// several in a row, so this is far above normal use; it only stops floods that would keep the
+// file system busy.
+const HTTP_RATE = 1000;
 
 // WebSocket close codes the viewer understands
 const CLOSE = { unknownDevice: 4001, pairingRejected: 4003, authTimeout: 4008, rateLimited: 4029 };
@@ -85,12 +90,13 @@ const validField = (v) => typeof v === 'string' && v.length > 0 && v.length <= M
 // - language: 'auto' | 'es' | 'en', or a function returning it: the viewer's language (auto follows the tablet).
 // - platform: the PC's system as shards see it (Shard.platform); defaults to this process's.
 // - isSelf(app): whether a detected app is LibreShard itself (focus/apps isSelfApp; injectable for tests).
+// - httpRate: HTTP requests per minute per address (HTTP_RATE; lower in tests).
 // The returned server also has releaseAll(), setPaused(on) and isPaused().
 function startServer({
   port, host = '0.0.0.0', store, shardDirs, rulesFile, appVersion,
   keyboard, focus, devices, pairing, limiter, allowPublic = false, onAlert, confirmPairing,
   allowAppsFromTablet = false, unavailableKeys = unavailable, language = 'auto',
-  platform = shardPlatform(process.platform), isSelf = isSelfApp,
+  platform = shardPlatform(process.platform), isSelf = isSelfApp, httpRate = HTTP_RATE,
 }) {
   const canAllow = () => (typeof allowAppsFromTablet === 'function' ? allowAppsFromTablet() : allowAppsFromTablet) === true;
   const typer = makeTyper(keyboard || nutKeyboard());
@@ -116,6 +122,10 @@ function startServer({
     });
     next();
   });
+
+  // Every route reads files or the store. Each address is counted on its own: the server only
+  // answers private networks, where grouping IPv6 addresses by subnet would merge all the tablets.
+  app.use(rateLimit({ windowMs: 60000, limit: httpRate, ipv6Subnet: false, standardHeaders: 'draft-8', legacyHeaders: false }));
 
   app.get('/api/shards', (_req, res) => res.json(store.publicList()));
 
