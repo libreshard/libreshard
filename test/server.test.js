@@ -177,6 +177,17 @@ test('the viewer gets a CSP that only allows itself', () => withServer({}, async
   assert.equal(r.headers['x-powered-by'], undefined);
 }));
 
+test('too many HTTP requests from one address get 429, and the WebSocket still works', () => withServer({ httpRate: 3 }, async (s) => {
+  for (let i = 0; i < 3; i++) assert.equal((await rawGet(s.port, '/shards/demo/style.css')).status, 200);
+  const r = await rawGet(s.port, '/shards/demo/index.html');
+  assert.equal(r.status, 429);
+  assert.ok(r.headers['retry-after']);
+  assert.equal((await rawGet(s.port, '/api/shards')).status, 429);
+  // A foreign Host is refused before it counts or is limited
+  assert.equal((await rawGet(s.port, '/', { Host: 'evil.example' })).status, 403);
+  await authed(s);
+}));
+
 /* ---------- Keys ---------- */
 
 test('press sends modifiers first and releases them last', () => withServer({}, async (s) => {
