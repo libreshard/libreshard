@@ -190,7 +190,7 @@ timeline
         0.4 : Paneles sin programar : Editor visual e importación de Stream Deck
         0.5 : Ecosistema de shards : Galería comunitaria y más idiomas
         0.6 : Experiencia en la tablet : Menú mejorado, cambio automático y HTTPS
-        1.0 : Primera versión estable
+        1.0 : Primera versión estable : Firma y actualizaciones automáticas
     section Tentativa
         1.1 : Shards más potentes : Acciones, macros, datos en vivo y ratón
         1.2 : Conectores : OBS y otras apps, con estado en vivo
@@ -211,9 +211,10 @@ Se agradece ayuda con cualquier punto de la [hoja de ruta](#hoja-de-ruta).
 ## Firma de código
 
 Las versiones de Windows todavía no están firmadas. Tenemos previsto firmarlas gratis a través de
-[SignPath Foundation](https://signpath.org/). Mientras tanto, comprueba las descargas con el archivo
-`SHA256SUMS.txt` que acompaña a cada versión. Esta sección pasará a ser la política de firma de
-código del proyecto cuando la firma esté en marcha.
+[SignPath Foundation](https://signpath.org/) en la 1.0, junto con las actualizaciones automáticas.
+Mientras tanto, comprueba las descargas con el archivo `SHA256SUMS.txt` que acompaña a cada
+versión. Esta sección pasará a ser la política de firma de código del proyecto cuando la firma esté
+en marcha.
 
 ## Licencia
 
