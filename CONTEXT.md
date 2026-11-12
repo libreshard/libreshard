@@ -622,21 +622,11 @@ The maintainer plans the work in local notes (`docs/plans/`, not published). The
 
 - Shards open full screen from the menu, and touch screens on the PC get a panel that never takes the focus. The website refreshes by itself when a version is published.
 
-**0.3: robustness and trust** (next)
+**0.3: robustness and trust** (released 2026-11-12)
 
-- **Logs on disk** (`<userData>/logs/`, rotated, with no personal data) and a "Copy diagnostics" button in Settings, for bug reports.
-- **About** in Settings (version, license, links) and **"Report a bug"**: copies the diagnostics and opens a prefilled GitHub issue form, so the user reviews everything before sending it.
-- **New version notice** in the PC window: a daily check of GitHub Releases that can be turned off (on by default). It only links to the download; nothing is installed by itself. It's the app's first outgoing connection and sends no user data.
-- **Backup:** export and import settings and installed shards. Paired devices stay out, and every imported shard goes through the install review again.
-- The "This PC" panel is always on top by default (new installs only).
-- **Elevated apps on Windows:** when the foreground app runs as administrator and LibreShard doesn't, the keys are lost silently. Detect it and warn on the tablet.
-- **Version in the viewer**, with "Reload to update" when it doesn't match the PC's.
-- **Linux session end:** quit cleanly when the session ends instead of letting Chromium abort (see §8).
-- **Windows CI:** find the handle leak that `--test-force-exit` masks.
-- Close the pairing confirmation dialog when the tablet gives up or the 60 s pass.
-- **Never press keys into LibreShard from any device:** extend the `self` block, today only for "This PC", to every tablet.
+- A log on disk and a "Report a bug" button with diagnostics, an About section, a notice when a new version is out (the app's only outgoing connection, can be turned off), and backups of settings and shards. The tablet warns when the app in front runs as administrator and offers to reload after the PC updates; no device can type into LibreShard itself; Linux quits cleanly when the session ends; the CI no longer needs `--test-force-exit`.
 
-**0.4: panels without code**
+**0.4: panels without code** (next)
 
 - **Panel editor** in the PC window: a grid with pages, buttons with a label, icon, color and press type, and a live preview on the tablet. The result is a normal shard that can be exported and shared.
 - **Import Stream Deck profiles** into the editor: layout, labels, images and hotkey actions, with a summary of what couldn't be imported (plugin actions, opening programs). Nothing from the other product is bundled; the importer only reads the user's own exported files.
