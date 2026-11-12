@@ -588,7 +588,10 @@ test('with confirmation on, a new device waits for the PC and can be accepted', 
     await c.opened;
     c.send({ type: 'pair', code: s.pairing.current().code, name: 'iPad · Safari' });
     assert.deepEqual(await c.next(), { type: 'pending' });
-    assert.deepEqual(asked, [{ name: 'iPad · Safari', ip: '127.0.0.1' }]);
+    assert.equal(asked.length, 1);
+    assert.equal(asked[0].name, 'iPad · Safari');
+    assert.equal(asked[0].ip, '127.0.0.1');
+    assert.equal(asked[0].signal.aborted, false, 'the question stays open while the tablet waits');
     assert.equal(s.devices.all().length, 1, 'not added before the answer');
     answer(true);
     const paired = await c.next();
@@ -606,6 +609,36 @@ test('with confirmation on, a rejected device is closed with 4003', () => {
     assert.deepEqual(await c.next(), { type: 'pending' });
     assert.deepEqual(await c.next(), { type: 'error', code: 'pair-rejected' });
     assert.equal(await c.closed, 4003);
+    assert.equal(s.devices.all().length, 1);
+  });
+});
+
+test('the question on the PC is closed when the tablet gives up waiting', () => {
+  let signal;
+  const confirmPairing = (info) => { signal = info.signal; return new Promise(() => {}); }; // never answered
+  return withServer({ confirmPairing }, async (s) => {
+    const c = connect(s.port);
+    await c.opened;
+    c.send({ type: 'pair', code: s.pairing.current().code });
+    assert.deepEqual(await c.next(), { type: 'pending' });
+    assert.equal(signal.aborted, false);
+    c.ws.terminate();
+    await waitFor(() => signal.aborted);
+    assert.equal(s.devices.all().length, 1, 'no device added');
+  });
+});
+
+test('the question on the PC is closed when the time runs out, and the tablet is rejected', () => {
+  let signal;
+  const confirmPairing = (info) => { signal = info.signal; return new Promise(() => {}); };
+  return withServer({ confirmPairing, confirmTimeoutMs: 100 }, async (s) => {
+    const c = connect(s.port);
+    await c.opened;
+    c.send({ type: 'pair', code: s.pairing.current().code });
+    assert.deepEqual(await c.next(), { type: 'pending' });
+    assert.deepEqual(await c.next(), { type: 'error', code: 'pair-rejected' });
+    assert.equal(await c.closed, 4003);
+    assert.equal(signal.aborted, true);
     assert.equal(s.devices.all().length, 1);
   });
 });
