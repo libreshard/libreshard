@@ -28,7 +28,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test --test-timeout=10000 --test-force-exit \"test/**/*.test.js\"",
+    "test": "node --test --test-timeout=10000 --require ./test/leak-guard.js \"test/**/*.test.js\"",
     "dist": "electron-builder",
     "icons": "electron brand/render-icons.js",
     "test:linux": "docker build -f test/linux/Dockerfile -t libreshard-linux-test . && docker run --rm libreshard-linux-test",

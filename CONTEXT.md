@@ -521,6 +521,7 @@ Tests (`test/`):
 - **Real tablet:** with USB debugging, `adb shell input tap X Y` taps and `adb exec-out screencap -p` captures the screen. `adb forward tcp:9333 localabstract:chrome_devtools_remote` exposes the tablet's Chrome to the DevTools Protocol, so the viewer page can be inspected (`document.elementFromPoint`, event listeners) like a desktop page.
 - To drive the real desktop window (tabs, buttons, screenshots), start the app with `--remote-debugging-port=9223` and use the Chrome DevTools Protocol (`Runtime.evaluate`, `Page.captureScreenshot`).
 - Every client a test opens is terminated afterwards, so a failing test can't leave `server.close()` waiting. The script runs with `--test-timeout=10000`.
+- **Nothing may stay open after a file's tests.** `npm test` loads `test/leak-guard.js` into every test file: if the process is still alive 5 s after its tests, it prints what's open (`process.getActiveResourcesInfo()`, e.g. `TCPServerWrap` for a server, `FSEventWrap` for a watcher) and fails that file. Close servers, watchers and timers (or `unref()` them) in every test, failing ones included. It replaced `--test-force-exit`, which hid such leaks after one once kept the Windows CI job running for over 50 minutes.
 
 Other notes:
 
