@@ -55,6 +55,7 @@ libreshard/
 ├── net.js                allowed Host headers and private-network checks
 ├── keys.js               turns "ctrl+shift+m" into nut-js keys
 ├── log.js                the log on disk (<userData>/logs/), rotated, with no personal data
+├── diagnostics.js        the text "Copy diagnostics" and "Report a bug" put on the clipboard
 ├── focus/                foreground app detection
 │   ├── index.js          createFocus(): picks a provider; check(), active(), openApps()
 │   ├── apps.js           app entries ({ exe } / { match }), normalizeApp, appMatches, appLabel
@@ -72,6 +73,7 @@ libreshard/
 │   ├── linux/            .deb post-install/post-remove scripts (AppArmor profile)
 │   └── windows/installer.nsh  NSIS additions: optional firewall rule, file type cleanup on uninstall
 ├── .github/workflows/    ci.yml (tests on 3 OSes, Linux injection, DCO), release.yml (tag v* → draft release) and website.yml (published release → rebuild libreshard.com)
+├── .github/ISSUE_TEMPLATE/  bug_report.yml (the form "Report a bug" opens) and config.yml (security reports go private)
 ├── LICENSE, NOTICE       Apache-2.0; LICENSES/MIT-0.txt for shard-base/ and docs/shard-template/
 ├── README*.md, SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CHANGELOG.md, TRADEMARKS.md   public docs
 ├── viewer/
@@ -118,11 +120,12 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - **Tray:** a `Tray` with Open / Open this PC's panel / Pause or Resume / Quit (labels follow the language). With `closeToTray` on (default), closing the window hides it and the server keeps running; the first time, a notification says so. Without a tray (some Linux desktops), closing quits as before. `--hidden` starts with only the tray icon.
 - **Open at login** (`openAtLogin`, off by default): `app.setLoginItemSettings` on Windows and macOS (with `--hidden`; in development the entry is named `electron.app.Electron` and points at the project's Electron), and `~/.config/autostart/libreshard.desktop` on Linux (using `$APPIMAGE` when running from an AppImage).
 - Extra IPC: `shard:settings`, `shard:reset-settings`, `shard:favorite`, `shard:move`, `install:pick-dev` (folder dialog for development mode), and `install:path` accepts `{ link: true }`. A candidate with `link` is confirmed with `store.link()` instead of `store.install()`.
+- **About** (end of Ajustes): `app:open-link(kind)` opens one of `LINKS` (website, source, security, license) with `shell.openExternal`; the page names a destination and never passes a URL. `app:open-path` also takes `logs` (the log's folder) and `licenses` (Electron's `LICENSES.chromium.html` next to the packaged executable, on Windows and Linux; `state.thirdPartyLicenses` says whether it exists). `app:copy-diagnostics` puts `diagnostics()` on the clipboard. `app:report-bug` does the same and opens the `bug_report.yml` issue form with `version` and `os` (`systemLabel()`) in the address; the diagnostics never go in the address: they would be cut, and the user must see them before sending.
 - `state.settings` carries every setting the Ajustes tab shows, `closeToTray`, `openAtLogin` and `panelAlwaysOnTop` included (without them their switches always looked off).
 
 **desktop/** (the PC window; plain JS, no dependencies)
 - `preload.js` exposes `window.libreshard` (one function per IPC channel, plus `onState`, `onReview` and `pathForFile` through `webUtils` for dropped files). The page has no Node access.
-- `app.js` renders four tabs from the state: **Conectar** (QRs, then the "Esta PC" card with `monitor.svg` that opens the local panel; code with countdown), **Dispositivos** (rename, unpair, confirm-new-devices switch; the local device carries the "Panel de esta PC" badge), **Shards** (install from zip/folder or by dropping, review, approve, enable/disable, open folder, uninstall, rejected shards with their errors) and **Ajustes** (language, port, confirm devices, public networks, panel always on top, folders). A pause button sits in the header.
+- `app.js` renders four tabs from the state: **Conectar** (QRs, then the "Esta PC" card with `monitor.svg` that opens the local panel; code with countdown), **Dispositivos** (rename, unpair, confirm-new-devices switch; the local device carries the "Panel de esta PC" badge), **Shards** (install from zip/folder or by dropping, review, approve, enable/disable, open folder, uninstall, rejected shards with their errors) and **Ajustes** (language, port, confirm devices, public networks, panel always on top, folders, and **About**: version, license, links, "Report a bug", "Copy diagnostics", "Open logs folder"). A pause button sits in the header.
 - The **apps editor** ("Apps" on each shard card) chooses between "In any app" and "Only in these apps". Apps are added by picking an open program (with its icon), with "Detect app" (a 5 s countdown, then the program in front), or by typing a text rule. "Restore suggestions" removes the user's rule.
 - **Shard settings** ("Settings" on cards whose manifest declares them): a form built from the schema (switch, select, number, color, text), labels in the app's language; "Default values" resets them.
 - **Menu order and favorites:** the Shards tab lists shards in the tablet's menu order; each card has a star (favorite) and ↑/↓. Tablets refresh their menu at once (`shards-changed`).
@@ -199,6 +202,9 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - `createLog({ file })`: `info`/`warn`/`error(event, details)` append one line (`time LEVEL event key=value…`, an `Error` adds its stack below), synchronously so the last lines before a crash are on disk. Rotates at 1 MB, keeping `.1` and `.2`. A failed write never throws (reported once on the console). `tail(n)` returns the last lines, for diagnostics.
 - **What never goes in:** keys pressed, window titles, device names, IP addresses or the app in front. Callers log ids (`shortId()` keeps 6 characters of a device id) and reasons. As a safety net the user's home folder becomes `~` in every value and stack.
 - `nullLog` is the default everywhere (tests, tools). `once(log)` logs each distinct error a single time, for errors that would repeat on every tap or poll (the foreground app detection, the live indicator).
+
+**diagnostics.js**
+- `buildDiagnostics(info)`: plain text with the app and Electron versions, the system (`systemLabel()`: "Windows 10.0.26300 x64", "Linux 6.8.0 x64 (x11)"), the detection provider, every non-internal setting, how many devices (and whether one is the local panel) and networks (and how many are VPNs), one line per shard (id, version, bundled/installed/development, enabled, keys waiting for approval, apps limit), rejected folder names and the last 200 log lines. Never device names, IP addresses, network names, tokens or the pairing code; the home folder becomes `~`.
 
 **focus/**
 - Providers all answer the same way: `name`, `available()`, `active()` → `{ exe, name, title, path }` and optionally `openWindows()`. `createFocus({ providers, cacheMs })` uses the first available one (`active-win`, then `linux-x11`, then `title`); the module itself exports a default instance.

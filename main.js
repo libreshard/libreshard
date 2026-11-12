@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Notification, Tray, dialog, ipcMain, nativeImage, screen, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, Tray, clipboard, dialog, ipcMain, nativeImage, screen, session, shell } = require('electron');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
@@ -15,6 +15,7 @@ const { appLabel, isSelfApp } = require('./focus/apps');
 const i18n = require('./i18n');
 const { labelFor } = require('./shard-settings');
 const { createLog, nullLog, shortId } = require('./log');
+const { buildDiagnostics, systemLabel } = require('./diagnostics');
 
 const DEFAULT_PORT = 7878;
 const VPN = /tailscale|zerotier|hamachi|vpn|wireguard|openvpn|nord|proton/i;
@@ -26,6 +27,15 @@ const PANEL_MIN = { width: 360, height: 280 };
 // Windows never makes a window that doesn't activate topmost at Electron's default 'floating' level
 // (checked with a game in front, 2026-11-04); an explicit level does
 const PANEL_TOP_LEVEL = 'pop-up-menu';
+
+// The only addresses the desktop window can open in the browser ("About"): it names one, never a URL
+const LINKS = {
+  website: 'https://libreshard.com',
+  source: 'https://github.com/libreshard/libreshard',
+  security: 'https://libreshard.com/security/',
+  license: 'https://github.com/libreshard/libreshard/blob/main/LICENSE',
+};
+const ISSUE_URL = 'https://github.com/libreshard/libreshard/issues/new';
 
 const dataFile = (name) => path.join(app.getPath('userData'), name);
 
@@ -282,6 +292,7 @@ async function start() {
         pendingKeys: e.pendingKeys, risk: classifyKeys(e.manifest.keys),
       }))),
       detection: focus.providerName(),
+      thirdPartyLicenses: hasLicenses,
       rejected: store.rejected.map((r) => ({ folder: path.basename(r.root), root: r.root, errors: r.errors })),
       settings: {
         port: cfg.port, allowPublicNetworks: cfg.allowPublicNetworks, confirmDevices: cfg.confirmDevices,
@@ -303,6 +314,33 @@ async function start() {
   store.on('settings', push);
   devices.on('change', push);
   pairing.on('change', push);
+
+  /* ---------- About: diagnostics and bug reports ---------- */
+
+  const system = () => ({ platform: process.platform, release: os.release(), arch: process.arch, session: process.env.XDG_SESSION_TYPE });
+  // Electron's and Chromium's licenses, which electron-builder puts next to the executable
+  // (Windows and Linux; macOS keeps them inside the bundle)
+  const licensesFile = app.isPackaged && process.platform !== 'darwin' ? path.join(path.dirname(process.execPath), 'LICENSES.chromium.html') : null;
+  const hasLicenses = !!licensesFile && fs.existsSync(licensesFile);
+
+  // What a bug report needs, without device names, addresses or network names (see diagnostics.js)
+  function diagnostics() {
+    const nets = lanInterfaces();
+    const all = devices.all();
+    return buildDiagnostics({
+      version: app.getVersion(), packaged: app.isPackaged, ...system(),
+      versions: process.versions, focus: focus.providerName(),
+      settings: Object.fromEntries(Object.keys(SETTINGS).filter((k) => !SETTINGS[k].internal).map((k) => [k, cfg[k]])),
+      devices: { total: all.length, local: all.some((d) => d.local) },
+      networks: { total: nets.length, vpn: nets.filter((n) => n.vpn).length },
+      shards: store.all().map((e) => ({
+        id: e.id, version: e.manifest.version, bundled: e.bundled, linked: e.linked, enabled: e.enabled,
+        pendingKeys: e.pendingKeys.length, apps: e.apps.length,
+      })),
+      rejected: store.rejected.map((r) => path.basename(r.root)),
+      log: log.tail(200),
+    });
+  }
 
   /* ---------- Installing ---------- */
 
@@ -356,6 +394,26 @@ async function start() {
     if (kind === 'shards') shell.openPath(userShards);
     else if (kind === 'data') shell.openPath(app.getPath('userData'));
     else if (kind === 'shard' && store.rejected.some((r) => r.root === p)) shell.openPath(p);
+    else if (kind === 'logs') {
+      fs.mkdirSync(path.dirname(log.file), { recursive: true });
+      shell.openPath(path.dirname(log.file));
+    } else if (kind === 'licenses' && hasLicenses) shell.openPath(licensesFile);
+  });
+  handle('app:open-link', async (kind) => {
+    if (!Object.hasOwn(LINKS, kind)) throw new Error('Unknown link');
+    await shell.openExternal(LINKS[kind]);
+  });
+  handle('app:copy-diagnostics', () => {
+    clipboard.writeText(diagnostics());
+    log.info('diagnostics-copied');
+  });
+  // The report form gets the version and system in the address; the diagnostics go to the clipboard
+  // for the user to paste and read (they would be cut in an address, and nothing is sent unseen)
+  handle('app:report-bug', async () => {
+    clipboard.writeText(diagnostics());
+    const query = new URLSearchParams({ template: 'bug_report.yml', version: app.getVersion(), os: systemLabel(system()) });
+    await shell.openExternal(`${ISSUE_URL}?${query}`);
+    log.info('bug-report-opened');
   });
   handle('app:restart', () => { app.relaunch(); app.quit(); });
 

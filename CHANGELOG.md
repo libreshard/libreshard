@@ -13,6 +13,13 @@ All notable changes to LibreShard are listed here. The format follows
 - LibreShard keeps a log on the PC, `logs/libreshard.log` in its data folder (rotated, 3 MB at
   most), to help with bug reports. It records what the app did and what went wrong, never keys
   typed, window titles, device names or network addresses.
+- **About** at the end of Settings: version, license and links to the website, the source code and
+  the security policy.
+- **Report a bug** (Settings): copies the diagnostics and opens the bug report form on GitHub with
+  your version and system filled in; paste the diagnostics in the last field and read them before
+  sending. **Copy diagnostics** and **Open logs folder** sit next to it. The diagnostics hold the
+  versions, settings, shards and the last lines of the log, never device names or network
+  addresses.
 
 ### Project
 
