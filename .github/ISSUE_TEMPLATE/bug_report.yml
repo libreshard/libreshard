@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in LibreShard doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report it. In LibreShard, **Settings → Report a bug** opens this
+        form with the version and system filled in, and copies the diagnostics for the last field.
+
+        Found a security problem? Don't post it here: report it privately (see the security policy).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the "…" shard on the tablet
+        2. Tap "…"
+        3. …
+  - type: input
+    id: version
+    attributes:
+      label: LibreShard version
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: System
+      description: Windows or Linux version (and Xorg or Wayland on Linux).
+      placeholder: Windows 11, Ubuntu 24.04 (Xorg)…
+    validations:
+      required: true
+  - type: input
+    id: tablet
+    attributes:
+      label: Tablet and browser
+      description: If the problem shows on the tablet.
+      placeholder: Android 14 with Chrome, iPad with Safari…
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: |
+        Paste what "Report a bug" or "Copy diagnostics" put on the clipboard (Settings in LibreShard).
+        It has no device names, network addresses or keys typed, but read it before sending.
+      render: text

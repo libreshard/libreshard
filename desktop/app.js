@@ -466,8 +466,32 @@ function renderSettings() {
     h('div', { class: 'row' },
       h('button', { class: 'btn small', onclick: () => api.openPath('shards') }, t('shards.openShardsFolder')),
       h('button', { class: 'btn small', onclick: () => api.openPath('data') }, t('settings.openData'))),
-    h('p', { class: 'hint small' }, t('settings.version', { version: state.version })),
+    renderAbout(),
   );
+}
+
+// Version, links and what helps with a bug report. Links name a destination; main.js holds the URLs.
+function renderAbout() {
+  const link = (kind, label) => h('button', { class: 'btn small', onclick: () => call(api.openLink, kind) }, label);
+  const copy = async () => { if ((await call(api.copyDiagnostics))?.ok !== false) toast(t('about.copied')); };
+  const report = async () => { if ((await call(api.reportBug))?.ok !== false) toast(t('about.reportOpened')); };
+  return [
+    h('h2', null, t('about.title')),
+    h('p', { class: 'about-version' }, t('about.version', { version: state.version })),
+    h('p', { class: 'hint small' }, t('about.license')),
+    h('div', { class: 'row' },
+      link('website', t('about.website')),
+      link('source', t('about.source')),
+      link('security', t('about.security')),
+      link('license', t('about.licenseLink')),
+      state.thirdPartyLicenses ? h('button', { class: 'btn small', onclick: () => api.openPath('licenses') }, t('about.thirdParty')) : null),
+    h('h2', null, t('about.problems')),
+    h('p', { class: 'hint small' }, t('about.problemsHint')),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn small primary', onclick: report }, t('about.report')),
+      h('button', { class: 'btn small', onclick: copy }, t('about.copy')),
+      h('button', { class: 'btn small', onclick: () => api.openPath('logs') }, t('about.openLogs'))),
+  ];
 }
 
 /* ---------- Drag and drop ---------- */

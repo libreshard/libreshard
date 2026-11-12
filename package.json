@@ -67,6 +67,7 @@
       "shard-settings.js",
       "keys.js",
       "log.js",
+      "diagnostics.js",
       "focus/**",
       "i18n/**",
       "desktop/**",

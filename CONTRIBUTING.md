@@ -4,8 +4,10 @@ Thanks for helping! Bug reports, shards, translations, documentation and code ar
 
 ## Ways to help
 
-- **Report a bug:** open an issue with your LibreShard version, your OS (and desktop on Linux), what
-  you did and what happened.
+- **Report a bug:** in LibreShard, **Settings → Report a bug** opens the issue form with your version
+  and system filled in, and copies the diagnostics for you to paste (read them first). You can also
+  [open an issue](https://github.com/libreshard/libreshard/issues/new/choose) yourself with your
+  LibreShard version, your OS (and desktop on Linux), what you did and what happened.
   For security problems, follow [SECURITY.md](SECURITY.md) instead.
 - **Share a shard:** you don't need to change LibreShard for that. Publish your shard in your own
   repository (see [docs/shards.md](docs/shards.md)) and tell us about it in an issue or discussion.
