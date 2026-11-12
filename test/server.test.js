@@ -361,7 +361,9 @@ test('the elevation check never runs on a release, and LibreShard in front wins 
 });
 
 // A real non-loopback connection: the server listens everywhere and the client uses the LAN address
-const lanAddress = Object.values(os.networkInterfaces()).flat().find((i) => i && i.family === 'IPv4' && !i.internal)?.address;
+// A link-local adapter (169.254.x, an unplugged or virtual one) can take seconds to answer: skip it
+const lanAddress = Object.values(os.networkInterfaces()).flat()
+  .find((i) => i && i.family === 'IPv4' && !i.internal && !i.address.startsWith('169.254.'))?.address;
 test('the local device is refused from any address but loopback', { skip: !lanAddress && 'no LAN address' }, () => {
   const devices = new Devices(null);
   const { token } = devices.add('This PC', '127.0.0.1', { local: true });
