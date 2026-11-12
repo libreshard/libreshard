@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Notification, Tray, clipboard, dialog, ipcMain, nativeImage, net, screen, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, Tray, clipboard, dialog, ipcMain, nativeImage, net, powerMonitor, screen, session, shell } = require('electron');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
@@ -17,6 +17,7 @@ const i18n = require('./i18n');
 const { labelFor } = require('./shard-settings');
 const { createLog, nullLog, shortId } = require('./log');
 const { buildDiagnostics, systemLabel } = require('./diagnostics');
+const { watchSessionEnd } = require('./linux-session');
 const updates = require('./updates');
 
 const DEFAULT_PORT = 7878;
@@ -134,6 +135,21 @@ app.on('before-quit', (e) => {
   released = true;
   server.releaseAll().catch(() => {}).finally(() => app.quit());
 });
+
+// The session or the system is ending (linux-session.js, powerMonitor 'shutdown'): there are only
+// a few hundred milliseconds before the desktop goes away, not enough for the normal quit (closing
+// windows), and Chromium aborts if it's still running then. Let go of held keys, briefly, and exit.
+const QUICK_RELEASE_MS = 100;
+let exiting = false;
+async function quitNow(reason, details = {}) {
+  if (exiting) return; // a normal quit already under way is cut short too
+  exiting = true;
+  quitting = true;
+  released = true;
+  log.info('quit', { reason, ...details });
+  if (server) await Promise.race([server.releaseAll().catch(() => {}), new Promise((r) => setTimeout(r, QUICK_RELEASE_MS))]);
+  app.exit(0);
+}
 
 let openShardFile = (file) => { if (file) pendingFile = file; };
 
@@ -255,6 +271,13 @@ async function start() {
     app.quit();
     return;
   }
+
+  if (process.platform === 'linux') {
+    // gdbus would outlive a normal quit (closing from the tray) without this
+    const stopWatching = watchSessionEnd({ log, onEnd: (manager) => quitNow('session-end', { manager }) });
+    process.on('exit', stopWatching);
+  }
+  powerMonitor.on('shutdown', () => quitNow('shutdown')); // Linux (logind) and macOS
 
   // QR images only change when the pairing token does
   let qrCache = { token: null, list: [] };
