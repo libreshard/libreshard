@@ -113,8 +113,9 @@ can rename or unpair them.
 
 **Touch screen on the PC?** The **This PC** card next to the QR codes opens the shards in a window of
 their own on this screen, no tablet needed. Tapping it never takes the focus from the app you are
-controlling. Drag it to the touch monitor, and turn on "Keep this PC's panel on top" in Settings if
-you like. On Linux it always stays on top and has its own bar to move, resize and close it.
+controlling. Drag it to the touch monitor; it stays on top of other windows unless you turn off
+"Keep this PC's panel on top" in Settings. On Linux it always stays on top and has its own bar to
+move, resize and close it.
 
 ## Make your own shard
 
@@ -187,7 +188,7 @@ timeline
         0.4 : Panels without code : Visual editor and Stream Deck import
         0.5 : Shard ecosystem : Community gallery and more languages
         0.6 : Tablet experience : Smarter menu, auto-switching and HTTPS
-        1.0 : First stable version
+        1.0 : First stable version : Signed builds and automatic updates
     section Tentative
         1.1 : More capable shards : Actions, macros, live data and mouse
         1.2 : Connectors : OBS and other apps, with live state
@@ -207,9 +208,9 @@ Help is welcome on anything in the [roadmap](#roadmap).
 ## Code signing
 
 Windows releases aren't code-signed yet. We plan to sign them for free through
-[SignPath Foundation](https://signpath.org/). Until then, check downloads against the
-`SHA256SUMS.txt` file published with each release. This section will become the project's code
-signing policy once signing is in place.
+[SignPath Foundation](https://signpath.org/) for 1.0, together with automatic updates. Until then,
+check downloads against the `SHA256SUMS.txt` file published with each release. This section will
+become the project's code signing policy once signing is in place.
 
 ## License
 

@@ -11,6 +11,8 @@ All notable changes to LibreShard are listed here. The format follows
 - LibreShard keeps a log on the PC, `logs/libreshard.log` in its data folder (rotated, 3 MB at
   most), to help with bug reports. It records what the app did and what went wrong, never keys
   typed, window titles, device names or network addresses.
+- The **This PC** panel now stays on top of other windows by default. Only new installs change:
+  if you already used 0.2, your setting stays as it was (turn it on in Settings).
 
 ### Project
 
