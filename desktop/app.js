@@ -468,9 +468,70 @@ function renderSettings() {
     h('div', { class: 'row' },
       h('button', { class: 'btn small', onclick: () => api.openPath('shards') }, t('shards.openShardsFolder')),
       h('button', { class: 'btn small', onclick: () => api.openPath('data') }, t('settings.openData'))),
+    h('h2', null, t('backup.title')),
+    h('p', { class: 'hint small' }, t('backup.hint')),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn small', onclick: exportBackup }, t('backup.export')),
+      h('button', { class: 'btn small', onclick: importBackup }, t('backup.import'))),
     renderAbout(),
   );
 }
+
+/* ---------- Backups ---------- */
+
+async function exportBackup() {
+  const r = await call(api.exportBackup);
+  if (r && r.ok && r.saved) toast(t('backup.saved'));
+}
+
+// Settings that change who can reach this PC or what tablets may do: flagged in the summary
+const SECURITY_SETTINGS = ['port', 'allowPublicNetworks', 'confirmDevices', 'allowAppsFromTablet'];
+const settingLabel = (key) => t({ allowPublicNetworks: 'settings.publicNetworks' }[key] || 'settings.' + key);
+function settingValue(key, v) {
+  if (typeof v === 'boolean') return v ? t('backup.on') : t('backup.off');
+  if (key === 'language') return t('settings.language.' + v);
+  return String(v);
+}
+
+// Reads a backup and shows what importing it would change; nothing is applied before "Import"
+async function importBackup() {
+  const r = await call(api.pickBackup);
+  if (!r || !r.ok || !r.summary) return;
+  const s = r.summary;
+  const name = (id) => (state.shards.find((x) => x.id === id) || {}).name || id;
+  const cancel = () => { api.cancelBackup(s.id); closeModal(); };
+  const apply = async () => {
+    closeModal();
+    const res = await call(api.applyBackup, s.id);
+    if (res && res.ok && !s.install.length) toast(t('backup.done'));
+  };
+  const risky = s.settings.some((x) => SECURITY_SETTINGS.includes(x.key));
+  const nothing = !s.settings.length && !s.rules && !s.install.length && !s.states;
+  fill($('dialog'),
+    h('div', { class: 'label' }, t('backup.summaryTitle')),
+    h('div', { class: 'meta' }, t('backup.from', { version: s.appVersion || '?', date: s.createdAt ? fmtDate(s.createdAt) : '?' })),
+    nothing ? h('div', { class: 'hint small' }, t('backup.nothing')) : null,
+    s.settings.length ? h('div', { class: 'section' },
+      h('div', { class: 'label' }, t('backup.settings', { count: s.settings.length })),
+      risky ? h('div', { class: 'warnbox warn' }, t('backup.securityNote')) : null,
+      s.settings.map((x) => h('div', { class: SECURITY_SETTINGS.includes(x.key) ? 'backup-change risky' : 'backup-change' },
+        settingLabel(x.key) + ': ' + settingValue(x.key, x.from) + ' → ' + settingValue(x.key, x.to)))) : null,
+    s.rules ? h('div', { class: 'hint small' }, t('backup.rules', { count: s.rules })) : null,
+    s.states ? h('div', { class: 'hint small' }, t('backup.states', { count: s.states })) : null,
+    s.install.length ? h('div', { class: 'section' },
+      h('div', { class: 'label' }, t('backup.install', { count: s.install.length })),
+      h('div', { class: 'hint small' }, t('backup.installHint')),
+      h('div', null, s.install.join(', '))) : null,
+    s.kept.length ? h('div', { class: 'hint small' }, t('backup.kept', { names: s.kept.map(name).join(', ') })) : null,
+    h('div', { class: 'hint small' }, t('backup.never')),
+    h('div', { class: 'buttons' },
+      h('button', { class: 'btn', onclick: cancel }, t('action.cancel')),
+      h('button', { class: 'btn primary', disabled: nothing, onclick: apply }, t('backup.apply'))),
+  );
+  $('modal').hidden = false;
+  $('modal').onclick = (e) => { if (e.target === $('modal')) cancel(); };
+}
+api.onBackupDone(() => toast(t('backup.done')));
 
 // What the last check for a new version found
 function updateStatus() {

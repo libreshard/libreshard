@@ -58,6 +58,7 @@ libreshard/
 ├── diagnostics.js        the text "Copy diagnostics" and "Report a bug" put on the clipboard
 ├── updates.js            the daily check for a new version (GitHub's latest release), and version comparison
 ├── linux-session.js      Linux: watches the session manager over D-Bus to quit before the session ends
+├── backup.js             backups: one zip with settings, app rules, shard states and installed shards
 ├── focus/                foreground app detection
 │   ├── index.js          createFocus(): picks a provider; check(), active(), openApps()
 │   ├── apps.js           app entries ({ exe } / { match }), normalizeApp, appMatches, appLabel
@@ -210,6 +211,11 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 **focus/elevation.js**
 - `above(app)`: `true` when the app's process (`app.pid`, only given by the active-win provider) has a higher integrity level than LibreShard, `false` when it doesn't, `null` when unknown. It reads the level from the process token (`OpenProcess` with `PROCESS_QUERY_LIMITED_INFORMATION`, `OpenProcessToken`, `TokenIntegrityLevel`), which Windows allows from a normal process even for an elevated one. A process that denies access (anti-cheats, system services) is `null`, so it can never cause a false block. Checked on 2026-11-11: elevated Notepad and Valheim read high, the same apps started normally read medium. One reading takes about 4 µs; only LibreShard's own level is cached. `selfElevated()` says whether LibreShard runs as administrator (diagnostics, start line of the log).
 - koffi is loaded lazily and only on Windows; if it's missing or a call fails, everything is `null` and the log gets one line. `createElevation({ platform, api })` takes a fake API in the tests.
+
+**backup.js**
+- `createBackup({ appVersion, config, rules, state, shards })` returns a zip (its own small writer: deflate, UTF-8 names): `backup.json` (`format: 1`, the non-internal settings, `app-rules.json`, per shard `disabled`/`favorite`/`position`/`settings`, and the ids of the shards the user installed) plus `shards/<id>/…` for those shards (never bundled ones or development links; links inside are skipped). Never key approvals, devices, the log or what tablets store.
+- `readBackup(file, { settings })` extracts with `installer.extractZip` (wider limits: 300 MB, 20,000 files) and `checkBackup()` keeps only valid values: each setting through its `valid()`, rules through `cleanRule`, ids by the manifest's rule (also safe as folder names). Refuses files that aren't LibreShard backups and newer formats.
+- In `main.js`: `backup:export` (save dialog), `backup:pick` (open dialog → summary: settings that change, rules, states, shards to install and shards kept), `backup:apply` and `backup:cancel`. Applying uses `applySetting()` (the same path as Ajustes), `store.writeRules()` and `store.restoreState()` (drops settings values the manifest doesn't accept, never touches approvals) for shards already here, then queues the others: each goes through `prepareInstall()` and the usual review (`install:review`), one after another; its saved state is applied after the user confirms it (`after`), and cancelling one moves to the next. Shards already installed here are kept as they are. The window flags security settings (port, public networks, confirm devices, apps from the tablet) in the summary.
 
 **linux-session.js**
 - `watchSessionEnd({ onEnd })` runs `gdbus monitor --session --dest <manager>` for the desktop in `XDG_CURRENT_DESKTOP` and calls `onEnd(manager)` once when the session is ending: GNOME's `ClientPrivate.EndSession` (the logout can no longer be cancelled; `QueryEndSession` is ignored because it can), or XFCE's `Manager.StateChanged` to 3 or 4. These are broadcast signals, so nothing registers with the session manager. Returns `stop()`, which `main.js` calls on process exit so gdbus doesn't outlive a normal quit. No gdbus or another desktop: nothing is watched (logged once).
@@ -477,6 +483,7 @@ Principles that **must not be broken** when changing the code:
 14. A user shard can only type keys the user approved (`shards-state.json`). The review shows every key, flags system combos and text typing, and never hides keys that were added since the last approval.
 15. The desktop window has no Node access: everything goes through `preload.js` and IPC handlers that check the sender and every argument. Zips are extracted with path, symlink and size checks, and uninstalling never follows links.
 16. The only connection outside the user's network is the check for new versions (`updates.js`): GitHub's latest release, with a generic User-Agent and nothing about the user, devices or shards. It can be turned off (`checkUpdates`), never downloads or installs anything, and never involves the tablet. Any other outgoing connection needs the same scrutiny and must be documented in `SECURITY.md`.
+17. Importing a backup never approves keys or adds devices: every shard in it goes through the install review, settings and values are checked as if typed in Ajustes, and nothing applies before the user sees the summary.
 
 Known limitations:
 

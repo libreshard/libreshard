@@ -19,6 +19,7 @@ const { createLog, nullLog, shortId } = require('./log');
 const { buildDiagnostics, systemLabel } = require('./diagnostics');
 const { watchSessionEnd } = require('./linux-session');
 const updates = require('./updates');
+const backup = require('./backup');
 
 const DEFAULT_PORT = 7878;
 const VPN = /tailscale|zerotier|hamachi|vpn|wireguard|openvpn|nord|proton/i;
@@ -416,7 +417,8 @@ async function start() {
   // Prepared installs waiting for the user's confirmation, by a random id
   const candidates = new Map();
   // link: development mode, where the folder is linked instead of copied
-  async function prepareInstall(source, { link = false } = {}) {
+  // fromBackup: the shard comes from an imported backup; `after` runs once the user confirms it
+  async function prepareInstall(source, { link = false, fromBackup = false, after = null } = {}) {
     if (link && !fs.statSync(source).isDirectory()) throw new Error('Development mode needs a folder');
     const r = await installer.prepare(source, {
       appVersion: app.getVersion(),
@@ -424,7 +426,7 @@ async function start() {
     });
     if (!r.ok) return { ok: false, errors: r.errors };
     const id = crypto.randomUUID();
-    candidates.set(id, { ...r, link });
+    candidates.set(id, { ...r, link, fromBackup, after });
     return { ok: true, review: { id, link, manifest: r.manifest, risk: r.risk, size: r.size, update: r.update } };
   }
 
@@ -494,7 +496,8 @@ async function start() {
   });
   handle('app:restart', () => { app.relaunch(); app.quit(); });
 
-  handle('settings:set', (key, value) => {
+  // One setting changed from Ajustes or by importing a backup, with whatever it has to update live
+  function applySetting(key, value) {
     const s = SETTINGS[key];
     if (!s || s.internal || !s.valid(value)) throw new Error('Invalid value');
     cfg[key] = value;
@@ -509,7 +512,8 @@ async function start() {
     if (key === 'checkUpdates' && value && !update.checkedAt) checkForUpdates();
     if (key === 'panelAlwaysOnTop' && panel) panel.setAlwaysOnTop(value, PANEL_TOP_LEVEL);
     push();
-  });
+  }
+  handle('settings:set', applySetting);
 
   handle('device:rename', (id, name) => {
     if (typeof id !== 'string' || typeof name !== 'string') throw new Error('Invalid device');
@@ -546,16 +550,118 @@ async function start() {
     candidates.delete(id);
     try {
       if (c.link) store.link(c.root, c.manifest); else store.install(c.root, c.manifest);
-      log.info(c.link ? 'shard-linked' : 'shard-installed', { shard: c.manifest.id, version: c.manifest.version, update: !!c.update });
+      log.info(c.link ? 'shard-linked' : 'shard-installed', { shard: c.manifest.id, version: c.manifest.version, update: !!c.update, backup: c.fromBackup || undefined });
+      if (c.after) {
+        try { c.after(); } catch (e) { log.warn('backup-shard-state-failed', { shard: c.manifest.id, error: e }); }
+      }
     } catch (e) {
       log.error('shard-install-failed', { shard: c.manifest.id, error: e });
       throw e;
-    } finally { c.cleanup(); }
+    } finally {
+      c.cleanup();
+      if (c.fromBackup) nextBackupReview();
+    }
   });
   handle('install:cancel', (id) => {
     const c = candidates.get(id);
     if (c) { c.cleanup(); candidates.delete(id); }
+    if (c?.fromBackup) nextBackupReview();
   });
+
+  /* ---------- Backups ---------- */
+
+  // Export: settings, app rules, each shard's state and the user's installed shards (backup.js).
+  // Import: the file is read and checked, the window shows a summary, and only on "Import" are the
+  // settings, rules and states applied. Shards not installed here go through the usual install
+  // review one after another; their saved state is applied once the user confirms each one.
+  const backups = new Map(); // read backups waiting for the user's answer, by a random id
+  let restoring = null; // { read, queue } while imported shards wait for their review
+  const settingsForBackup = () => Object.fromEntries(Object.keys(SETTINGS).filter((k) => !SETTINGS[k].internal).map((k) => [k, cfg[k]]));
+
+  handle('backup:export', async () => {
+    const day = new Date().toISOString().slice(0, 10);
+    const r = await dialog.showSaveDialog(win, {
+      title: t('backup.exportTitle'),
+      defaultPath: path.join(app.getPath('documents'), `libreshard-backup-${day}.zip`),
+      filters: [{ name: t('backup.filter'), extensions: ['zip'] }],
+    });
+    if (r.canceled || !r.filePath) return { ok: true, saved: false };
+    let rules = {};
+    try { rules = JSON.parse(fs.readFileSync(rulesFile, 'utf8')) || {}; } catch { /* no valid rules: none saved */ }
+    const zip = backup.createBackup({ appVersion: app.getVersion(), config: settingsForBackup(), rules, state: store.state, shards: store.all() });
+    fs.writeFileSync(r.filePath, zip);
+    log.info('backup-exported', { shards: store.all().filter((e) => !e.bundled && !e.linked).length, bytes: zip.length });
+    return { ok: true, saved: true };
+  });
+
+  handle('backup:pick', async () => {
+    if (restoring) throw new Error(t('backup.busy'));
+    const r = await dialog.showOpenDialog(win, { title: t('backup.importTitle'), properties: ['openFile'], filters: [{ name: t('backup.filter'), extensions: ['zip'] }] });
+    if (r.canceled || !r.filePaths[0]) return { ok: true, summary: null };
+    const read = await backup.readBackup(r.filePaths[0], { settings: SETTINGS });
+    if (!read.ok) return { ok: false, errors: read.errors };
+    const id = crypto.randomUUID();
+    backups.set(id, read);
+    const d = read.data;
+    const here = (sid) => store.all().find((e) => e.id === sid);
+    return {
+      ok: true,
+      summary: {
+        id, appVersion: d.appVersion, createdAt: d.createdAt,
+        settings: Object.entries(d.config).filter(([k, v]) => cfg[k] !== v).map(([key, to]) => ({ key, from: cfg[key], to })),
+        rules: Object.keys(d.appRules).length,
+        install: d.installed.filter((sid) => !here(sid)),
+        kept: d.installed.filter((sid) => here(sid)),
+        states: Object.keys(d.shards).length,
+      },
+    };
+  });
+
+  handle('backup:cancel', (id) => {
+    const read = backups.get(id);
+    if (read) { read.cleanup(); backups.delete(id); }
+  });
+
+  handle('backup:apply', async (id) => {
+    const read = backups.get(id);
+    if (!read) throw new Error(t('backup.gone'));
+    backups.delete(id);
+    const d = read.data;
+    for (const [key, value] of Object.entries(d.config)) if (cfg[key] !== value) applySetting(key, value);
+    if (Object.keys(d.appRules).length) store.writeRules((raw) => { Object.assign(raw, d.appRules); });
+    // Shards already here (bundled, or installed before) get their saved state now
+    for (const [sid, st] of Object.entries(d.shards)) {
+      if (store.all().some((e) => e.id === sid)) store.restoreState(sid, st);
+    }
+    const queue = d.installed.filter((sid) => !store.all().some((e) => e.id === sid));
+    log.info('backup-imported', { settings: Object.keys(d.config).length, rules: Object.keys(d.appRules).length, toInstall: queue.length });
+    restoring = { read, queue };
+    nextBackupReview();
+  });
+
+  // Shows the install review of the next imported shard, or finishes the import
+  async function nextBackupReview() {
+    if (!restoring) return;
+    while (restoring.queue.length) {
+      const sid = restoring.queue.shift();
+      const saved = restoring.read.data.shards[sid];
+      const r = await prepareInstall(restoring.read.shardDir(sid), {
+        fromBackup: true,
+        after: () => {
+          if (saved) store.restoreState(sid, saved);
+        },
+      }).catch((e) => ({ ok: false, errors: [e.message] }));
+      if (r.ok && r.review.manifest.id === sid) {
+        win.webContents.send('install:review', r.review);
+        return;
+      }
+      if (r.ok) candidates.get(r.review.id)?.cleanup();
+      log.warn('backup-shard-skipped', { shard: sid, error: (r.errors || ['the id inside does not match']).join('; ') });
+    }
+    restoring.read.cleanup();
+    restoring = null;
+    win.webContents.send('backup:done');
+  }
 
   handle('shard:approve', (id) => { store.approve(entry(id).id); log.info('shard-approved', { shard: entry(id).id }); });
   handle('shard:enable', (id, on) => { store.setEnabled(entry(id).id, on === true); log.info('shard-enabled', { shard: entry(id).id, on: on === true }); });

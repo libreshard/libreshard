@@ -72,6 +72,7 @@
       "diagnostics.js",
       "updates.js",
       "linux-session.js",
+      "backup.js",
       "focus/**",
       "i18n/**",
       "desktop/**",
