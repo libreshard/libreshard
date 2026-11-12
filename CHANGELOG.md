@@ -8,6 +8,10 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **New version notice:** once a day LibreShard asks GitHub which release is the latest and, if it's
+  newer, shows a notice with a link to the download page (it never installs anything by itself).
+  It sends nothing about you or your devices, and can be turned off in Settings, where "Check now"
+  and the result sit too. Versions still being tested (pre-releases) aren't announced.
 - **Apps running as administrator (Windows):** Windows silently drops keys sent to them unless
   LibreShard runs as administrator too. Now the tablet says so ("… runs as administrator") instead
   of tapping for nothing. Apps LibreShard can't inspect, such as some anti-cheats, work as before.
@@ -33,6 +37,8 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### Security
 
+- The check for new versions is LibreShard's first connection outside your network. It's described
+  in SECURITY.md (Privacy) and can be turned off.
 - No device types into LibreShard's own window anymore. Before, only the This PC panel was stopped
   while LibreShard was in front, so a tablet with Tab and Enter approved could press buttons in its
   window or dialogs. Now every tablet gets the "LibreShard is in front" notice instead.

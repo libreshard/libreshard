@@ -1,11 +1,13 @@
 name: Website
 
-# libreshard.com reads the newest release from GitHub when it's built, so publishing a release
-# (drafts don't count) rebuilds it through a Cloudflare Pages deploy hook. The hook's URL is the
-# repository secret WEBSITE_DEPLOY_HOOK. It can also be run by hand from the Actions tab.
+# libreshard.com offers the release GitHub marks "Latest" (never a draft or a pre-release), read
+# when the site is built. "released" fires exactly when a version becomes that release: published
+# as a release, or a pre-release promoted after its testing period ("published" would also fire for
+# pre-releases, and not on the promotion). The rebuild goes through a Cloudflare Pages deploy hook
+# whose URL is the repository secret WEBSITE_DEPLOY_HOOK. It can also be run by hand from Actions.
 on:
   release:
-    types: [published]
+    types: [released]
   workflow_dispatch:
 
 permissions: {}

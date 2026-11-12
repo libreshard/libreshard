@@ -70,6 +70,7 @@
       "keys.js",
       "log.js",
       "diagnostics.js",
+      "updates.js",
       "focus/**",
       "i18n/**",
       "desktop/**",

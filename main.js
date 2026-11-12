@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Notification, Tray, clipboard, dialog, ipcMain, nativeImage, screen, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, Tray, clipboard, dialog, ipcMain, nativeImage, net, screen, session, shell } = require('electron');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
@@ -17,6 +17,7 @@ const i18n = require('./i18n');
 const { labelFor } = require('./shard-settings');
 const { createLog, nullLog, shortId } = require('./log');
 const { buildDiagnostics, systemLabel } = require('./diagnostics');
+const updates = require('./updates');
 
 const DEFAULT_PORT = 7878;
 const VPN = /tailscale|zerotier|hamachi|vpn|wireguard|openvpn|nord|proton/i;
@@ -35,6 +36,7 @@ const LINKS = {
   source: 'https://github.com/libreshard/libreshard',
   security: 'https://libreshard.com/security/',
   license: 'https://github.com/libreshard/libreshard/blob/main/LICENSE',
+  download: 'https://libreshard.com/download/',
 };
 const ISSUE_URL = 'https://github.com/libreshard/libreshard/issues/new';
 
@@ -50,6 +52,10 @@ const SETTINGS = {
   openAtLogin: { default: false, valid: (v) => typeof v === 'boolean' },
   language: { default: 'auto', valid: (v) => v === 'auto' || i18n.languages.includes(v) },
   panelAlwaysOnTop: { default: true, valid: (v) => typeof v === 'boolean' },
+  // The daily check for a new version (updates.js): the app's only connection outside the network
+  checkUpdates: { default: true, valid: (v) => typeof v === 'boolean' },
+  // A new version the user chose to ignore; its notice doesn't come back, a later version's does
+  updateDismissed: { default: null, internal: true, valid: (v) => v === null || !!updates.parseVersion(v) },
   // Where the local panel window was last left; saved by the app, never set from the page
   panelBounds: {
     default: null, internal: true,
@@ -301,11 +307,13 @@ async function start() {
       }))),
       detection: focus.providerName(),
       thirdPartyLicenses: hasLicenses,
+      update: { ...update, show: !!update.latest && update.newer && update.latest !== cfg.updateDismissed },
       rejected: store.rejected.map((r) => ({ folder: path.basename(r.root), root: r.root, errors: r.errors })),
       settings: {
         port: cfg.port, allowPublicNetworks: cfg.allowPublicNetworks, confirmDevices: cfg.confirmDevices,
         allowAppsFromTablet: cfg.allowAppsFromTablet, language: cfg.language,
         closeToTray: cfg.closeToTray, openAtLogin: cfg.openAtLogin, panelAlwaysOnTop: cfg.panelAlwaysOnTop,
+        checkUpdates: cfg.checkUpdates,
       },
     };
   }
@@ -349,6 +357,35 @@ async function start() {
       log: log.tail(200),
     });
   }
+
+  /* ---------- New versions ---------- */
+
+  // Once a day (the first time a minute after starting) LibreShard asks GitHub for the latest
+  // release, unless checkUpdates is off. It only tells: the window shows a notice with a download
+  // link. "Check now" asks right away even with the setting off, since the user asked for it.
+  const UPDATE_FIRST_MS = 60 * 1000;
+  const UPDATE_EVERY_MS = 24 * 60 * 60 * 1000;
+  const update = { latest: null, newer: false, checkedAt: null, checking: false, failed: false };
+  async function checkForUpdates({ manual = false } = {}) {
+    if ((!manual && !cfg.checkUpdates) || update.checking) return;
+    update.checking = true;
+    push();
+    try {
+      Object.assign(update, await updates.checkLatest({ current: app.getVersion(), fetch: net.fetch }), { failed: false });
+      log.info('update-check', { latest: update.latest, newer: update.newer, manual });
+    } catch (e) {
+      update.failed = true;
+      log.warn('update-check-failed', { manual, error: e });
+    } finally {
+      update.checking = false;
+      update.checkedAt = Date.now();
+      push();
+    }
+  }
+  setTimeout(() => {
+    checkForUpdates();
+    setInterval(checkForUpdates, UPDATE_EVERY_MS);
+  }, UPDATE_FIRST_MS);
 
   /* ---------- Installing ---------- */
 
@@ -407,6 +444,14 @@ async function start() {
       shell.openPath(path.dirname(log.file));
     } else if (kind === 'licenses' && hasLicenses) shell.openPath(licensesFile);
   });
+  handle('update:check', () => checkForUpdates({ manual: true }));
+  handle('update:dismiss', () => {
+    if (!update.latest) return;
+    cfg.updateDismissed = update.latest;
+    saveConfig(cfg);
+    log.info('update-dismissed', { version: update.latest });
+    push();
+  });
   handle('app:open-link', async (kind) => {
     if (!Object.hasOwn(LINKS, kind)) throw new Error('Unknown link');
     await shell.openExternal(LINKS[kind]);
@@ -437,6 +482,7 @@ async function start() {
       updateTray();
     }
     if (key === 'openAtLogin') applyOpenAtLogin(value);
+    if (key === 'checkUpdates' && value && !update.checkedAt) checkForUpdates();
     if (key === 'panelAlwaysOnTop' && panel) panel.setAlwaysOnTop(value, PANEL_TOP_LEVEL);
     push();
   });
