@@ -8,6 +8,9 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Linux:** logging out with LibreShard running no longer makes it crash (Ubuntu showed a crash
+  report, and keys held from a tablet weren't released). On GNOME and XFCE, LibreShard now notices
+  the session ending and quits first.
 - **New version notice:** once a day LibreShard asks GitHub which release is the latest and, if it's
   newer, shows a notice with a link to the download page (it never installs anything by itself).
   It sends nothing about you or your devices, and can be turned off in Settings, where "Check now"

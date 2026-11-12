@@ -71,6 +71,7 @@
       "log.js",
       "diagnostics.js",
       "updates.js",
+      "linux-session.js",
       "focus/**",
       "i18n/**",
       "desktop/**",
