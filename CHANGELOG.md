@@ -6,6 +6,12 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### App
+
+- LibreShard keeps a log on the PC, `logs/libreshard.log` in its data folder (rotated, 3 MB at
+  most), to help with bug reports. It records what the app did and what went wrong, never keys
+  typed, window titles, device names or network addresses.
+
 ### Project
 
 - Code of conduct (Contributor Covenant 3.0), with reports to conduct@libreshard.com.

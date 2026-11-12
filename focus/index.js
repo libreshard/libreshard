@@ -4,17 +4,23 @@
 //   name, available(), active() → { exe, name, title, path }, openWindows() (optional) → [same]
 // The first available provider is used.
 const { appMatches, appLabel } = require('./apps');
+const { nullLog, once } = require('../log');
 
 function createFocus({ providers = [require('./active-win'), require('./linux-x11'), require('./title')], cacheMs = 100 } = {}) {
   let provider = null;
   let cache = { t: 0, v: null };
+  let warnOnce = once(nullLog);
   const current = () => (provider = provider || providers.find((p) => p.available()));
 
-  // Short cache so the system isn't queried on every tap
+  // Short cache so the system isn't queried on every tap. A failing provider counts as "unknown";
+  // each distinct error is logged once, since this runs on every tap and poll.
   async function active() {
     const now = Date.now();
     if (cache.v && now - cache.t < cacheMs) return cache.v;
-    try { cache = { t: now, v: await current().active() }; } catch { cache = { t: 0, v: null }; }
+    try { cache = { t: now, v: await current().active() }; } catch (e) {
+      cache = { t: 0, v: null };
+      warnOnce('focus-failed', { provider: current().name, error: e });
+    }
     return cache.v;
   }
 
@@ -41,7 +47,10 @@ function createFocus({ providers = [require('./active-win'), require('./linux-x1
     return { ok: false, reason: 'wrong-app', active: describe(a), app: a.exe ? { exe: a.exe, name: a.name || a.exe, path: a.path } : null };
   }
 
-  return { check, active, openApps, describe, providerName: () => current().name, appLabel };
+  // The app hands its log here once it has one (this module is created when it's first required)
+  const setLog = (log) => { warnOnce = once(log); };
+
+  return { check, active, openApps, describe, providerName: () => current().name, appLabel, setLog };
 }
 
 module.exports = { createFocus, ...createFocus() };

@@ -70,3 +70,7 @@ These are documented on purpose. Keep them in mind:
 
 LibreShard sends no data anywhere. There's no telemetry, no account and no cloud service: the app
 only talks to the devices you pair on your own network. Shards can't reach the network either.
+
+To help with bug reports, the app keeps a log on your PC (`logs/libreshard.log` in its data folder).
+It never leaves the PC unless you copy it into a report yourself, and it holds no keys typed, window
+titles, device names or network addresses.
