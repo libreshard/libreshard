@@ -10,6 +10,7 @@ const { Pairing, Devices, RateLimiter, cleanName } = require('./pairing');
 const { ShardStore } = require('./shard-store');
 const { appLabel, isSelfApp } = require('./focus/apps');
 const i18n = require('./i18n');
+const { nullLog, once, shortId } = require('./log');
 
 // How long a 'press' is held down. Without it, press and release arrive at the same instant
 // and games that read the keyboard once per frame (Star Citizen, for example) miss it.
@@ -91,13 +92,15 @@ const validField = (v) => typeof v === 'string' && v.length > 0 && v.length <= M
 // - platform: the PC's system as shards see it (Shard.platform); defaults to this process's.
 // - isSelf(app): whether a detected app is LibreShard itself (focus/apps isSelfApp; injectable for tests).
 // - httpRate: HTTP requests per minute per address (HTTP_RATE; lower in tests).
+// - log: where events and errors go (log.js); by default nowhere. Never device names, IPs or keys typed.
 // The returned server also has releaseAll(), setPaused(on) and isPaused().
 function startServer({
   port, host = '0.0.0.0', store, shardDirs, rulesFile, appVersion,
   keyboard, focus, devices, pairing, limiter, allowPublic = false, onAlert, confirmPairing,
   allowAppsFromTablet = false, unavailableKeys = unavailable, language = 'auto',
-  platform = shardPlatform(process.platform), isSelf = isSelfApp, httpRate = HTTP_RATE,
+  platform = shardPlatform(process.platform), isSelf = isSelfApp, httpRate = HTTP_RATE, log = nullLog,
 }) {
+  const warnOnce = once(log);
   const canAllow = () => (typeof allowAppsFromTablet === 'function' ? allowAppsFromTablet() : allowAppsFromTablet) === true;
   const typer = makeTyper(keyboard || nutKeyboard());
   focus = focus || require('./focus');
@@ -241,7 +244,7 @@ function startServer({
         }
       }
     } catch (e) {
-      console.error(e.message);
+      warnOnce('focus-poll-failed', { error: e });
     } finally {
       polling = false;
     }
@@ -273,15 +276,18 @@ function startServer({
         if (c.tokens < 1) return;
         c.tokens--;
       }
-      if (++c.pending > MAX_PENDING) return ws.close(1008, 'Too many messages');
-      queue = queue.then(() => handle(msg)).catch((e) => console.error(e.message)).finally(() => { c.pending--; });
+      if (++c.pending > MAX_PENDING) {
+        log.warn('connection-flooded', { device: shortId(c.device?.id) });
+        return ws.close(1008, 'Too many messages');
+      }
+      queue = queue.then(() => handle(msg)).catch((e) => log.error('message-failed', { type: msg.type, error: e })).finally(() => { c.pending--; });
     });
 
     // Held combos ('down' without its 'up') are released if the connection drops
     ws.on('close', () => {
       clearTimeout(authTimer);
       queue = queue.then(async () => {
-        for (const combo of c.held) await typer.up(parse(combo)).catch(() => {});
+        for (const combo of c.held) await typer.up(parse(combo)).catch((e) => log.error('release-failed', { error: e }));
         c.held.clear();
         conns.delete(c);
         updateFocusPolling();
@@ -298,13 +304,16 @@ function startServer({
     async function pair(msg) {
       const gate = limiter.check(c.ip);
       if (!gate.ok) {
+        log.warn('pair-rate-limited');
         send({ type: 'error', code: 'rate-limited', retryAfter: gate.retryAfter });
         return ws.close(CLOSE.rateLimited, 'Too many attempts');
       }
       const attempt = typeof msg.token === 'string' ? { token: msg.token }
         : typeof msg.code === 'string' ? { code: msg.code } : {};
       if (!pairing.consume(attempt)) {
-        if (limiter.fail(c.ip).alert && onAlert) onAlert({ ip: c.ip });
+        const { alert } = limiter.fail(c.ip);
+        log.warn('pair-failed', { alert });
+        if (alert && onAlert) onAlert({ ip: c.ip });
         send({ type: 'error', code: 'pair-failed' });
         return ws.close(CLOSE.unknownDevice, 'Invalid pairing code');
       }
@@ -317,18 +326,21 @@ function startServer({
         clearTimeout(authTimer);
         send({ type: 'pending' });
         let timer;
+        let timedOut = false;
         const accepted = await Promise.race([
-          Promise.resolve(decision).catch(() => false),
-          new Promise((r) => { timer = setTimeout(() => r(false), CONFIRM_TIMEOUT_MS); }),
+          Promise.resolve(decision).catch((e) => { log.error('pair-confirm-failed', { error: e }); return false; }),
+          new Promise((r) => { timer = setTimeout(() => { timedOut = true; r(false); }, CONFIRM_TIMEOUT_MS); }),
         ]);
         clearTimeout(timer);
-        if (ws.readyState !== ws.OPEN) return;
+        if (ws.readyState !== ws.OPEN) return log.info('pair-abandoned');
         if (accepted !== true) {
+          log.info('pair-rejected', { reason: timedOut ? 'timeout' : 'user' });
           send({ type: 'error', code: 'pair-rejected' });
           return ws.close(CLOSE.pairingRejected, 'Pairing rejected');
         }
       }
       const { device, token } = devices.add(name, c.ip);
+      log.info('device-paired', { device: shortId(device.id), confirmed: decision !== true });
       authOk(device, { token });
     }
 
@@ -340,6 +352,7 @@ function startServer({
           const device = devices.verify(msg.token, c.ip);
           // The local panel's device only exists for this PC: from anywhere else it is unknown
           if (device && (!device.local || isLoopback(c.ip))) return authOk(device);
+          log.info('auth-unknown-device');
           return ws.close(CLOSE.unknownDevice, 'Unknown device');
         }
         if (msg.type === 'pair') return pair(msg);
@@ -375,20 +388,26 @@ function startServer({
       const combo = normalize(msg.keys);
       // Validation lives here, in the agent: a shard can only use what it declared and the user approved.
       if (!shard.allowed.has(combo)) {
+        log.warn('denied', { shard: shard.id, device: shortId(c.device.id) });
         return send({ type: 'denied', shard: msg.shard, keys: combo });
       }
       if (msg.type === 'down' && !c.held.has(combo) && c.held.size >= MAX_HELD) {
+        log.warn('too-many-held', { device: shortId(c.device.id) });
         return send({ type: 'error', code: 'too-many-held' });
       }
       // A key missing from this system's keyboard map would crash the app (see keys.unavailable).
       // It can't have been pressed, so there's nothing to release either.
       const missing = unavailableKeys(combo);
-      if (missing.length) return send({ type: 'error', code: 'key-unavailable', keys: missing.join('+') });
+      if (missing.length) {
+        log.warn('key-unavailable', { shard: shard.id, keys: missing.join('+') });
+        return send({ type: 'error', code: 'key-unavailable', keys: missing.join('+') });
+      }
 
       // The local panel runs on this PC: with LibreShard itself in front, its keys would land in the
       // app (reload, developer tools…). Tablets are left alone and get no extra detection. A failed
       // detection doesn't block here; the app check below still fails closed.
       if (msg.type !== 'up' && c.device.local && isSelf(await focus.active())) {
+        log.info('blocked', { shard: shard.id, device: shortId(c.device.id), reason: 'self' });
         return send({ type: 'blocked', shard: msg.shard, keys: combo, apps: [], active: '', reason: 'self' });
       }
 
@@ -399,6 +418,7 @@ function startServer({
         if (!r.ok) {
           const allowable = canAllow() && !!r.app?.exe;
           c.lastBlocked = allowable ? { shard: shard.id, app: r.app, at: Date.now() } : null;
+          log.info('blocked', { shard: shard.id, device: shortId(c.device.id), reason: r.reason });
           return send({
             type: 'blocked', shard: msg.shard, keys: combo,
             apps: shard.apps.map(appLabel), active: r.active, reason: r.reason,
@@ -424,14 +444,14 @@ function startServer({
           await typer.up(keys);
         }
       } catch (e) {
-        console.error(e.message);
+        log.error('typing-failed', { shard: shard.id, type: msg.type, error: e });
       }
     }
   });
 
   const releaseHeld = async () => {
     for (const c of conns) {
-      for (const combo of c.held) await typer.up(parse(combo)).catch(() => {});
+      for (const combo of c.held) await typer.up(parse(combo)).catch((e) => log.error('release-failed', { error: e }));
       c.held.clear();
     }
   };
@@ -445,6 +465,7 @@ function startServer({
   // Pausing releases whatever is held and tells every tablet
   server.setPaused = async (on) => {
     paused = !!on;
+    log.info('paused', { on: paused });
     if (paused) await releaseHeld();
     broadcast({ type: 'paused', value: paused });
   };

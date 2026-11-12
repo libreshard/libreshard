@@ -765,3 +765,28 @@ test('/api/shards follows the menu order and marks favorites', async () => {
     });
   } finally { cleanup(); }
 });
+
+test('the log records pairings and blocks without device names, addresses or keys', () => {
+  const lines = [];
+  const add = (level) => (event, details = {}) => lines.push({ level, event, details });
+  const log = { info: add('info'), warn: add('warn'), error: add('error') };
+  const focus = fakeFocus({ ok: false, reason: 'wrong-app', active: 'Spotify (Spotify.exe)' });
+  return withServer({ log, focus }, async (s) => {
+    const p = connect(s.port);
+    await p.opened;
+    p.send({ type: 'pair', code: s.pairing.current().code, name: 'Secret Tablet' });
+    const paired = await p.next();
+    p.send({ type: 'press', shard: 'demo', keys: 'ctrl+alt+x' }); // undeclared: denied
+    await p.next();
+    p.send({ type: 'press', shard: 'restricted', keys: 'b' });
+    await p.next();
+
+    assert.deepEqual(lines.map((l) => l.event), ['device-paired', 'denied', 'blocked']);
+    assert.deepEqual(lines[0].details, { device: paired.device.id.slice(0, 6), confirmed: false });
+    assert.equal(lines[2].details.reason, 'wrong-app');
+    const text = JSON.stringify(lines);
+    for (const secret of ['Secret Tablet', '127.0.0.1', 'ctrl+alt+x', 'Spotify', paired.token]) {
+      assert.ok(!text.includes(secret), `the log must not contain ${secret}`);
+    }
+  });
+});

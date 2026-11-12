@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { EventEmitter } = require('events');
+const { nullLog } = require('./log');
 
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest();
 
@@ -61,14 +62,19 @@ class Pairing extends EventEmitter {
 // `local` marks the panel that runs inside the app on this PC; there is at most one.
 // Emits 'change' when a device is added, renamed or removed, and 'removed' (with the id) on removal.
 class Devices extends EventEmitter {
-  constructor(file) {
+  // log: where a damaged file is reported (its devices are lost: they must pair again)
+  constructor(file, { log = nullLog } = {}) {
     super();
     this.file = file;
     this.list = [];
+    if (!file || !fs.existsSync(file)) return; // no devices yet
     try {
       const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
       if (Array.isArray(raw)) this.list = raw.filter((d) => d && typeof d.tokenHash === 'string' && typeof d.id === 'string');
-    } catch { /* no devices yet */ }
+      else log.warn('devices-invalid', { error: 'not a list' });
+    } catch (e) {
+      log.warn('devices-invalid', { error: e });
+    }
   }
 
   save() {

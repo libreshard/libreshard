@@ -54,6 +54,7 @@ libreshard/
 ├── manifest.js           shard manifest validation and key risk classification
 ├── net.js                allowed Host headers and private-network checks
 ├── keys.js               turns "ctrl+shift+m" into nut-js keys
+├── log.js                the log on disk (<userData>/logs/), rotated, with no personal data
 ├── focus/                foreground app detection
 │   ├── index.js          createFocus(): picks a provider; check(), active(), openApps()
 │   ├── apps.js           app entries ({ exe } / { match }), normalizeApp, appMatches, appLabel
@@ -101,6 +102,7 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 
 **main.js**
 - Only one instance runs (`requestSingleInstanceLock`). Opening the app again focuses the existing window and hands over any `.libreshard`/`.zip` it was opened with (`second-instance`; `open-file` on macOS; `process.argv` on the first launch).
+- The running instance starts the log right away (`startLog()`, `<userData>/logs/libreshard.log`, also printed to the terminal in development) and records what would otherwise only reach a console: uncaught exceptions (`uncaughtExceptionMonitor`, so the app still ends as before), unhandled rejections (Electron only warns about them), renderers and child processes that die, and an unresponsive window. The log goes to `Devices`, the `ShardStore`, the server and `focus.setLog()`; `main.js` itself logs the start (version, system, Electron, detection provider, port), settings changes, device removals, shard installs, approvals, enabling and uninstalls, and quitting.
 - `SETTINGS` defines the settings in `<userData>/config.json`, with defaults and validation: `port` (7878), `allowPublicNetworks` (false), `confirmDevices` (false), `allowAppsFromTablet` (true), `language` (`auto`), `panelAlwaysOnTop` (true) and `panelBounds` (null; `internal`: saved by the app, refused from `settings:set`). `loadConfig()` fills in missing or invalid values.
 - Creates the `Devices` store (`devices.json`), the `Pairing` codes and the `ShardStore` (bundled `shards/` first, then `<userData>/shards`, with `shards-state.json`, `app-rules.json` and `watch: true`), and starts the server with them. If the port is taken (`EADDRINUSE`) it shows a dialog and quits.
 - `confirmPairing`: when `confirmDevices` is on, a native dialog over the window asks before a new device gets its token.
@@ -193,11 +195,16 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - Besides the usual keys it knows `print` (`printscreen`) and `numlock`.
 - `unavailable(combo)`: the keys this system can't press safely. Only ever non-empty on Linux, for F13–F24 missing from the X keymap (checked with `xmodmap -pke`, cached for a minute; without xmodmap they count as missing). Pressing such a key makes Xlib abort the whole process.
 
+**log.js**
+- `createLog({ file })`: `info`/`warn`/`error(event, details)` append one line (`time LEVEL event key=value…`, an `Error` adds its stack below), synchronously so the last lines before a crash are on disk. Rotates at 1 MB, keeping `.1` and `.2`. A failed write never throws (reported once on the console). `tail(n)` returns the last lines, for diagnostics.
+- **What never goes in:** keys pressed, window titles, device names, IP addresses or the app in front. Callers log ids (`shortId()` keeps 6 characters of a device id) and reasons. As a safety net the user's home folder becomes `~` in every value and stack.
+- `nullLog` is the default everywhere (tests, tools). `once(log)` logs each distinct error a single time, for errors that would repeat on every tap or poll (the foreground app detection, the live indicator).
+
 **focus/**
 - Providers all answer the same way: `name`, `available()`, `active()` → `{ exe, name, title, path }` and optionally `openWindows()`. `createFocus({ providers, cacheMs })` uses the first available one (`active-win`, then `linux-x11`, then `title`); the module itself exports a default instance.
 - `linux-x11.js` asks the X server with `xprop` (`_NET_ACTIVE_WINDOW`, then `_NET_WM_PID`, `WM_CLASS`, `_NET_WM_NAME`) and reads `/proc/<pid>/exe`. It exists because on Linux npm silently drops active-win when there's no C++ toolchain, even though its Linux code needs none. `parseWindow()` is pure and tested on every OS.
 - `check(entries)` returns `{ ok: true }` if any entry matches the foreground app, or `{ ok: false, reason, active, app }`: `reason` is `wrong-app` or `unknown`, `active` a readable description, and `app` the detected program (`{ exe, name, path }`, only when the provider knows it), so the user can allow it.
-- `openApps()` lists programs with a visible window, once per executable (null if the provider can't list). `active()` is the raw detection (100 ms cache).
+- `openApps()` lists programs with a visible window, once per executable (null if the provider can't list). `active()` is the raw detection (100 ms cache); a provider that throws counts as unknown, and each distinct error is logged once through the log given to `setLog()`.
 - `apps.js`: an entry is `{ exe, name, path? }` (exact executable, compared without folder, case or `.exe`, so it works across systems) or `{ match }` (case-insensitive "contains" on the program's name and executable, or on the window title when that's all the provider knows). Plain strings are read as `{ match }`.
 - Fails closed: if the active window can't be detected, it blocks.
 
@@ -476,7 +483,8 @@ What needs a restart:
 - New shards, or changes to a manifest in the user's shards folder: picked up on their own (hot reload). Bundled shards (`shards/`) are read at startup.
 - Changes in `config.json` or `devices.json` made by hand: restart the app. The Ajustes tab saves settings directly; port and public networks still need a restart (the window offers it).
 - Changes in `desktop/`: restart the app (the window blocks navigation, reloads included).
-- Changes in `main.js`, `server.js`, `shard-store.js`, `installer.js`, `pairing.js`, `manifest.js`, `net.js`, `focus/`, `keys.js` or `i18n/`: restart `npm start`.
+- Changes in `main.js`, `server.js`, `shard-store.js`, `installer.js`, `pairing.js`, `manifest.js`, `net.js`, `focus/`, `keys.js`, `log.js` or `i18n/`: restart `npm start`.
+- What the app did and what failed: `<userData>/logs/libreshard.log` (in development it's also printed to the terminal).
 
 Tests (`test/`):
 
