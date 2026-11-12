@@ -238,6 +238,7 @@ async function start() {
       confirmPairing: (info) => (cfg.confirmDevices ? askDevice(info) : true),
       allowAppsFromTablet: () => cfg.allowAppsFromTablet,
       language: () => cfg.language,
+      appVersion: app.getVersion(),
       log,
     });
   } catch (e) {

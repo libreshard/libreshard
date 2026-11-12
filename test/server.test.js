@@ -107,6 +107,18 @@ test('pairing with the code creates a device whose token works, and uses the cod
   assert.equal(await again.closed, 4001);
 }));
 
+test('the viewer is told the app version, on load and on every sign-in', () => withServer({ appVersion: '9.9.9' }, async (s) => {
+  const c = connect(s.port);
+  await c.opened;
+  c.send({ type: 'auth', token: s.token });
+  assert.equal((await c.next()).version, '9.9.9');
+  const p = connect(s.port);
+  await p.opened;
+  p.send({ type: 'pair', code: s.pairing.current().code });
+  assert.equal((await p.next()).version, '9.9.9');
+  assert.equal((await (await fetch(s.base + '/api/strings')).json()).version, '9.9.9');
+}));
+
 test('pairing with the QR token works too', () => withServer({}, async (s) => {
   const c = connect(s.port);
   await c.opened;

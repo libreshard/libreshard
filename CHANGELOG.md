@@ -27,6 +27,14 @@ All notable changes to LibreShard are listed here. The format follows
   versions, settings, shards and the last lines of the log, never device names or network
   addresses.
 
+### Tablet viewer
+
+- When LibreShard is updated on the PC while a tablet keeps the page open, the tablet says so and
+  offers **Reload** (it never reloads by itself). This works from 0.3 on: a tablet showing the 0.2
+  page needs one manual reload.
+- The **This device** sheet (the gear in the menu) shows the LibreShard version, and is now
+  available on every device, iPhone included.
+
 ### Project
 
 - Code of conduct (Contributor Covenant 3.0), with reports to conduct@libreshard.com.
