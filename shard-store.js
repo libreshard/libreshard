@@ -10,6 +10,7 @@ const { EventEmitter } = require('events');
 const { validateManifest } = require('./manifest');
 const { normalizeApp, appLabel, exeKey } = require('./focus/apps');
 const { resolveValues, checkValues } = require('./shard-settings');
+const { nullLog } = require('./log');
 
 // Clean list of app entries (see focus/apps.js), at most 20
 function cleanApps(v) {
@@ -63,9 +64,10 @@ function removeShardFolder(root) {
 class ShardStore extends EventEmitter {
   // dirs: [{ dir, bundled }] in priority order (with a repeated id, the first one wins).
   // installDir: where install() copies shards (the user's folder).
-  constructor({ dirs, installDir, stateFile, rulesFile, appVersion, watch = false }) {
+  constructor({ dirs, installDir, stateFile, rulesFile, appVersion, watch = false, log = nullLog }) {
     super();
-    Object.assign(this, { dirs, installDir, stateFile, rulesFile, appVersion });
+    Object.assign(this, { dirs, installDir, stateFile, rulesFile, appVersion, log });
+    this.loggedRejections = new Set();
     this.state = this.readState();
     this.rules = new Map();
     this.entries = new Map();
@@ -91,7 +93,7 @@ class ShardStore extends EventEmitter {
   // Keeps the previous rules if the file has invalid JSON
   readRules() {
     try { this.rules = loadRules(this.rulesFile); } catch (e) {
-      console.warn('Invalid app-rules.json, keeping the previous rules:', e.message);
+      this.log.warn('app-rules-invalid', { error: e });
     }
   }
 
@@ -136,8 +138,20 @@ class ShardStore extends EventEmitter {
     }
     this.entries = entries;
     this.rejected = rejected;
+    this.logRejections();
     if (this.watching) this.watchLinked();
     this.emit('change');
+  }
+
+  // Each rejected folder is logged once per distinct set of errors (load() runs again on every change)
+  logRejections() {
+    const now = new Set();
+    for (const r of this.rejected) {
+      const key = r.root + '\n' + r.errors.join('\n');
+      now.add(key);
+      if (!this.loggedRejections.has(key)) this.log.warn('shard-rejected', { folder: path.basename(r.root), errors: r.errors.join('; ') });
+    }
+    this.loggedRejections = now;
   }
 
   // Menu order, shared by the PC window and the tablet: favorites first, then the order the user

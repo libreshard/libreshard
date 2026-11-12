@@ -14,6 +14,7 @@ const focus = require('./focus');
 const { appLabel, isSelfApp } = require('./focus/apps');
 const i18n = require('./i18n');
 const { labelFor } = require('./shard-settings');
+const { createLog, nullLog, shortId } = require('./log');
 
 const DEFAULT_PORT = 7878;
 const VPN = /tailscale|zerotier|hamachi|vpn|wireguard|openvpn|nord|proton/i;
@@ -53,7 +54,10 @@ function saveConfig(cfg) {
 // Missing or invalid values are filled in and saved
 function loadConfig() {
   let cfg = {};
-  try { cfg = JSON.parse(fs.readFileSync(dataFile('config.json'), 'utf8')) || {}; } catch { /* first run */ }
+  const file = dataFile('config.json');
+  if (fs.existsSync(file)) {
+    try { cfg = JSON.parse(fs.readFileSync(file, 'utf8')) || {}; } catch (e) { log.warn('config-invalid', { error: e }); }
+  }
   let changed = false;
   for (const [key, s] of Object.entries(SETTINGS)) {
     if (!s.valid(cfg[key])) {
@@ -78,6 +82,7 @@ function lanInterfaces() {
 
 let win = null;
 let server = null;
+let log = nullLog; // the log on disk, once this is the running instance (see below)
 let pendingFile = null; // a .libreshard opened before the window was ready
 
 // Linux: Chromium encrypts its cookie store with a key kept in the desktop keyring. The panel's web
@@ -92,6 +97,7 @@ if (process.platform === 'linux') app.commandLine.appendSwitch('password-store',
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  startLog();
   app.on('second-instance', (_e, argv) => {
     showWindow();
     openShardFile(argv.find((a) => SHARD_FILE.test(a)));
@@ -104,6 +110,7 @@ if (!app.requestSingleInstanceLock()) {
 let released = false;
 let quitting = false; // set once the app is really quitting, so closing the window doesn't just hide it
 app.on('before-quit', (e) => {
+  if (!quitting) log.info('quit');
   quitting = true;
   if (released || !server) return;
   e.preventDefault();
@@ -112,6 +119,19 @@ app.on('before-quit', (e) => {
 });
 
 let openShardFile = (file) => { if (file) pendingFile = file; };
+
+// The log on disk, and what the process reports that would otherwise only reach a console nobody
+// sees. None of these change how the app behaves: an uncaught exception still ends it (the monitor
+// only watches), and Electron only warns about unhandled rejections.
+function startLog() {
+  log = createLog({ file: path.join(app.getPath('userData'), 'logs', 'libreshard.log'), echo: !app.isPackaged });
+  process.on('uncaughtExceptionMonitor', (error, origin) => log.error('uncaught-exception', { origin, error }));
+  process.on('unhandledRejection', (error) => log.error('unhandled-rejection', { error: error instanceof Error ? error : String(error) }));
+  app.on('render-process-gone', (_e, _wc, d) => log.error('renderer-gone', { reason: d.reason, exitCode: d.exitCode }));
+  app.on('child-process-gone', (_e, d) => {
+    if (d.reason !== 'clean-exit') log.error('child-process-gone', { type: d.type, name: d.name, reason: d.reason, exitCode: d.exitCode });
+  });
+}
 
 function showWindow() {
   if (!win) return;
@@ -147,7 +167,15 @@ async function start() {
   const rulesFile = dataFile('app-rules.json');
   if (!fs.existsSync(rulesFile)) fs.writeFileSync(rulesFile, '{}\n');
 
-  const devices = new Devices(dataFile('devices.json'));
+  focus.setLog(log);
+  log.info('start', {
+    version: app.getVersion(), packaged: app.isPackaged,
+    os: `${process.platform} ${os.release()} ${process.arch}`,
+    session: process.platform === 'linux' ? process.env.XDG_SESSION_TYPE || 'unknown' : undefined,
+    electron: process.versions.electron, focus: focus.providerName(), port: cfg.port,
+  });
+
+  const devices = new Devices(dataFile('devices.json'), { log });
   const pairing = new Pairing();
   const store = new ShardStore({
     dirs: [{ dir: path.join(__dirname, 'shards'), bundled: true }, { dir: userShards, bundled: false }],
@@ -156,6 +184,7 @@ async function start() {
     rulesFile,
     appVersion: app.getVersion(),
     watch: true,
+    log,
   });
   let alertAt = 0;
 
@@ -191,8 +220,10 @@ async function start() {
       confirmPairing: (info) => (cfg.confirmDevices ? askDevice(info) : true),
       allowAppsFromTablet: () => cfg.allowAppsFromTablet,
       language: () => cfg.language,
+      log,
     });
   } catch (e) {
+    log.error('server-failed', { port: cfg.port, code: e.code, error: e });
     dialog.showErrorBox('LibreShard', e.code === 'EADDRINUSE'
       ? t('dialog.portInUse', { port: cfg.port, file: dataFile('config.json') })
       : t('dialog.serverFailed', { error: e.message }));
@@ -333,6 +364,7 @@ async function start() {
     if (!s || s.internal || !s.valid(value)) throw new Error('Invalid value');
     cfg[key] = value;
     saveConfig(cfg);
+    log.info('setting', { key, value });
     if (key === 'language') {
       locale = i18n.pickLocale(value, app.getLocale());
       t = i18n.translator(locale);
@@ -350,7 +382,10 @@ async function start() {
   handle('device:remove', async (id) => {
     const d = devices.all().find((x) => x.id === id);
     if (!d) throw new Error('Unknown device');
-    if (await confirmBox(t('dialog.removeDevice.message', { name: d.name }), t('dialog.removeDevice.detail'), t('dialog.remove'))) devices.remove(id);
+    if (await confirmBox(t('dialog.removeDevice.message', { name: d.name }), t('dialog.removeDevice.detail'), t('dialog.remove'))) {
+      devices.remove(id);
+      log.info('device-removed', { device: shortId(id) });
+    }
   });
 
   handle('install:pick', async (kind) => {
@@ -375,6 +410,10 @@ async function start() {
     candidates.delete(id);
     try {
       if (c.link) store.link(c.root, c.manifest); else store.install(c.root, c.manifest);
+      log.info(c.link ? 'shard-linked' : 'shard-installed', { shard: c.manifest.id, version: c.manifest.version, update: !!c.update });
+    } catch (e) {
+      log.error('shard-install-failed', { shard: c.manifest.id, error: e });
+      throw e;
     } finally { c.cleanup(); }
   });
   handle('install:cancel', (id) => {
@@ -382,8 +421,8 @@ async function start() {
     if (c) { c.cleanup(); candidates.delete(id); }
   });
 
-  handle('shard:approve', (id) => { store.approve(entry(id).id); });
-  handle('shard:enable', (id, on) => { store.setEnabled(entry(id).id, on === true); });
+  handle('shard:approve', (id) => { store.approve(entry(id).id); log.info('shard-approved', { shard: entry(id).id }); });
+  handle('shard:enable', (id, on) => { store.setEnabled(entry(id).id, on === true); log.info('shard-enabled', { shard: entry(id).id, on: on === true }); });
   handle('shard:open', (id) => { shell.openPath(entry(id).root); });
 
   // Apps editor. LibreShard itself is never offered: the user is looking at it while choosing.
@@ -409,7 +448,10 @@ async function start() {
     const e = entry(id);
     if (e.bundled) throw new Error('Bundled shards can be disabled, not uninstalled');
     const detail = e.linked ? t('dialog.uninstall.detailLinked') : t('dialog.uninstall.detail');
-    if (await confirmBox(t('dialog.uninstall.message', { name: e.manifest.name || e.id }), detail, t('dialog.uninstallButton'))) store.uninstall(e.id);
+    if (await confirmBox(t('dialog.uninstall.message', { name: e.manifest.name || e.id }), detail, t('dialog.uninstallButton'))) {
+      store.uninstall(e.id);
+      log.info('shard-uninstalled', { shard: e.id, linked: e.linked });
+    }
   });
 
   /* ---------- Local panel ("This PC") ---------- */
@@ -608,7 +650,7 @@ async function start() {
     tray.on('click', showWindow); // Windows; on Linux the menu opens instead
     updateTray();
   } catch (e) {
-    console.warn('No system tray:', e.message);
+    log.warn('no-tray', { error: e });
     tray = null;
   }
 
@@ -628,6 +670,8 @@ async function start() {
   });
   // The page never navigates or opens windows
   win.webContents.on('will-navigate', (e) => e.preventDefault());
+  win.on('unresponsive', () => log.warn('window-unresponsive'));
+  win.on('responsive', () => log.info('window-responsive'));
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.once('did-finish-load', () => {
     const file = pendingFile || process.argv.slice(1).find((a) => SHARD_FILE.test(a));
