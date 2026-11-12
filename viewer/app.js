@@ -12,6 +12,8 @@ let wasAuthed = false; // after the first sign-in, a reconnection refetches the 
 
 // UI strings come from the PC (i18n/*.json), in the tablet's language unless the PC chose one
 let strings = {};
+let pageVersion = null; // the app version that served this page (from /api/strings)
+let updateShown = false;
 let shardQuery = ''; // ?lang=…&os=… for every shard: its language and the PC's system (see shard-api.js)
 function t(key, vars = {}) {
   return (strings[key] || key).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
@@ -22,6 +24,7 @@ const stringsReady = fetch('/api/strings?lang=' + encodeURIComponent(navigator.l
     strings = r.strings || {};
     document.documentElement.lang = r.locale || 'en';
     shardQuery = new URLSearchParams({ lang: r.shardLang || r.locale || 'en', os: r.platform || '' }).toString();
+    pageVersion = r.version || null;
     for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
     for (const el of document.querySelectorAll('[data-i18n-aria]')) el.setAttribute('aria-label', t(el.dataset.i18nAria));
   })
@@ -80,6 +83,7 @@ function connect(mode) {
       $('lock').classList.remove('on');
       $('offline').hidden = true;
       setPaused(m.paused);
+      checkVersion(m.version);
       if (current) send({ type: 'open', shard: current });
       if (wasAuthed) resync(); else listReady.then(route);
       wasAuthed = true;
@@ -238,6 +242,18 @@ function enterFullscreen(report) {
   });
 }
 
+/* ---------- Version ---------- */
+// The PC may update while this page stays open: every sign-in (reconnections included) says the PC's
+// version, and if it isn't the one that served this page, the tablet offers to reload. Never on its
+// own: the user may be in the middle of using a shard.
+function checkVersion(pcVersion) {
+  if (!pcVersion || !pageVersion || pcVersion === pageVersion || updateShown) return;
+  updateShown = true;
+  $('updateBanner').hidden = false;
+  showToast(t('viewer.updateAvailable'), { label: t('viewer.reload'), run: () => location.reload() });
+}
+$('updateReload').onclick = () => location.reload();
+
 /* ---------- This device's settings ---------- */
 // Open shards full screen when picked from the menu: on by default, only the opt-out is stored
 const AUTO_FS_KEY = 'auto-fullscreen';
@@ -246,15 +262,19 @@ const autoFullscreen = () => !embedded && localStorage.getItem(AUTO_FS_KEY) !== 
 function setDeviceSheet(open) {
   $('devSheet').hidden = $('devScrim').hidden = !open;
   $('devBtn').setAttribute('aria-expanded', String(open));
-  if (open) $('autoFs').checked = autoFullscreen();
+  if (open) {
+    $('autoFs').checked = autoFullscreen();
+    $('devVersion').textContent = pageVersion ? t('viewer.version', { version: pageVersion }) : '';
+  }
 }
 $('devBtn').onclick = () => setDeviceSheet($('devSheet').hidden);
 $('devScrim').onclick = () => setDeviceSheet(false);
 $('autoFs').onchange = (e) => {
   if (e.target.checked) localStorage.removeItem(AUTO_FS_KEY); else localStorage.setItem(AUTO_FS_KEY, 'off');
 };
-// Full screen is the only setting so far: without the API there is nothing to show
-$('devBtn').hidden = !fsSupported || embedded;
+// The sheet always shows the version; the full screen setting only where the API exists
+$('devBtn').hidden = embedded;
+$('autoFsRow').hidden = !fsSupported;
 
 // Fills a button with the icon and text for the current state
 function fillFsButton(b) {

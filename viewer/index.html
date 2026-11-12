@@ -111,6 +111,10 @@
     background:var(--cell); border:1px solid var(--line); border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,.45);
   }
   #devSheet h2 { margin:0; font-size:17px; font-weight:650; }
+  #devVersion { margin:0; color:var(--muted); font-size:13px; }
+  /* The PC was updated while this page stayed open */
+  #updateBanner { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 18px; padding:10px 14px; border-radius:12px; background:var(--cell); border:1px solid var(--accent); font-size:14px; }
+  #updateBanner button { flex:none; min-height:40px; padding:8px 14px; border:0; border-radius:10px; background:var(--accent); color:var(--bg); font-weight:600; cursor:pointer; }
   .check { display:flex; align-items:flex-start; gap:12px; min-height:44px; cursor:pointer; }
   .check input { flex:none; width:22px; height:22px; margin:2px 0 0; accent-color:var(--accent); }
   .check small { display:block; margin-top:4px; color:var(--muted); font-size:13px; line-height:1.4; }
@@ -159,6 +163,7 @@
       </button>
     </div>
   </header>
+  <div id="updateBanner" role="status" hidden><span data-i18n="viewer.updateAvailable"></span><button id="updateReload" type="button" data-i18n="viewer.reload"></button></div>
   <div id="list"></div>
   <p id="empty" hidden></p>
 </main>
@@ -178,10 +183,11 @@
 <div id="devScrim" hidden></div>
 <div id="devSheet" role="dialog" aria-labelledby="devTitle" hidden>
   <h2 id="devTitle" data-i18n="viewer.deviceSettings"></h2>
-  <label class="check">
+  <label class="check" id="autoFsRow">
     <input id="autoFs" type="checkbox">
     <span><span data-i18n="viewer.autoFullscreen"></span><small data-i18n="viewer.autoFullscreenHint"></small></span>
   </label>
+  <p id="devVersion"></p>
 </div>
 
 <div id="paused" hidden data-i18n="viewer.paused"></div>

@@ -81,6 +81,8 @@ const validField = (v) => typeof v === 'string' && v.length > 0 && v.length <= M
 
 // Resolves with the listening server, or rejects (EADDRINUSE, for example) if the port can't be used.
 // - store: a ShardStore. Without one, `shardDirs` (+ `rulesFile`) are loaded as bundled shards.
+// - appVersion: the app's version, told to the viewer (/api/strings and every ok/paired), so a tablet
+//   that kept an older page open while the PC updated can offer to reload.
 // - keyboard, focus: injectable; by default nut-js and ./focus.
 // - devices, pairing, limiter: default to in-memory instances (the app passes ones backed by files).
 // - confirmPairing({ name, ip, signal }): optional; return true to accept a new device right away, or
@@ -146,7 +148,7 @@ function startServer({
     // Shards get the raw language (a shard may ship languages the app doesn't) and the PC's system
     const wanted = preference && preference !== 'auto' ? preference : String(req.query.lang || '');
     const shardLang = LANG_TAG.test(wanted) ? wanted.toLowerCase() : locale;
-    res.json({ locale, strings: Object.fromEntries(viewer), shardLang, platform });
+    res.json({ locale, strings: Object.fromEntries(viewer), shardLang, platform, version: appVersion });
   });
 
   // Shard files: strict CSP (no network, no external resources), never outside the shard's folder
@@ -304,7 +306,7 @@ function startServer({
       c.authed = true;
       c.device = device;
       clearTimeout(authTimer);
-      send({ type: extra.token ? 'paired' : 'ok', device: { id: device.id, name: device.name }, paused, ...extra });
+      send({ type: extra.token ? 'paired' : 'ok', device: { id: device.id, name: device.name }, paused, version: appVersion, ...extra });
     }
 
     async function pair(msg) {
