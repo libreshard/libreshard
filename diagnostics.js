@@ -22,7 +22,7 @@ function shardLine(s) {
 
 // info: {
 //   version, packaged, platform, release, arch, session, versions: { electron, chrome, node },
-//   focus (detection provider), settings ({ key: value }, internal ones already left out),
+//   focus (detection provider), elevated (LibreShard runs as administrator: true/false/null), settings ({ key: value }, internal ones already left out),
 //   devices: { total, local }, networks: { total, vpn },
 //   shards: [{ id, version, bundled, linked, enabled, pendingKeys, apps }], rejected: [folder name],
 //   log: [line], now: Date
@@ -38,6 +38,7 @@ function buildDiagnostics(info, { home } = {}) {
     `System: ${systemLabel(info)}`,
     `Electron ${v.electron} · Chromium ${v.chrome} · Node ${v.node}`,
     `Foreground app detection: ${info.focus}`,
+    ...(info.platform === 'win32' ? [`Running as administrator: ${info.elevated === true ? 'yes' : info.elevated === false ? 'no' : 'unknown'}`] : []),
     `Settings: ${Object.entries(info.settings).map(([k, val]) => `${k}=${val}`).join(' ')}`,
     `Paired devices: ${info.devices.total}${info.devices.local ? ' (one is the This PC panel)' : ''}`,
     `Networks: ${info.networks.total}${info.networks.vpn ? ` (${info.networks.vpn} VPN)` : ''}`,

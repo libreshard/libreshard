@@ -73,8 +73,9 @@ rights.
 - **SmartScreen:** releases aren't code-signed yet (see [Code signing](#code-signing)), so Windows
   may say "Windows protected your PC". Click **More info → Run anyway**. You can check the download
   against `SHA256SUMS.txt` in the release.
-- **Games running as administrator** ignore keys from normal programs. For those, run LibreShard as
-  administrator too (read the note in [SECURITY.md](SECURITY.md#known-limitations)).
+- **Games running as administrator** ignore keys from normal programs. The tablet tells you when
+  that happens; run LibreShard as administrator too for those (read the note in
+  [SECURITY.md](SECURITY.md#known-limitations)).
 
 ### Linux
 

@@ -61,7 +61,8 @@ libreshard/
 │   ├── apps.js           app entries ({ exe } / { match }), normalizeApp, appMatches, appLabel
 │   ├── active-win.js     provider: program and executable via active-win@8 (Windows, macOS, Linux if installed)
 │   ├── linux-x11.js      provider: Linux/X11 through xprop, when active-win didn't install
-│   └── title.js          fallback provider: window title via nut-js
+│   ├── title.js          fallback provider: window title via nut-js
+│   └── elevation.js      Windows: whether the app in front runs above LibreShard (as administrator), via koffi
 ├── desktop/              the PC window: index.html, app.js, style.css and preload.js (the only bridge);
 │                         panel-preload.js and monitor.svg for the local panel
 ├── i18n/                 UI strings: index.js (pickLocale, strings, translator), es.json, en.json
@@ -96,7 +97,7 @@ libreshard/
 └── docs/plans/           local work plans in Spanish (not in the repository)
 ```
 
-Dependencies in `package.json`: `express`, `ws`, `qrcode`, `yauzl` (reads shard zips), `@nut-tree-fork/nut-js` (production) and `electron` (45), `electron-builder` (26) (development). Optional: `active-win@8` (recognizes the program and its executable; installed by default, see section 8). Every version is exact (`.npmrc` has `save-exact=true`).
+Dependencies in `package.json`: `express`, `ws`, `qrcode`, `yauzl` (reads shard zips), `@nut-tree-fork/nut-js` (production) and `electron` (45), `electron-builder` (26) (development). Optional: `active-win@8` (recognizes the program and its executable; installed by default, see section 8) and `koffi@3` (calls Windows APIs for `focus/elevation.js`; MIT, prebuilt binary in a per-platform package such as `@koromix/koffi-win32-x64`, so its install script is denied in `allowScripts`; unpacked from the `.asar` like active-win). Every version is exact (`.npmrc` has `save-exact=true`).
 
 Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contributor Covenant 3.0 text, under CC BY-SA 4.0). `shard-base/` and `docs/shard-template/` (and the `libreshard.css`/`libreshard.js` copies in each shard) are MIT-0, so shard authors can copy them freely; their source files carry `SPDX-License-Identifier: MIT-0`. The name and logo are covered by `TRADEMARKS.md`, not by the license. Contributions are inbound=outbound plus a DCO sign-off (`git commit -s`), checked by CI on pull requests.
 
@@ -175,7 +176,8 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - Key messages: `shard` and `keys` must be strings of 1–64 characters. A token bucket allows 50 key messages per second per connection, but **`up` is never dropped**; more than 100 queued messages close the connection (1008). At most 10 combos can be held at once per connection.
 - A key is typed only if it's in the shard's `allowed` set (declared **and** approved). App rules are resolved by the store (`resolveApps`: the user's rule in `app-rules.json`, otherwise the manifest's, otherwise none; `{ mode: 'any' }`, or a manifest list that is empty or has `"*"`, means no restriction).
 - Before running `press` or `down`, if `shard.apps` isn't empty, it calls `focus.check()`. If it doesn't match it replies `blocked` and doesn't touch the keyboard. `up` is never blocked.
-- **Never into LibreShard itself (every device):** before `press`/`down` from any device, if `focus.active()` is LibreShard (option `isSelf`, default `focus/apps` `isSelfApp`: the executable equals `process.execPath`, so Electron in development), it replies `blocked` with `reason: 'self'` and types nothing. The keys would otherwise land in the app's own window (reload, developer tools…), and a tablet with Tab and Enter approved could answer one of its dialogs. A failed detection doesn't block for this reason. Every tap therefore asks for the app in front: about 0.3 ms on Windows (active-win) and 5 ms on Linux (`xprop`), with the 100 ms cache; `main.js` runs one detection at startup because the first one is slow (~400 ms on Windows).
+- **Never into LibreShard itself (every device):** before `press`/`down` from any device, if `focus.active()` is LibreShard (option `isSelf`, default `focus/apps` `isSelfApp`: the executable equals `process.execPath`, so Electron in development), it replies `blocked` with `reason: 'self'` and types nothing. The keys would otherwise land in the app's own window (reload, developer tools…), and a tablet with Tab and Enter approved could answer one of its dialogs. A failed detection doesn't block for this reason.
+- **Never into an app running as administrator (Windows):** next, with the same detection, if `isElevated(app)` (default `focus/elevation` `above`) is `true`, it replies `blocked` with `reason: 'elevated'` and `active` set to the app's name, and types nothing: Windows drops keys injected into a process at a higher integrity level (UIPI) and `SendInput` doesn't say so. Only a sure reading blocks; `null` (unknown) presses as usual. `up` is never checked. Every tap therefore asks for the app in front: about 0.3 ms on Windows (active-win) and 5 ms on Linux (`xprop`), with the 100 ms cache; `main.js` runs one detection at startup because the first one is slow (~400 ms on Windows).
 - Each connection's messages are handled **in order** (one promise queue per socket). Without it, an `up` (which doesn't wait for `focus.check`) could run before its `down` on a quick tap and leave the key stuck.
 - Every server-side WebSocket has an `error` listener: `ws` emits protocol errors (an oversized message, for example) there, and without one a single bad message would crash the app.
 
@@ -203,11 +205,15 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - **What never goes in:** keys pressed, window titles, device names, IP addresses or the app in front. Callers log ids (`shortId()` keeps 6 characters of a device id) and reasons. As a safety net the user's home folder becomes `~` in every value and stack.
 - `nullLog` is the default everywhere (tests, tools). `once(log)` logs each distinct error a single time, for errors that would repeat on every tap or poll (the foreground app detection, the live indicator).
 
+**focus/elevation.js**
+- `above(app)`: `true` when the app's process (`app.pid`, only given by the active-win provider) has a higher integrity level than LibreShard, `false` when it doesn't, `null` when unknown. It reads the level from the process token (`OpenProcess` with `PROCESS_QUERY_LIMITED_INFORMATION`, `OpenProcessToken`, `TokenIntegrityLevel`), which Windows allows from a normal process even for an elevated one. A process that denies access (anti-cheats, system services) is `null`, so it can never cause a false block. Checked on 2026-11-11: elevated Notepad and Valheim read high, the same apps started normally read medium. One reading takes about 4 µs; only LibreShard's own level is cached. `selfElevated()` says whether LibreShard runs as administrator (diagnostics, start line of the log).
+- koffi is loaded lazily and only on Windows; if it's missing or a call fails, everything is `null` and the log gets one line. `createElevation({ platform, api })` takes a fake API in the tests.
+
 **diagnostics.js**
-- `buildDiagnostics(info)`: plain text with the app and Electron versions, the system (`systemLabel()`: "Windows 10.0.26300 x64", "Linux 6.8.0 x64 (x11)"), the detection provider, every non-internal setting, how many devices (and whether one is the local panel) and networks (and how many are VPNs), one line per shard (id, version, bundled/installed/development, enabled, keys waiting for approval, apps limit), rejected folder names and the last 200 log lines. Never device names, IP addresses, network names, tokens or the pairing code; the home folder becomes `~`.
+- `buildDiagnostics(info)`: plain text with the app and Electron versions, the system (`systemLabel()`: "Windows 10.0.26300 x64", "Linux 6.8.0 x64 (x11)"), the detection provider, whether LibreShard runs as administrator (Windows), every non-internal setting, how many devices (and whether one is the local panel) and networks (and how many are VPNs), one line per shard (id, version, bundled/installed/development, enabled, keys waiting for approval, apps limit), rejected folder names and the last 200 log lines. Never device names, IP addresses, network names, tokens or the pairing code; the home folder becomes `~`.
 
 **focus/**
-- Providers all answer the same way: `name`, `available()`, `active()` → `{ exe, name, title, path }` and optionally `openWindows()`. `createFocus({ providers, cacheMs })` uses the first available one (`active-win`, then `linux-x11`, then `title`); the module itself exports a default instance.
+- Providers all answer the same way: `name`, `available()`, `active()` → `{ exe, name, title, path }` (active-win adds `pid`, for the elevation check) and optionally `openWindows()`. `createFocus({ providers, cacheMs })` uses the first available one (`active-win`, then `linux-x11`, then `title`); the module itself exports a default instance.
 - `linux-x11.js` asks the X server with `xprop` (`_NET_ACTIVE_WINDOW`, then `_NET_WM_PID`, `WM_CLASS`, `_NET_WM_NAME`) and reads `/proc/<pid>/exe`. It exists because on Linux npm silently drops active-win when there's no C++ toolchain, even though its Linux code needs none. `parseWindow()` is pure and tested on every OS.
 - `check(entries)` returns `{ ok: true }` if any entry matches the foreground app, or `{ ok: false, reason, active, app }`: `reason` is `wrong-app` or `unknown`, `active` a readable description, and `app` the detected program (`{ exe, name, path }`, only when the provider knows it), so the user can allow it.
 - `openApps()` lists programs with a visible window, once per executable (null if the provider can't list). `active()` is the raw detection (100 ms cache); a provider that throws counts as unknown, and each distinct error is logged once through the log given to `setLog()`.
@@ -249,7 +255,7 @@ Behavior:
 - **This device's settings:** a gear button `#devBtn` in the menu header opens `#devSheet` (closed by `#devScrim`, Escape or opening a shard) with the checkbox "Abrir los shards en pantalla completa", on by default. Only the opt-out is stored, as `localStorage` `auto-fullscreen` = `off`. Hidden where there is no Fullscreen API.
 - **Shard → PC bridge:** the `message` listener requires `e.source === frame.contentWindow`, `t` in `press|down|up` and a string `keys`. The shard id comes from `current`, never from the message. It records `down`/`up` in `held` and vibrates with `navigator.vibrate`.
 - **Safe release:** `visibilitychange` (screen hidden) and `pagehide` call `releaseHeld()`, which sends `up` for every held key.
-- **Blocked action notice:** on `blocked` it shows a notice (`#toast`, 4.5 s) with the allowed apps and the active app, and vibrates with a different pattern. Menu cards show "Solo en …" when the shard is restricted. A `blocked` with `reason: 'self'` (LibreShard in front, from any device) shows "No se pulsó nada: LibreShard está delante…" instead.
+- **Blocked action notice:** on `blocked` it shows a notice (`#toast`, 4.5 s) with the allowed apps and the active app, and vibrates with a different pattern. Menu cards show "Solo en …" when the shard is restricted. A `blocked` with `reason: 'self'` (LibreShard in front, from any device) shows "No se pulsó nada: LibreShard está delante…" instead, and one with `reason: 'elevated'` says the app runs as administrator and that LibreShard has to be opened as administrator too.
 - **Untrusted content:** name, author, icon and description come from community manifests. The viewer renders them with `textContent` (never `innerHTML`), trims the description to 120 characters and uses only the first 2 characters of the icon.
 
 **viewer/shard-api.js**
@@ -297,7 +303,7 @@ Server to client:
 | `{ "type": "settings", "shard", "values" }` | The user changed that shard's settings on the PC |
 | `{ "type": "shard-files-changed", "shard" }` | A development shard's files changed: reload it if open |
 | `{ "type": "error", "code": "allow-failed" }` | Nothing to allow (setting off, no recent block, another shard) |
-| `{ "type": "blocked", "shard", "keys", "apps", "active", "reason", "canAllow"?, "app"? }` | The shard is limited to other apps (`apps` are readable labels). With `canAllow`, the tablet may answer `allow-app`; `app` is the detected program's name. `active` is what's in the foreground and `reason` is `wrong-app` or `unknown`. `reason: 'self'` (any device, `apps` empty): LibreShard itself is in front |
+| `{ "type": "blocked", "shard", "keys", "apps", "active", "reason", "canAllow"?, "app"? }` | The shard is limited to other apps (`apps` are readable labels). With `canAllow`, the tablet may answer `allow-app`; `app` is the detected program's name. `active` is what's in the foreground and `reason` is `wrong-app` or `unknown`. `reason: 'self'` (any device, `apps` empty): LibreShard itself is in front. `reason: 'elevated'` (`apps` empty, `active` is the app's name): the app in front runs as administrator and LibreShard doesn't |
 
 Close codes: `4001` unknown or revoked device, wrong pairing code, or a message before authenticating; `4003` the PC rejected the device; `4008` no authentication within 10 s; `4029` rate limited; `1008` message flood; `1009` message too large.
 
@@ -539,7 +545,7 @@ npm run dist
 ## 8. Gotchas
 
 - **nut-js:** the project uses the community fork `@nut-tree-fork/nut-js`, because the official package stopped shipping free binaries. Don't switch it to `@nut-tree/nut-js`.
-- **Elevated games:** on Windows, a game running as administrator ignores keys simulated by a normal process. LibreShard must run as administrator too.
+- **Elevated games:** on Windows, a game running as administrator ignores keys simulated by a normal process, and nothing reports the failure. LibreShard must run as administrator too. Since 0.3 the server detects it (`focus/elevation.js`) and the tablet says so instead of tapping for nothing.
 - **macOS:** needs the Accessibility permission for the app.
 - **Wayland (Linux):** nut-js key simulation may not work; X11 (or an Xorg session) is what's supported.
 - **F13–F24 on Linux:** many X keymaps have no F13–F24 (the keys send XF86Tools, XF86Launch5…). nut-js then hits an X error and Xlib **aborts the whole process**. The server refuses those keys when `keys.unavailable()` says so; never press keys around that check. Shards meant for Linux shouldn't rely on F13+.

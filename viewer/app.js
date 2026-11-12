@@ -95,6 +95,9 @@ function connect(mode) {
     if (m.type === 'blocked' && m.reason === 'self') {
       showToast(t('viewer.blockedSelf'));
       if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
+    } else if (m.type === 'blocked' && m.reason === 'elevated') {
+      showToast(t('viewer.blockedElevated', { app: m.active || '?' }));
+      if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
     } else if (m.type === 'blocked') {
       const where = (m.apps || []).join(', ');
       const now = m.active ? t('viewer.activeNow', { app: m.active }) : t('viewer.activeUnknown');

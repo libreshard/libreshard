@@ -73,9 +73,9 @@ administrador.
 - **SmartScreen:** las versiones todavía no están firmadas (ver [Firma de código](#firma-de-código)),
   así que Windows puede decir "Windows protegió su PC". Pulsa **Más información → Ejecutar de todas
   formas**. Puedes comprobar la descarga con el archivo `SHA256SUMS.txt` de cada versión.
-- **Juegos que se ejecutan como administrador:** ignoran las teclas de los programas normales. Para
-  esos, ejecuta también LibreShard como administrador (lee la nota de
-  [SECURITY.md](SECURITY.md#known-limitations)).
+- **Juegos que se ejecutan como administrador:** ignoran las teclas de los programas normales. La
+  tablet te avisa cuando pasa; para esos, ejecuta también LibreShard como administrador (lee la nota
+  de [SECURITY.md](SECURITY.md#known-limitations)).
 
 ### Linux
 

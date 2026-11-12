@@ -306,6 +306,48 @@ test('tablets are blocked too while LibreShard itself is in front', () => {
   });
 });
 
+test('an app running as administrator is reported instead of pressed into, unless unknown', () => {
+  const game = { exe: 'valheim.exe', name: 'Valheim', title: 'Valheim', pid: 4242 };
+  const focus = fakeFocus({ ok: true }, game);
+  let answer = true;
+  const seen = [];
+  const isElevated = (app) => { seen.push(app); return answer; };
+  return withServer({ focus, isElevated }, async (s) => {
+    const c = await authed(s);
+    c.send({ type: 'press', shard: 'demo', keys: 'f13' });
+    assert.deepEqual(await c.next(), { type: 'blocked', shard: 'demo', keys: 'f13', apps: [], active: 'Valheim', reason: 'elevated' });
+    assert.equal(seen[0], game, 'checks the app focus detected');
+    c.send({ type: 'down', shard: 'demo', keys: 'shift' });
+    assert.equal((await c.next()).reason, 'elevated');
+    assert.equal(s.keyboard.events.length, 0);
+
+    // Releasing is never blocked
+    c.send({ type: 'up', shard: 'demo', keys: 'shift' });
+    await waitFor(() => s.keyboard.events.length === 1);
+
+    // Unknown (access denied, no pid) or not elevated: pressed as usual
+    for (const value of [null, false]) {
+      answer = value;
+      const before = s.keyboard.events.length;
+      c.send({ type: 'press', shard: 'demo', keys: 'f13' });
+      await waitFor(() => s.keyboard.events.length === before + 2);
+    }
+  });
+});
+
+test('the elevation check never runs on a release, and LibreShard in front wins over it', () => {
+  const focus = fakeFocus({ ok: true }, SELF);
+  let calls = 0;
+  return withServer({ focus, isElevated: () => { calls++; return true; } }, async (s) => {
+    const c = await authed(s);
+    c.send({ type: 'press', shard: 'demo', keys: 'f13' });
+    assert.equal((await c.next()).reason, 'self');
+    c.send({ type: 'up', shard: 'demo', keys: 'f13' });
+    await waitFor(() => s.keyboard.events.length === 1);
+    assert.equal(calls, 0);
+  });
+});
+
 // A real non-loopback connection: the server listens everywhere and the client uses the LAN address
 const lanAddress = Object.values(os.networkInterfaces()).flat().find((i) => i && i.family === 'IPv4' && !i.internal)?.address;
 test('the local device is refused from any address but loopback', { skip: !lanAddress && 'no LAN address' }, () => {

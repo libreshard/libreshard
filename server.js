@@ -93,6 +93,8 @@ const validField = (v) => typeof v === 'string' && v.length > 0 && v.length <= M
 // - language: 'auto' | 'es' | 'en', or a function returning it: the viewer's language (auto follows the tablet).
 // - platform: the PC's system as shards see it (Shard.platform); defaults to this process's.
 // - isSelf(app): whether a detected app is LibreShard itself (focus/apps isSelfApp; injectable for tests).
+// - isElevated(app): true when the detected app surely runs at a higher integrity level than LibreShard
+//   (Windows drops our keys then), null when unknown (focus/elevation above; injectable for tests).
 // - httpRate: HTTP requests per minute per address (HTTP_RATE; lower in tests).
 // - log: where events and errors go (log.js); by default nowhere. Never device names, IPs or keys typed.
 // The returned server also has releaseAll(), setPaused(on) and isPaused().
@@ -100,13 +102,14 @@ function startServer({
   port, host = '0.0.0.0', store, shardDirs, rulesFile, appVersion,
   keyboard, focus, devices, pairing, limiter, allowPublic = false, onAlert, confirmPairing,
   allowAppsFromTablet = false, unavailableKeys = unavailable, language = 'auto',
-  platform = shardPlatform(process.platform), isSelf = isSelfApp, httpRate = HTTP_RATE, log = nullLog,
+  platform = shardPlatform(process.platform), isSelf = isSelfApp, isElevated, httpRate = HTTP_RATE, log = nullLog,
   confirmTimeoutMs = CONFIRM_TIMEOUT_MS,
 }) {
   const warnOnce = once(log);
   const canAllow = () => (typeof allowAppsFromTablet === 'function' ? allowAppsFromTablet() : allowAppsFromTablet) === true;
   const typer = makeTyper(keyboard || nutKeyboard());
   focus = focus || require('./focus');
+  isElevated = isElevated || require('./focus/elevation').above;
   devices = devices || new Devices(null);
   pairing = pairing || new Pairing();
   limiter = limiter || new RateLimiter();
@@ -413,13 +416,22 @@ function startServer({
         return send({ type: 'error', code: 'key-unavailable', keys: missing.join('+') });
       }
 
-      // Never type into LibreShard itself, from any device: its keys would land in the app (reload,
-      // developer tools…), and a tablet with tab and enter approved could answer one of its dialogs
-      // ("Allow" a new device, confirm an uninstall). A failed detection doesn't block here; the app
-      // check below still fails closed.
-      if (msg.type !== 'up' && isSelf(await focus.active())) {
-        log.info('blocked', { shard: shard.id, device: shortId(c.device.id), reason: 'self' });
-        return send({ type: 'blocked', shard: msg.shard, keys: combo, apps: [], active: '', reason: 'self' });
+      if (msg.type !== 'up') {
+        const front = await focus.active();
+        // Never type into LibreShard itself, from any device: its keys would land in the app (reload,
+        // developer tools…), and a tablet with tab and enter approved could answer one of its dialogs
+        // ("Allow" a new device, confirm an uninstall). A failed detection doesn't block here; the app
+        // check below still fails closed.
+        if (isSelf(front)) {
+          log.info('blocked', { shard: shard.id, device: shortId(c.device.id), reason: 'self' });
+          return send({ type: 'blocked', shard: msg.shard, keys: combo, apps: [], active: '', reason: 'self' });
+        }
+        // An app running as administrator (with LibreShard not) silently ignores injected keys:
+        // say so instead of pressing for nothing. Only a sure reading blocks; unknown presses as usual.
+        if (isElevated(front) === true) {
+          log.info('blocked', { shard: shard.id, device: shortId(c.device.id), reason: 'elevated' });
+          return send({ type: 'blocked', shard: msg.shard, keys: combo, apps: [], active: front.name || front.exe || '', reason: 'elevated' });
+        }
       }
 
       // If the shard is limited to certain apps, it only acts while one of them is in the foreground.
