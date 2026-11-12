@@ -6,32 +6,18 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-12
+
 ### App
 
-- **Backup** (Settings): export your settings, app rules, shard order and settings, and the shards
-  you installed to one file, and import it on another PC. Importing shows what would change first
-  (security settings highlighted), and every shard goes through the usual key review again. Paired
-  devices and key approvals are never included.
-- **Linux:** logging out with LibreShard running no longer makes it crash (Ubuntu showed a crash
-  report, and keys held from a tablet weren't released). On GNOME and XFCE, LibreShard now notices
-  the session ending and quits first.
-- A shard install that stops halfway (a zip over the size limit, for example) no longer leaves a
-  temporary folder behind on macOS.
 - **New version notice:** once a day LibreShard asks GitHub which release is the latest and, if it's
   newer, shows a notice with a link to the download page (it never installs anything by itself).
   It sends nothing about you or your devices, and can be turned off in Settings, where "Check now"
   and the result sit too. Versions still being tested (pre-releases) aren't announced.
-- **Apps running as administrator (Windows):** Windows silently drops keys sent to them unless
-  LibreShard runs as administrator too. Now the tablet says so ("… runs as administrator") instead
-  of tapping for nothing. Apps LibreShard can't inspect, such as some anti-cheats, work as before.
-  The diagnostics also say whether LibreShard itself runs as administrator.
-- With "Confirm new devices" on, the question on the PC now closes by itself when the tablet stops
-  waiting or after 60 s. Before, it stayed open and answering it did nothing.
-- The **This PC** panel now stays on top of other windows by default. Only new installs change:
-  if you already used 0.2, your setting stays as it was (turn it on in Settings).
-- LibreShard keeps a log on the PC, `logs/libreshard.log` in its data folder (rotated, 3 MB at
-  most), to help with bug reports. It records what the app did and what went wrong, never keys
-  typed, window titles, device names or network addresses.
+- **Backup** (Settings): export your settings, app rules, shard order and settings, and the shards
+  you installed to one file, and import it on another PC. Importing shows what would change first
+  (security settings highlighted), and every shard goes through the usual key review again. Paired
+  devices and key approvals are never included.
 - **About** at the end of Settings: version, license and links to the website, the source code and
   the security policy.
 - **Report a bug** (Settings): copies the diagnostics and opens the bug report form on GitHub with
@@ -39,6 +25,22 @@ All notable changes to LibreShard are listed here. The format follows
   sending. **Copy diagnostics** and **Open logs folder** sit next to it. The diagnostics hold the
   versions, settings, shards and the last lines of the log, never device names or network
   addresses.
+- LibreShard keeps a log on the PC, `logs/libreshard.log` in its data folder (rotated, 3 MB at
+  most), to help with bug reports. It records what the app did and what went wrong, never keys
+  typed, window titles, device names or network addresses.
+- **Apps running as administrator (Windows):** Windows silently drops keys sent to them unless
+  LibreShard runs as administrator too. Now the tablet says so ("… runs as administrator") instead
+  of tapping for nothing. Apps LibreShard can't inspect, such as some anti-cheats, work as before.
+  The diagnostics also say whether LibreShard itself runs as administrator.
+- The **This PC** panel now stays on top of other windows by default. Only new installs change:
+  if you already used 0.2, your setting stays as it was (turn it on in Settings).
+- **Linux:** logging out with LibreShard running no longer makes it crash (Ubuntu showed a crash
+  report, and keys held from a tablet weren't released). On GNOME and XFCE, LibreShard now notices
+  the session ending and quits first.
+- With "Confirm new devices" on, the question on the PC now closes by itself when the tablet stops
+  waiting or after 60 s. Before, it stayed open and answering it did nothing.
+- A shard install that stops halfway (a zip over the size limit, for example) no longer leaves a
+  temporary folder behind on macOS.
 
 ### Tablet viewer
 
@@ -48,21 +50,25 @@ All notable changes to LibreShard are listed here. The format follows
 - The **This device** sheet (the gear in the menu) shows the LibreShard version, and is now
   available on every device, iPhone included.
 
-### Project
-
-- Code of conduct (Contributor Covenant 3.0), with reports to conduct@libreshard.com.
-
 ### Security
 
-- The check for new versions is LibreShard's first connection outside your network. It's described
-  in SECURITY.md (Privacy) and can be turned off.
 - No device types into LibreShard's own window anymore. Before, only the This PC panel was stopped
   while LibreShard was in front, so a tablet with Tab and Enter approved could press buttons in its
   window or dialogs. Now every tablet gets the "LibreShard is in front" notice instead.
+- The check for new versions is LibreShard's first connection outside your network. It's described
+  in SECURITY.md (Privacy) and can be turned off.
 - The PC answers at most 1000 HTTP requests per minute from each address (the viewer and shard
   files); past that it replies 429 until the minute is over. Keys over the WebSocket aren't
   affected.
 - The script injected into shards ignores replies whose id it isn't waiting for.
+
+### Project
+
+- Each version is published first as a pre-release while people try it, and becomes a release
+  afterwards. The app and libreshard.com only offer releases.
+- A bug report form on GitHub, and private reporting for security problems.
+- Code of conduct (Contributor Covenant 3.0), with reports to conduct@libreshard.com.
+- Signed Windows builds and automatic updates move to 1.0.
 
 ## [0.2.0] - 2026-11-04
 
@@ -130,6 +136,7 @@ First public release.
 - Linux `.deb` (with an AppArmor profile for Ubuntu 24.04 and newer) and AppImage.
 - Electron Fuses: no `ELECTRON_RUN_AS_NODE`, no inspector flags, and `app.asar` integrity checks.
 
-[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/libreshard/libreshard/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/libreshard/libreshard/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/libreshard/libreshard/releases/tag/v0.1.0

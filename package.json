@@ -2,7 +2,7 @@
   "name": "libreshard",
   "productName": "LibreShard",
   "desktopName": "libreshard.desktop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Open-source control deck: turn a tablet into a touch panel for your PC with HTML/CSS shards",
   "keywords": [
     "control deck",
