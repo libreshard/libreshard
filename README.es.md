@@ -39,7 +39,8 @@ y compartir.
   shards no pueden llegar a internet, a tus archivos ni a otros shards.
 - 🎯 **Solo donde corresponde.** Limita un shard a las apps para las que está pensado, para que un
   toque nunca dispare un atajo en el programa equivocado.
-- ⚡ **100 % local y privado.** Sin cuentas, sin telemetría: nada sale de tu red.
+- ⚡ **Local y privado.** Sin cuentas ni telemetría. La única conexión fuera de tu red es una
+  búsqueda diaria de versiones nuevas, que no envía nada sobre ti y se puede desactivar.
 - 🌍 **Español e inglés**, según el idioma del sistema.
 
 Shards incluidos: **Multimedia**, **Teclado numérico**, **Edición de imagen** (Photoshop, Affinity
@@ -159,8 +160,9 @@ La guía completa (teclas, ajustes, idiomas, limitar a apps, reglas de diseño) 
   aprobaste.
 - El tráfico local va por HTTP sin cifrar: usa LibreShard en redes de confianza.
 
-LibreShard no envía datos a ningún sitio. En **[SECURITY.md](SECURITY.md)** (en inglés) están el
-modelo de amenazas, las limitaciones conocidas y cómo reportar una vulnerabilidad.
+LibreShard no envía datos sobre ti a ningún sitio; su única conexión al exterior es la búsqueda de
+versiones nuevas (ver [Privacy](SECURITY.md#privacy), en inglés). En **[SECURITY.md](SECURITY.md)**
+están el modelo de amenazas, las limitaciones conocidas y cómo reportar una vulnerabilidad.
 
 ## Compilar desde el código
 

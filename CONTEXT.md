@@ -56,6 +56,7 @@ libreshard/
 ├── keys.js               turns "ctrl+shift+m" into nut-js keys
 ├── log.js                the log on disk (<userData>/logs/), rotated, with no personal data
 ├── diagnostics.js        the text "Copy diagnostics" and "Report a bug" put on the clipboard
+├── updates.js            the daily check for a new version (GitHub's latest release), and version comparison
 ├── focus/                foreground app detection
 │   ├── index.js          createFocus(): picks a provider; check(), active(), openApps()
 │   ├── apps.js           app entries ({ exe } / { match }), normalizeApp, appMatches, appLabel
@@ -73,7 +74,7 @@ libreshard/
 │   ├── icon.png          app icon for electron-builder (generated)
 │   ├── linux/            .deb post-install/post-remove scripts (AppArmor profile)
 │   └── windows/installer.nsh  NSIS additions: optional firewall rule, file type cleanup on uninstall
-├── .github/workflows/    ci.yml (tests on 3 OSes, Linux injection, DCO), release.yml (tag v* → draft release) and website.yml (published release → rebuild libreshard.com)
+├── .github/workflows/    ci.yml (tests on 3 OSes, Linux injection, DCO), release.yml (tag v* → draft release) and website.yml (a release becomes "Latest" → rebuild libreshard.com)
 ├── .github/ISSUE_TEMPLATE/  bug_report.yml (the form "Report a bug" opens) and config.yml (security reports go private)
 ├── LICENSE, NOTICE       Apache-2.0; LICENSES/MIT-0.txt for shard-base/ and docs/shard-template/
 ├── README*.md, SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CHANGELOG.md, TRADEMARKS.md   public docs
@@ -208,6 +209,10 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 **focus/elevation.js**
 - `above(app)`: `true` when the app's process (`app.pid`, only given by the active-win provider) has a higher integrity level than LibreShard, `false` when it doesn't, `null` when unknown. It reads the level from the process token (`OpenProcess` with `PROCESS_QUERY_LIMITED_INFORMATION`, `OpenProcessToken`, `TokenIntegrityLevel`), which Windows allows from a normal process even for an elevated one. A process that denies access (anti-cheats, system services) is `null`, so it can never cause a false block. Checked on 2026-11-11: elevated Notepad and Valheim read high, the same apps started normally read medium. One reading takes about 4 µs; only LibreShard's own level is cached. `selfElevated()` says whether LibreShard runs as administrator (diagnostics, start line of the log).
 - koffi is loaded lazily and only on Windows; if it's missing or a call fails, everything is `null` and the log gets one line. `createElevation({ platform, api })` takes a fake API in the tests.
+
+**updates.js**
+- `checkLatest({ current, fetch })` asks `https://api.github.com/repos/libreshard/libreshard/releases/latest` (the release marked "Latest": never a draft or a pre-release, so a version in its testing period isn't announced) with only `Accept` and a generic `User-Agent: LibreShard`, and answers `{ latest, newer }`. `compareVersions()` follows Semantic Versioning, pre-release tags included. `main.js` passes Electron's `net.fetch`.
+- In `main.js`: the first check a minute after starting, then every 24 h, only while `checkUpdates` is on; `update:check` ("Buscar ahora" in About) asks even with it off. A newer version shows the `#update` banner (Download opens `LINKS.download`; "Ignore this version" saves `updateDismissed`, internal, so only a later version brings the banner back) and a line in About. Failures only go to the log.
 
 **diagnostics.js**
 - `buildDiagnostics(info)`: plain text with the app and Electron versions, the system (`systemLabel()`: "Windows 10.0.26300 x64", "Linux 6.8.0 x64 (x11)"), the detection provider, whether LibreShard runs as administrator (Windows), every non-internal setting, how many devices (and whether one is the local panel) and networks (and how many are VPNs), one line per shard (id, version, bundled/installed/development, enabled, keys waiting for approval, apps limit), rejected folder names and the last 200 log lines. Never device names, IP addresses, network names, tokens or the pairing code; the home folder becomes `~`.
@@ -466,6 +471,7 @@ Principles that **must not be broken** when changing the code:
 13. Every protocol limit (message size, rate, queue, held combos, connections) has a test. `up` is never dropped or blocked.
 14. A user shard can only type keys the user approved (`shards-state.json`). The review shows every key, flags system combos and text typing, and never hides keys that were added since the last approval.
 15. The desktop window has no Node access: everything goes through `preload.js` and IPC handlers that check the sender and every argument. Zips are extracted with path, symlink and size checks, and uninstalling never follows links.
+16. The only connection outside the user's network is the check for new versions (`updates.js`): GitHub's latest release, with a generic User-Agent and nothing about the user, devices or shards. It can be turned off (`checkUpdates`), never downloads or installs anything, and never involves the tablet. Any other outgoing connection needs the same scrutiny and must be documented in `SECURITY.md`.
 
 Known limitations:
 
@@ -532,7 +538,7 @@ npm run dist
 - **Electron Fuses** (`build.electronFuses`): `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and `--inspect` are ignored by the packaged app, cookies are encrypted, only `app.asar` is loaded and its integrity is checked (Windows and macOS: a modified `app.asar` refuses to start, verified). `grantFileProtocolExtraPrivileges` stays at its default: the desktop window is a `file://` page inside the `.asar`, and without that fuse it fails with `ERR_FILE_NOT_FOUND`. Turning it off would need a custom protocol for the window.
 - **Windows installer:** one-click, per user (`%LOCALAPPDATA%\Programs\libreshard`), no admin rights. `build/windows/installer.nsh` asks (Yes/No, English or Spanish by `$LANGUAGE`) whether to add a Windows Firewall rule for LibreShard on **private** networks only; yes runs `netsh` through a UAC prompt, and silent installs skip it. Uninstalling removes the rule (UAC again) and the `.libreshard` extension, but not during updates (`${isUpdated}`). The file is UTF-8 **with BOM**: NSIS reads files without one as ANSI and the Spanish text breaks.
 - **Linux:** `desktopName` (`libreshard.desktop`) plus `linux.syncDesktopName` make the window's `WM_CLASS` match the `.desktop` entry, so docks group it with its icon.
-- **Releases:** pushing a tag `v<version>` (it must match `package.json`) runs `.github/workflows/release.yml`: tests and installers on Windows, Linux and macOS (macOS may fail without blocking), then a **draft** GitHub release with the installers, `SHA256SUMS.txt` and the CHANGELOG section. A maintainer publishes the draft by hand; publishing runs `.github/workflows/website.yml`, which calls the Cloudflare Pages deploy hook (secret `WEBSITE_DEPLOY_HOOK`) so libreshard.com's download page picks up the new version. Without the secret it only warns. GitHub Actions are pinned by commit SHA. Code signing (SignPath) would slot in between the build and the draft.
+- **Releases:** pushing a tag `v<version>` (it must match `package.json`) runs `.github/workflows/release.yml`: tests and installers on Windows, Linux and macOS (macOS may fail without blocking), then a **draft** GitHub release with the installers, `SHA256SUMS.txt` and the CHANGELOG section. A maintainer publishes the draft by hand, as a pre-release while people try it and then as a release (the "Latest" one, the only kind the app's update check and the website offer). Becoming a release (`release: released`) runs `.github/workflows/website.yml`, which calls the Cloudflare Pages deploy hook (secret `WEBSITE_DEPLOY_HOOK`) so libreshard.com's download page picks up the new version. Without the secret it only warns. GitHub Actions are pinned by commit SHA. Code signing (SignPath) would slot in between the build and the draft.
 - **CI:** `.github/workflows/ci.yml` runs `npm test` on Windows, Linux and macOS (macOS doesn't fail the run), `npm run test:linux`, and the DCO check on pull requests.
 - **Testing a build without touching your data:** run `dist/win-unpacked/LibreShard.exe --user-data-dir=<test folder> --remote-debugging-port=9225`. Put a `config.json` with another port in the folder first, so it doesn't clash with a running LibreShard.
 

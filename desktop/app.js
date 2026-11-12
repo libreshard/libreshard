@@ -75,6 +75,8 @@ function renderChrome() {
   $('alert').hidden = !alertOn;
   $('alert').textContent = t('alert.pairingAttempts');
   $('restart').hidden = !state.restartNeeded;
+  $('update').hidden = !state.update.show;
+  if (state.update.show) $('updateText').textContent = t('update.available', { version: state.update.latest });
 
   $('devCount').textContent = state.devices.length || '';
   const attention = state.shards.filter((s) => s.pendingKeys.length).length + state.rejected.length;
@@ -470,6 +472,16 @@ function renderSettings() {
   );
 }
 
+// What the last check for a new version found
+function updateStatus() {
+  const u = state.update;
+  if (u.checking) return t('about.updateChecking');
+  if (u.failed) return t('about.updateFailed');
+  if (u.latest && u.newer) return t('update.available', { version: u.latest });
+  if (u.latest) return t('about.updateLatest');
+  return state.settings.checkUpdates ? t('about.updatePending') : t('about.updateOff');
+}
+
 // Version, links and what helps with a bug report. Links name a destination; main.js holds the URLs.
 function renderAbout() {
   const link = (kind, label) => h('button', { class: 'btn small', onclick: () => call(api.openLink, kind) }, label);
@@ -485,6 +497,12 @@ function renderAbout() {
       link('security', t('about.security')),
       link('license', t('about.licenseLink')),
       state.thirdPartyLicenses ? h('button', { class: 'btn small', onclick: () => api.openPath('licenses') }, t('about.thirdParty')) : null),
+    h('h2', null, t('about.updates')),
+    toggle('checkUpdates', t('settings.checkUpdates'), t('settings.checkUpdatesHint')),
+    h('div', { class: 'row update-status' },
+      h('span', { class: 'hint small grow' }, updateStatus()),
+      state.update.latest && state.update.newer ? h('button', { class: 'btn small primary', onclick: () => call(api.openLink, 'download') }, t('update.download')) : null,
+      h('button', { class: 'btn small', disabled: state.update.checking, onclick: () => call(api.checkUpdates) }, t('about.checkNow'))),
     h('h2', null, t('about.problems')),
     h('p', { class: 'hint small' }, t('about.problemsHint')),
     h('div', { class: 'row' },
@@ -525,6 +543,8 @@ for (const b of document.querySelectorAll('.tab')) {
 }
 $('pause').addEventListener('click', () => call(api.setPaused, !state.paused));
 $('restartBtn').addEventListener('click', () => api.restart());
+$('updateDownload').addEventListener('click', () => call(api.openLink, 'download'));
+$('updateDismiss').addEventListener('click', () => call(api.dismissUpdate));
 
 function apply(s) {
   state = s;

@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('libreshard', {
   openLink: invoke('app:open-link'),
   copyDiagnostics: invoke('app:copy-diagnostics'),
   reportBug: invoke('app:report-bug'),
+  checkUpdates: invoke('update:check'),
+  dismissUpdate: invoke('update:dismiss'),
   restart: invoke('app:restart'),
   setSetting: invoke('settings:set'),
 
