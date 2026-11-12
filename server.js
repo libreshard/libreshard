@@ -83,8 +83,10 @@ const validField = (v) => typeof v === 'string' && v.length > 0 && v.length <= M
 // - store: a ShardStore. Without one, `shardDirs` (+ `rulesFile`) are loaded as bundled shards.
 // - keyboard, focus: injectable; by default nut-js and ./focus.
 // - devices, pairing, limiter: default to in-memory instances (the app passes ones backed by files).
-// - confirmPairing({ name, ip }): optional; return true to accept a new device right away, or a
-//   promise of true/false to make the tablet wait for the user's answer on the PC.
+// - confirmPairing({ name, ip, signal }): optional; return true to accept a new device right away, or
+//   a promise of true/false to make the tablet wait for the user's answer on the PC. `signal` aborts
+//   when the answer no longer matters (the tablet left or confirmTimeoutMs passed): close the question.
+// - confirmTimeoutMs: how long a pairing waits for that answer (CONFIRM_TIMEOUT_MS; shorter in tests).
 // - allowAppsFromTablet: boolean or function; when true, a block offers "allow here too" and the
 //   tablet may add the detected program to that shard's apps.
 // - unavailableKeys(combo): keys this system can't press safely (keys.unavailable; injectable for tests).
@@ -99,6 +101,7 @@ function startServer({
   keyboard, focus, devices, pairing, limiter, allowPublic = false, onAlert, confirmPairing,
   allowAppsFromTablet = false, unavailableKeys = unavailable, language = 'auto',
   platform = shardPlatform(process.platform), isSelf = isSelfApp, httpRate = HTTP_RATE, log = nullLog,
+  confirmTimeoutMs = CONFIRM_TIMEOUT_MS,
 }) {
   const warnOnce = once(log);
   const canAllow = () => (typeof allowAppsFromTablet === 'function' ? allowAppsFromTablet() : allowAppsFromTablet) === true;
@@ -321,17 +324,24 @@ function startServer({
       const name = cleanName(msg.name);
 
       // Optional confirmation on the PC: the tablet waits (the auth timeout doesn't apply meanwhile)
-      const decision = confirmPairing ? confirmPairing({ name, ip: c.ip }) : true;
+      // The question on the PC is closed (signal) as soon as its answer can no longer count: the
+      // tablet disconnected or the time ran out. Answering a stale dialog would do nothing.
+      const asking = new AbortController();
+      const decision = confirmPairing ? confirmPairing({ name, ip: c.ip, signal: asking.signal }) : true;
       if (decision !== true) {
         clearTimeout(authTimer);
         send({ type: 'pending' });
         let timer;
+        let onClose;
         let timedOut = false;
         const accepted = await Promise.race([
           Promise.resolve(decision).catch((e) => { log.error('pair-confirm-failed', { error: e }); return false; }),
-          new Promise((r) => { timer = setTimeout(() => { timedOut = true; r(false); }, CONFIRM_TIMEOUT_MS); }),
+          new Promise((r) => { timer = setTimeout(() => { timedOut = true; r(false); }, confirmTimeoutMs); }),
+          new Promise((r) => { onClose = () => r(false); ws.once('close', onClose); }),
         ]);
         clearTimeout(timer);
+        ws.off('close', onClose);
+        asking.abort();
         if (ws.readyState !== ws.OPEN) return log.info('pair-abandoned');
         if (accepted !== true) {
           log.info('pair-rejected', { reason: timedOut ? 'timeout' : 'user' });

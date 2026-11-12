@@ -188,9 +188,10 @@ async function start() {
   });
   let alertAt = 0;
 
-  // Optional confirmation of new devices, as a native dialog over the window
-  async function askDevice({ name, ip }) {
-    if (!win) return false;
+  // Optional confirmation of new devices, as a native dialog over the window. The server aborts
+  // `signal` when the tablet gives up or the time runs out, which closes the dialog (as a rejection).
+  async function askDevice({ name, ip, signal }) {
+    if (!win || signal?.aborted) return false;
     if (win.isMinimized()) win.restore();
     win.show();
     win.focus();
@@ -203,9 +204,10 @@ async function start() {
       noLink: true,
       message: t('dialog.confirmDevice.message', { name }),
       detail: t('dialog.confirmDevice.detail', { ip }),
+      signal,
     });
     win.flashFrame(false);
-    return response === 0;
+    return response === 0 && !signal?.aborted;
   }
 
   try {

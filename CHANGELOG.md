@@ -8,6 +8,8 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- With "Confirm new devices" on, the question on the PC now closes by itself when the tablet stops
+  waiting or after 60 s. Before, it stayed open and answering it did nothing.
 - The **This PC** panel now stays on top of other windows by default. Only new installs change:
   if you already used 0.2, your setting stays as it was (turn it on in Settings).
 - LibreShard keeps a log on the PC, `logs/libreshard.log` in its data folder (rotated, 3 MB at
