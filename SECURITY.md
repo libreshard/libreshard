@@ -57,10 +57,6 @@ These are documented on purpose. Keep them in mind:
   one layer of protection. Only use it behind a VPN or a firewall you trust.
 - **Killing the app abruptly** while a key is held can leave that key pressed. A normal quit releases
   every key.
-- **Tablets can type into LibreShard's own window.** Only the This PC panel is stopped while
-  LibreShard is in front. A tablet whose shard has keys like Tab and Enter approved could press
-  buttons in LibreShard's window if it's the app in front (its dialogs default to Cancel or Reject).
-  Extending the block to every device is planned for 0.3.
 - **On Linux, Chromium's storage isn't encrypted with the desktop keyring** (`--password-store=basic`),
   so opening the panel never asks to create one. LibreShard keeps no secrets there.
 - **Wayland (Linux) and macOS** are not fully supported: detecting the app in front may fail there,
