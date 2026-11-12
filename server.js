@@ -403,10 +403,11 @@ function startServer({
         return send({ type: 'error', code: 'key-unavailable', keys: missing.join('+') });
       }
 
-      // The local panel runs on this PC: with LibreShard itself in front, its keys would land in the
-      // app (reload, developer tools…). Tablets are left alone and get no extra detection. A failed
-      // detection doesn't block here; the app check below still fails closed.
-      if (msg.type !== 'up' && c.device.local && isSelf(await focus.active())) {
+      // Never type into LibreShard itself, from any device: its keys would land in the app (reload,
+      // developer tools…), and a tablet with tab and enter approved could answer one of its dialogs
+      // ("Allow" a new device, confirm an uninstall). A failed detection doesn't block here; the app
+      // check below still fails closed.
+      if (msg.type !== 'up' && isSelf(await focus.active())) {
         log.info('blocked', { shard: shard.id, device: shortId(c.device.id), reason: 'self' });
         return send({ type: 'blocked', shard: msg.shard, keys: combo, apps: [], active: '', reason: 'self' });
       }

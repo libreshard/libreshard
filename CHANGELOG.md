@@ -27,6 +27,9 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### Security
 
+- No device types into LibreShard's own window anymore. Before, only the This PC panel was stopped
+  while LibreShard was in front, so a tablet with Tab and Enter approved could press buttons in its
+  window or dialogs. Now every tablet gets the "LibreShard is in front" notice instead.
 - The PC answers at most 1000 HTTP requests per minute from each address (the viewer and shard
   files); past that it replies 429 until the minute is over. Keys over the WebSocket aren't
   affected.

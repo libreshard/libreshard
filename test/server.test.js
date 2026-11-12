@@ -286,13 +286,23 @@ test('the local panel is blocked while LibreShard itself is in front, and only t
   });
 });
 
-test('tablets are never checked for LibreShard in front', () => {
+test('tablets are blocked too while LibreShard itself is in front', () => {
   const focus = fakeFocus({ ok: true }, SELF);
   return withServer({ focus }, async (s) => {
     const c = await authed(s);
     c.send({ type: 'press', shard: 'demo', keys: 'f13' });
-    await waitFor(() => s.keyboard.events.length === 2);
-    assert.equal(focus.activeCalls, 0);
+    assert.deepEqual(await c.next(), { type: 'blocked', shard: 'demo', keys: 'f13', apps: [], active: '', reason: 'self' });
+    c.send({ type: 'down', shard: 'demo', keys: 'shift' });
+    assert.equal((await c.next()).reason, 'self');
+    assert.equal(s.keyboard.events.length, 0);
+
+    // Releasing is never blocked
+    c.send({ type: 'up', shard: 'demo', keys: 'shift' });
+    await waitFor(() => s.keyboard.events.length === 1);
+
+    focus.app = OTHER;
+    c.send({ type: 'press', shard: 'demo', keys: 'f13' });
+    await waitFor(() => s.keyboard.events.length === 3);
   });
 });
 

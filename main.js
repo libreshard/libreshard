@@ -178,6 +178,9 @@ async function start() {
   if (!fs.existsSync(rulesFile)) fs.writeFileSync(rulesFile, '{}\n');
 
   focus.setLog(log);
+  // Every tap asks for the app in front (LibreShard itself is never typed into), and the first
+  // detection is slow (~400 ms on Windows while the native module warms up): pay it now
+  focus.active().catch(() => {});
   log.info('start', {
     version: app.getVersion(), packaged: app.isPackaged,
     os: `${process.platform} ${os.release()} ${process.arch}`,

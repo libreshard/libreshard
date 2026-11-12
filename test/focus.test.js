@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createFocus } = require('../focus');
-const { normalizeApp, appMatches, appLabel, exeKey } = require('../focus/apps');
+const { normalizeApp, appMatches, appLabel, exeKey, isSelfApp } = require('../focus/apps');
 
 const photoshop = { exe: 'Photoshop.exe', name: 'Adobe Photoshop 2025', title: 'foto.psd @ 100%', path: 'C:\\Apps\\Photoshop.exe' };
 
@@ -31,6 +31,16 @@ test('text rules look in the program name and exe, or only in the title when tha
   assert.ok(appMatches({ exe: '', name: '', title: 'foto.psd - Photoshop' }, { match: 'photoshop' }));
   assert.ok(!appMatches(photoshop, { match: '   ' }));
   assert.ok(!appMatches(null, { match: 'x' }));
+});
+
+test('LibreShard itself is recognized by its executable, whatever the folder, case or ".exe"', () => {
+  const exe = 'C:\\Program Files\\LibreShard\\LibreShard.exe';
+  assert.equal(isSelfApp({ exe: 'libreshard.exe', name: 'LibreShard' }, exe), true);
+  assert.equal(isSelfApp({ exe: 'LIBRESHARD', name: '' }, '/opt/LibreShard/libreshard'), true);
+  assert.equal(isSelfApp({ exe: 'notepad.exe', name: 'Notepad' }, exe), false);
+  // Title-only detection, or none at all, never counts as LibreShard
+  assert.equal(isSelfApp({ exe: '', title: 'LibreShard' }, exe), false);
+  assert.equal(isSelfApp(null, exe), false);
 });
 
 test('labels prefer the friendly name', () => {
