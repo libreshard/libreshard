@@ -8,6 +8,10 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Apps running as administrator (Windows):** Windows silently drops keys sent to them unless
+  LibreShard runs as administrator too. Now the tablet says so ("… runs as administrator") instead
+  of tapping for nothing. Apps LibreShard can't inspect, such as some anti-cheats, work as before.
+  The diagnostics also say whether LibreShard itself runs as administrator.
 - With "Confirm new devices" on, the question on the PC now closes by itself when the tablet stops
   waiting or after 60 s. Before, it stayed open and answering it did nothing.
 - The **This PC** panel now stays on top of other windows by default. Only new installs change:

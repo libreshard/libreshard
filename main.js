@@ -11,6 +11,7 @@ const { ShardStore } = require('./shard-store');
 const { classifyKeys } = require('./manifest');
 const installer = require('./installer');
 const focus = require('./focus');
+const elevation = require('./focus/elevation');
 const { appLabel, isSelfApp } = require('./focus/apps');
 const i18n = require('./i18n');
 const { labelFor } = require('./shard-settings');
@@ -178,6 +179,7 @@ async function start() {
   if (!fs.existsSync(rulesFile)) fs.writeFileSync(rulesFile, '{}\n');
 
   focus.setLog(log);
+  elevation.setLog(log);
   // Every tap asks for the app in front (LibreShard itself is never typed into), and the first
   // detection is slow (~400 ms on Windows while the native module warms up): pay it now
   focus.active().catch(() => {});
@@ -186,6 +188,7 @@ async function start() {
     os: `${process.platform} ${os.release()} ${process.arch}`,
     session: process.platform === 'linux' ? process.env.XDG_SESSION_TYPE || 'unknown' : undefined,
     electron: process.versions.electron, focus: focus.providerName(), port: cfg.port,
+    elevated: process.platform === 'win32' ? elevation.selfElevated() ?? 'unknown' : undefined,
   });
 
   const devices = new Devices(dataFile('devices.json'), { log });
@@ -334,7 +337,7 @@ async function start() {
     const all = devices.all();
     return buildDiagnostics({
       version: app.getVersion(), packaged: app.isPackaged, ...system(),
-      versions: process.versions, focus: focus.providerName(),
+      versions: process.versions, focus: focus.providerName(), elevated: elevation.selfElevated(),
       settings: Object.fromEntries(Object.keys(SETTINGS).filter((k) => !SETTINGS[k].internal).map((k) => [k, cfg[k]])),
       devices: { total: all.length, local: all.some((d) => d.local) },
       networks: { total: nets.length, vpn: nets.filter((n) => n.vpn).length },
