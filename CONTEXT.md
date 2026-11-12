@@ -628,9 +628,12 @@ The maintainer plans the work in local notes (`docs/plans/`, not published). The
 
 **0.4: panels without code** (next)
 
-- **Panel editor** in the PC window: a grid with pages, buttons with a label, icon, color and press type, and a live preview on the tablet. The result is a normal shard that can be exported and shared.
-- **Import Stream Deck profiles** into the editor: layout, labels, images and hotkey actions, with a summary of what couldn't be imported (plugin actions, opening programs). Nothing from the other product is bundled; the importer only reads the user's own exported files.
-- A guide to **making a shard with an AI assistant**, based on `docs/shards.md` and the template.
+- **Panel editor** in its own window on the PC: a grid of up to 24×24 with pages, and buttons that press, hold, repeat, toggle between two keys, go to another page or just show text, spanning one or more cells. Each button gets a label, a color and an icon (LibreShard's own, an emoji or the user's image). Keys are captured or picked from a list (for Win, Alt+Tab, media keys and F13–F24), with the same warnings as the install review.
+- **Panel look:** built-in themes (LibreShard, light, high contrast, OLED black, a key-pad style) and settings for the background, buttons, spacing and text. No free-form CSS.
+- **Preview:** the editor draws the panel with the same code and styles the tablet uses, and tablets showing the panel reload when it's saved. The result is a normal shard (with a `panel.json` the editor reads back), so panels made on another PC can be edited too.
+- **Export any shard the user installed** as a `.libreshard` file, panels included.
+- **Import Stream Deck profiles** into the editor: pages and folders, labels, images, and hotkey, hotkey switch and media key actions. Hotkeys recorded on a Mac are adapted (Cmd becomes Ctrl) and flagged. Buttons that can't be imported (plugin actions, opening programs, typing text, multi-actions) keep their image and label without an action, and a summary says why. Nothing from the other product is bundled; the importer only reads the user's own exported files.
+- A guide to **making a shard with an AI assistant**, based on `docs/shards.md` and the template, linked from the Shards tab.
 
 **0.5: shard ecosystem and sustainability**
 
@@ -683,6 +686,7 @@ Integrations with other programs through their APIs, with live state on the butt
 - macOS from experimental to supported (permissions, signing and notarization).
 - Wayland: key injection (libei or the RemoteDesktop portal) and foreground app detection.
 - One tablet controlling several PCs.
+- A free-form panel editor, like a slide editor: elements placed anywhere instead of on a grid, as a second mode of the 0.4 editor. After 1.0, and more useful once 1.1 brings live data and macros. Panel pages already say which layout they use, so it can be added without breaking existing panels.
 
 ## 10. Design decisions (so they aren't undone by accident)
 
