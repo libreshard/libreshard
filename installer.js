@@ -11,19 +11,31 @@ const LIMITS = { maxBytes: 50 * 1024 * 1024, maxFiles: 2000 };
 
 // Extracts a zip into a new temporary folder. Refuses entries that would land outside it (absolute
 // paths, "..", drive letters), skips symlinks, and stops at the size and file count limits, using
-// the real decompressed size rather than what the zip claims.
+// the real decompressed size rather than what the zip claims. A failed extraction leaves nothing.
 function extractZip(file, limits = LIMITS) {
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'libreshard-install-'));
   return new Promise((resolve, reject) => {
     const fail = (e) => {
-      fs.rmSync(dest, { recursive: true, force: true });
+      // Retries: on macOS a just-closed file can still be on its way out when the folder goes
+      fs.rmSync(dest, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
       reject(e);
     };
     yauzl.open(file, { lazyEntries: true, strictFileNames: true, validateEntrySizes: true }, (err, zip) => {
       if (err) return fail(new Error('Not a valid zip file: ' + err.message));
       let files = 0;
       let bytes = 0;
-      const stop = (e) => { zip.close(); fail(e); };
+      const open = new Set(); // write streams not closed yet
+      let stopped = false;
+      // The folder is removed only once every file being written is closed: a write stream opens its
+      // file asynchronously, and removing the folder before that finished let the file appear again
+      // inside it (ENOTEMPTY on macOS, and a leftover in the temp folder)
+      const stop = (e) => {
+        if (stopped) return;
+        stopped = true;
+        zip.close();
+        const closing = [...open].map((out) => new Promise((r) => { out.once('close', r); out.destroy(); }));
+        Promise.all(closing).then(() => fail(e));
+      };
       zip.on('error', stop);
       zip.on('end', () => resolve(dest));
       zip.on('entry', (entry) => {
@@ -44,11 +56,12 @@ function extractZip(file, limits = LIMITS) {
           if (e) return stop(e);
           fs.mkdirSync(path.dirname(target), { recursive: true });
           const out = fs.createWriteStream(target);
+          open.add(out);
+          out.on('close', () => open.delete(out));
           stream.on('data', (chunk) => {
             bytes += chunk.length;
             if (bytes > limits.maxBytes) {
               stream.destroy();
-              out.destroy();
               stop(new Error(`The zip is larger than ${Math.round(limits.maxBytes / 1024 / 1024)} MB once extracted`));
             }
           });
