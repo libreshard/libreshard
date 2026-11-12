@@ -119,6 +119,11 @@ Llévala al monitor táctil; queda por encima de las demás ventanas salvo que d
 PC siempre visible" en Ajustes. En Linux siempre queda encima y tiene su propia barra para moverla,
 cambiar su tamaño y cerrarla.
 
+**¿PC nueva?** Ajustes → **Copia de seguridad** guarda en un archivo tus ajustes, las reglas de apps,
+el orden y los ajustes de los shards y los shards que instalaste. Al importarla, primero ves qué va
+a cambiar, y cada shard vuelve a pasar por la revisión de teclas. No incluye las tablets vinculadas:
+vuelve a vincularlas.
+
 ## Crea tu propio shard
 
 Un shard es una carpeta con un `manifest.json`:

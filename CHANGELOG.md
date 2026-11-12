@@ -8,6 +8,10 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Backup** (Settings): export your settings, app rules, shard order and settings, and the shards
+  you installed to one file, and import it on another PC. Importing shows what would change first
+  (security settings highlighted), and every shard goes through the usual key review again. Paired
+  devices and key approvals are never included.
 - **Linux:** logging out with LibreShard running no longer makes it crash (Ubuntu showed a crash
   report, and keys held from a tablet weren't released). On GNOME and XFCE, LibreShard now notices
   the session ending and quits first.

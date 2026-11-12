@@ -9,7 +9,7 @@ const path = require('path');
 const { EventEmitter } = require('events');
 const { validateManifest } = require('./manifest');
 const { normalizeApp, appLabel, exeKey } = require('./focus/apps');
-const { resolveValues, checkValues } = require('./shard-settings');
+const { resolveValues, checkValues, cleanValue } = require('./shard-settings');
 const { nullLog } = require('./log');
 
 // Clean list of app entries (see focus/apps.js), at most 20
@@ -320,6 +320,30 @@ class ShardStore extends EventEmitter {
     this.saveState();
     e.settings = resolveValues(e.manifest.settings, this.state[id].settings);
     this.emit('settings', id, e.settings);
+  }
+
+  // Restores what a backup saved for a shard: enabled, favorite, its place in the menu and its settings
+  // values. Values that don't fit the shard's manifest (another version, a hand-edited file) are
+  // dropped one by one instead of failing the whole shard. Never touches key approvals.
+  restoreState(id, { disabled, favorite, position, settings } = {}) {
+    const e = this.mustGet(id);
+    const st = { ...this.state[id] };
+    if (disabled === true) st.disabled = true; else delete st.disabled;
+    if (favorite === true) st.favorite = true; else delete st.favorite;
+    if (Number.isInteger(position) && position >= 0) st.position = position;
+    if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
+      const clean = {};
+      for (const [key, v] of Object.entries(settings)) {
+        const item = e.manifest.settings.find((x) => x.id === key);
+        const value = item ? cleanValue(item, v) : undefined;
+        if (value !== undefined) clean[key] = value;
+      }
+      st.settings = clean;
+    }
+    this.state[id] = st;
+    this.saveState();
+    this.load();
+    this.emit('settings', id, this.entries.get(id).settings);
   }
 
   resetSettings(id) {

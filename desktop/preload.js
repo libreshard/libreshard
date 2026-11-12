@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('libreshard', {
   getState: invoke('state:get'),
   onState: (cb) => ipcRenderer.on('state', (_e, s) => cb(s)),
   onReview: (cb) => ipcRenderer.on('install:review', (_e, r) => cb(r)),
+  onBackupDone: (cb) => ipcRenderer.on('backup:done', () => cb()),
 
   setPaused: invoke('app:pause'),
   openPanel: invoke('panel:open'),
@@ -17,6 +18,10 @@ contextBridge.exposeInMainWorld('libreshard', {
   reportBug: invoke('app:report-bug'),
   checkUpdates: invoke('update:check'),
   dismissUpdate: invoke('update:dismiss'),
+  exportBackup: invoke('backup:export'),
+  pickBackup: invoke('backup:pick'),
+  applyBackup: invoke('backup:apply'),
+  cancelBackup: invoke('backup:cancel'),
   restart: invoke('app:restart'),
   setSetting: invoke('settings:set'),
 

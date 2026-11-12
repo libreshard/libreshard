@@ -84,6 +84,8 @@ h2:first-child { margin-top: 0; }
 .setting .grow { flex: 1; }
 .setting label { font-weight: 600; display: block; margin-bottom: 2px; }
 .about-version { font-weight: 600; margin: 0 0 2px; }
+.backup-change { padding: 2px 0; font-size: 14px; }
+.backup-change.risky { color: var(--gold); font-weight: 600; }
 .update-status { padding: 10px 0; }
 .update-status .grow { flex: 1; }
 .switch { position: relative; width: 44px; height: 24px; flex: none; margin-top: 2px; }

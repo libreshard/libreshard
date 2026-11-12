@@ -119,6 +119,10 @@ controlling. Drag it to the touch monitor; it stays on top of other windows unle
 "Keep this PC's panel on top" in Settings. On Linux it always stays on top and has its own bar to
 move, resize and close it.
 
+**New PC?** Settings → **Backup** saves your settings, app rules, shard order and settings, and the
+shards you installed in one file. Importing it shows what would change first, and every shard goes
+through the usual key review again. Paired tablets aren't included: pair them again.
+
 ## Make your own shard
 
 A shard is a folder with a `manifest.json`:
