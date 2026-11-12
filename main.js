@@ -37,7 +37,7 @@ const SETTINGS = {
   closeToTray: { default: true, valid: (v) => typeof v === 'boolean' },
   openAtLogin: { default: false, valid: (v) => typeof v === 'boolean' },
   language: { default: 'auto', valid: (v) => v === 'auto' || i18n.languages.includes(v) },
-  panelAlwaysOnTop: { default: false, valid: (v) => typeof v === 'boolean' },
+  panelAlwaysOnTop: { default: true, valid: (v) => typeof v === 'boolean' },
   // Where the local panel window was last left; saved by the app, never set from the page
   panelBounds: {
     default: null, internal: true,

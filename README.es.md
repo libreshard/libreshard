@@ -114,8 +114,9 @@ Cada código sirve una vez y durante 10 minutos. Los dispositivos vinculados apa
 
 **¿Pantalla táctil en la PC?** La tarjeta **Esta PC**, junto a los QR, abre los shards en una ventana
 propia en esta pantalla, sin tablet. Tocarla nunca le quita el foco a la app que estás controlando.
-Llévala al monitor táctil y, si quieres, activa "Panel de esta PC siempre visible" en Ajustes. En
-Linux siempre queda encima y tiene su propia barra para moverla, cambiar su tamaño y cerrarla.
+Llévala al monitor táctil; queda por encima de las demás ventanas salvo que desactives "Panel de esta
+PC siempre visible" en Ajustes. En Linux siempre queda encima y tiene su propia barra para moverla,
+cambiar su tamaño y cerrarla.
 
 ## Crea tu propio shard
 

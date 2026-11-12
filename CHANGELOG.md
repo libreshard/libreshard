@@ -6,6 +6,11 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### App
+
+- The **This PC** panel now stays on top of other windows by default. Only new installs change:
+  if you already used 0.2, your setting stays as it was (turn it on in Settings).
+
 ### Project
 
 - Code of conduct (Contributor Covenant 3.0), with reports to conduct@libreshard.com.
