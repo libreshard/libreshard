@@ -585,14 +585,17 @@ The maintainer plans the work in local notes (`docs/plans/`, not published). The
 
 **0.3: robustness and trust** (next)
 
-- **Logs on disk** (`<userData>/logs/`, rotated) and a "Copy diagnostics" button in Settings, for bug reports.
+- **Logs on disk** (`<userData>/logs/`, rotated, with no personal data) and a "Copy diagnostics" button in Settings, for bug reports.
+- **About** in Settings (version, license, links) and **"Report a bug"**: copies the diagnostics and opens a prefilled GitHub issue form, so the user reviews everything before sending it.
+- **New version notice** in the PC window: a daily check of GitHub Releases that can be turned off (on by default). It only links to the download; nothing is installed by itself. It's the app's first outgoing connection and sends no user data.
+- **Backup:** export and import settings and installed shards. Paired devices stay out, and every imported shard goes through the install review again.
+- The "This PC" panel is always on top by default (new installs only).
 - **Elevated apps on Windows:** when the foreground app runs as administrator and LibreShard doesn't, the keys are lost silently. Detect it and warn on the tablet.
 - **Version in the viewer**, with "Reload to update" when it doesn't match the PC's.
 - **Linux session end:** quit cleanly when the session ends instead of letting Chromium abort (see §8).
 - **Windows CI:** find the handle leak that `--test-force-exit` masks.
 - Close the pairing confirmation dialog when the tablet gives up or the 60 s pass.
 - **Never press keys into LibreShard from any device:** extend the `self` block, today only for "This PC", to every tablet.
-- **Signed Windows builds** (SignPath) and then **automatic updates** (`electron-updater` with GitHub Releases). Tentative: signing depends on SignPath approving the project; if it isn't ready in time, both move to a later version.
 
 **0.4: panels without code**
 
@@ -623,6 +626,7 @@ The maintainer plans the work in local notes (`docs/plans/`, not published). The
 
 - No big new features: a full security review against §6, testing on every supported platform and on real tablets, complete docs, and fixes for what 0.3–0.6 bring up.
 - From 1.0 on, the shard format, the `shard-api.js` API and the protocol don't break without moving to 2.0.
+- **Signed Windows builds** (SignPath) and then **automatic updates** (`electron-updater` with GitHub Releases), replacing the 0.3 new version notice. Signing depends on SignPath approving the project.
 
 **1.1: more capable shards** (tentative)
 
