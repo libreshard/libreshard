@@ -27,15 +27,15 @@ function homeRedactor(home = os.homedir(), platform = process.platform) {
   return (s) => s.replace(re, '~');
 }
 
-// Values with spaces, quotes or '=' are quoted (only quotes and line breaks are escaped, so Windows
-// paths stay readable); long ones are cut
+// Values with spaces, quotes or '=' are quoted (backslashes, quotes and line breaks are escaped);
+// long ones are cut
 function formatValue(v, redact = identity) {
   let s = v instanceof Error ? v.message : typeof v === 'string' ? v : JSON.stringify(v);
   if (s === undefined) s = String(v);
   s = redact(s);
   if (s.length > MAX_VALUE) s = s.slice(0, MAX_VALUE) + '…';
   if (s !== '' && !/[\s"=]/.test(s)) return s;
-  return '"' + s.replace(/"/g, '\\"').replace(/\r?\n/g, '\\n') + '"';
+  return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n') + '"';
 }
 
 // "2026-11-11T18:00:00.000Z WARN  event a=1 b="two words"", plus the stack of any Error detail
