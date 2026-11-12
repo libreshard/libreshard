@@ -73,7 +73,6 @@ test('the size and file count limits are enforced while extracting, and leave no
   await assert.rejects(extractZip(big, { maxBytes: 1000, maxFiles: 100 }), /larger than/);
   const many = writeZip(Array.from({ length: 12 }, (_, i) => ({ name: `f${i}.txt`, data: 'x' })));
   await assert.rejects(extractZip(many, { maxBytes: 1e6, maxFiles: 10 }), /more than 10 files/);
-  await new Promise((r) => setTimeout(r, 100)); // let destroyed streams release their files
   assert.deepEqual(temps(), before, 'failed extractions remove their temporary folder');
 });
 
