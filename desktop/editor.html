@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>LibreShard</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body class="editor">
+
+<header class="ed-top">
+  <div class="ed-field">
+    <label for="name" data-i18n="editor.name"></label>
+    <input id="name" maxlength="60" class="ed-name">
+  </div>
+  <div class="ed-field">
+    <label for="icon" data-i18n="editor.icon"></label>
+    <input id="icon" maxlength="8" class="ed-icon">
+  </div>
+  <div class="ed-field">
+    <label data-i18n="editor.grid"></label>
+    <span class="row ed-gridsize">
+      <input id="cols" type="number" min="1" max="24" class="ed-num" data-i18n-aria="editor.cols">
+      <span>×</span>
+      <input id="rows" type="number" min="1" max="24" class="ed-num" data-i18n-aria="editor.rows">
+    </span>
+  </div>
+  <div class="ed-field">
+    <label for="size" data-i18n="editor.previewSize"></label>
+    <select id="size">
+      <option value="landscape" data-i18n="editor.size.landscape"></option>
+      <option value="portrait" data-i18n="editor.size.portrait"></option>
+      <option value="phone" data-i18n="editor.size.phone"></option>
+    </select>
+  </div>
+  <span class="ed-spacer"></span>
+  <button id="undo" class="btn" data-i18n="editor.undo"></button>
+  <button id="redo" class="btn" data-i18n="editor.redo"></button>
+  <button id="save" class="btn primary" data-i18n="action.save"></button>
+  <button id="close" class="btn" data-i18n="action.close"></button>
+</header>
+
+<div class="ed-main">
+  <aside class="ed-pages">
+    <h2 data-i18n="editor.pages"></h2>
+    <div id="pages" class="ed-page-list"></div>
+    <button id="addPage" class="btn small" data-i18n="editor.addPage"></button>
+    <label class="ed-check"><input type="checkbox" id="pageBar"> <span data-i18n="editor.pageBar"></span></label>
+  </aside>
+
+  <section class="ed-center">
+    <div id="stage" class="ed-stage">
+      <div id="frameBox" class="ed-framebox"><iframe id="preview" src="panel-preview.html" title="" tabindex="-1"></iframe></div>
+    </div>
+    <div id="warnings" class="ed-warnings"></div>
+  </section>
+
+  <aside id="props" class="ed-props"></aside>
+</div>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="keycodes.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

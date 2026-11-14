@@ -76,6 +76,9 @@
       const label = make('span', 'lsp-text', look.label);
       if (look.labelSize && look.labelSize !== 'm') label.classList.add('lsp-' + look.labelSize);
       if (look.labelPos === 'top') parts.unshift(label); else parts.push(label);
+    } else if (!icon && look.key) {
+      // Nothing else to show: the key itself
+      parts.push(make('span', 'ls-key', keyLabel(look.key)));
     }
     // Where the text goes: over an image at the bottom unless chosen otherwise; without an image
     // the icon and text stay together, in the middle unless a position was chosen
@@ -132,9 +135,15 @@
     const remember = () => { if (window.Shard) Shard.save(saved); };
 
     function button(b) {
-      const look = b.type === 'toggle' && saved.toggles[b.id] && b.alt ? { ...b, ...b.alt } : b;
+      let look = b.type === 'toggle' && saved.toggles[b.id] && b.alt ? { ...b, ...b.alt } : b;
+      // A page button with nothing to show says where it goes
+      if (b.type === 'page' && !look.label && !look.icon) {
+        const target = { back: '↩', next: '→', prev: '←' }[b.page] || '→ ' + (pages.find((p) => p.id === b.page)?.name || '');
+        look = { ...look, label: target };
+      }
       const tag = b.type === 'label' || b.type === 'none' ? 'div' : 'button';
       const el = make(tag, 'ls-btn lsp-btn' + (b.type === 'label' ? ' lsp-label' : b.type === 'none' ? ' lsp-none' : ''));
+      el.dataset.id = b.id;
       el.style.gridColumn = `${b.col + 1} / span ${b.w}`;
       el.style.gridRow = `${b.row + 1} / span ${b.h}`;
       if (tag === 'button') el.type = 'button';

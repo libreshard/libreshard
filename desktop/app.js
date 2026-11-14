@@ -158,7 +158,8 @@ function renderShards() {
 
   fill(p,
     h('div', { class: 'row' },
-      h('button', { class: 'btn primary', onclick: () => install('zip') }, t('shards.installZip')),
+      h('button', { class: 'btn primary', onclick: () => call(api.openEditor) }, t('shards.newPanel')),
+      h('button', { class: 'btn', onclick: () => install('zip') }, t('shards.installZip')),
       h('button', { class: 'btn', onclick: () => install('folder') }, t('shards.installFolder')),
       h('button', { class: 'btn', onclick: () => install('dev') }, t('shards.loadDev')),
       h('button', { class: 'btn', onclick: () => api.openPath('shards') }, t('shards.openShardsFolder'))),
@@ -173,7 +174,7 @@ function renderShards() {
 }
 
 function shardCard(s) {
-  const origin = s.bundled ? t('shards.bundled') : s.linked ? t('shards.linked') : t('shards.userInstalled');
+  const origin = s.bundled ? t('shards.bundled') : s.linked ? t('shards.linked') : s.panel ? t('shards.panelBadge') : t('shards.userInstalled');
   const risky = s.risk.warning ? h('span', { class: 'badge danger' }, t('risk.badgeWarning'))
     : s.risk.dangerous.length ? h('span', { class: 'badge warn' }, t('risk.badgeSystem')) : null;
   return h('div', { class: 'item' + (s.pendingKeys.length ? ' attention' : '') + (s.enabled ? '' : ' off') },
@@ -201,6 +202,7 @@ function shardCard(s) {
     s.description ? h('div', { class: 'desc' }, s.description) : null,
     h('div', { class: 'actions' },
       s.pendingKeys.length ? h('button', { class: 'btn primary small', onclick: () => review(approvalView(s), 'approve') }, t('shards.review')) : null,
+      s.panel ? h('button', { class: 'btn small', onclick: () => call(api.openEditor, s.id) }, t('shards.edit')) : null,
       h('button', { class: 'btn small', onclick: () => review(approvalView(s), 'view') }, t('shards.permissions')),
       h('button', { class: 'btn small', onclick: () => appsEditor(s) }, t('shards.apps')),
       s.settingsSchema.length ? h('button', { class: 'btn small', onclick: () => settingsEditor(s) }, t('shards.settings')) : null,

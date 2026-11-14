@@ -8,7 +8,9 @@ const QRCode = require('qrcode');
 const { startServer } = require('./server');
 const { Pairing, Devices, RateLimiter } = require('./pairing');
 const { ShardStore } = require('./shard-store');
-const { classifyKeys } = require('./manifest');
+const { classifyKeys, validateManifest } = require('./manifest');
+const { validatePanel, imagesOf, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
+const keys = require('./keys');
 const installer = require('./installer');
 const focus = require('./focus');
 const elevation = require('./focus/elevation');
@@ -26,6 +28,10 @@ const VPN = /tailscale|zerotier|hamachi|vpn|wireguard|openvpn|nord|proton/i;
 const VIRTUAL = /vethernet|virtualbox|vmware|hyper-v|wsl|docker|vbox|loopback/i;
 const DESKTOP_PAGE = path.join(__dirname, 'desktop', 'index.html');
 const DESKTOP_URL = pathToFileURL(DESKTOP_PAGE).href;
+const EDITOR_PAGE = path.join(__dirname, 'desktop', 'editor.html');
+const EDITOR_URL = pathToFileURL(EDITOR_PAGE).href;
+const PREVIEW_URL = pathToFileURL(path.join(__dirname, 'desktop', 'panel-preview.html')).href;
+const PANEL_TEMPLATE = path.join(__dirname, 'desktop', 'panel-template');
 const SHARD_FILE = /\.(libreshard|zip)$/i;
 const PANEL_MIN = { width: 360, height: 280 };
 // Windows never makes a window that doesn't activate topmost at Electron's default 'floating' level
@@ -322,7 +328,7 @@ async function start() {
         icon: e.manifest.icon, description: e.manifest.description, keys: e.manifest.keys,
         bundled: e.bundled, linked: e.linked, enabled: e.enabled, apps: e.apps.map(appLabel),
         appEntries: await withIcons(e.apps), customApps: e.customApps, suggestedApps: e.suggestedApps,
-        settings: e.settings, favorite: store.isFavorite(e.id),
+        settings: e.settings, favorite: store.isFavorite(e.id), panel: e.panel,
         settingsSchema: e.manifest.settings.map((item) => ({
           ...item,
           label: labelFor(item.label, locale),
@@ -437,11 +443,17 @@ async function start() {
     else dialog.showErrorBox('LibreShard', r.errors.join('\n'));
   };
 
-  /* ---------- IPC: only the desktop page may call, and every argument is checked ---------- */
+  /* ---------- IPC: only our own pages may call, and every argument is checked ---------- */
 
-  function handle(channel, fn) {
+  // Windows paths ignore case, and Chromium writes the drive letter in capitals (C:) even when the
+  // app was started from a lowercase c:\ path
+  const samePage = (a, b) => typeof a === 'string' && (process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b);
+  // A channel answers only the main frame of one window showing one page: the desktop page, or the
+  // panel editor for its own editor:* channels
+  function handleFor(getWindow, url, channel, fn) {
     ipcMain.handle(channel, async (e, ...args) => {
-      if (!win || e.sender !== win.webContents || e.senderFrame?.url !== DESKTOP_URL) throw new Error('Not allowed');
+      const w = getWindow();
+      if (!w || w.isDestroyed() || e.sender !== w.webContents || !samePage(e.senderFrame?.url, url)) throw new Error('Not allowed');
       try {
         return (await fn(...args)) ?? { ok: true };
       } catch (err) {
@@ -449,6 +461,7 @@ async function start() {
       }
     });
   }
+  const handle = (channel, fn) => handleFor(() => win, DESKTOP_URL, channel, fn);
   const entry = (id) => {
     const e = store.all().find((x) => x.id === id);
     if (!e) throw new Error('Unknown shard');
@@ -696,6 +709,135 @@ async function start() {
     }
   });
 
+  /* ---------- Panel editor ---------- */
+
+  // Panels without code, in a window of their own (one at a time). The editor works on a copy; only
+  // "Save" writes a shard: validated here (validatePanel), built from desktop/panel-template/ and
+  // installed with store.install(), which approves its keys, since the user chose them on this PC.
+  // A panel made on another PC is edited from its panel.json alone; the rest is generated again.
+  let editor = null;
+  let editing = null; // { id, meta, panel, images, warnings, dirty } while the editor is open
+  const editorHandle = (channel, fn) => handleFor(() => editor, EDITOR_URL, channel, fn);
+  const iconBodies = require('./shard-base/icons.js');
+
+  const panelImages = (root) => {
+    try { return fs.readdirSync(path.join(root, 'images')).map((n) => 'images/' + n); } catch { return []; }
+  };
+  // An installed panel as the editor needs it, with its images as data: URLs for the preview
+  function readPanel(e) {
+    let raw;
+    try { raw = JSON.parse(fs.readFileSync(path.join(e.root, 'panel.json'), 'utf8')); } catch (err) {
+      throw new Error(t('editor.unreadable', { error: err.message }));
+    }
+    const r = validatePanel(raw, { files: new Set(panelImages(e.root)) });
+    if (!r.ok) throw new Error(t('editor.unreadable', { error: r.errors.join('; ') }));
+    const images = {};
+    for (const f of imagesOf(r.panel)) images[f] = 'data:image/png;base64,' + fs.readFileSync(path.join(e.root, f)).toString('base64');
+    return { panel: r.panel, warnings: r.warnings, images };
+  }
+  const newPanel = () => ({
+    format: 1, grid: { cols: 5, rows: 3 },
+    pages: [{ id: 'p1', name: t('editor.pageName', { n: 1 }), layout: 'grid', buttons: [] }],
+  });
+
+  function openEditor(id) {
+    if (editor) {
+      if (editor.isMinimized()) editor.restore();
+      editor.focus();
+      return;
+    }
+    if (id) {
+      const e = entry(id);
+      if (!e.panel) throw new Error('Not a panel');
+      const m = e.manifest;
+      editing = { id: e.id, meta: { name: m.name, icon: m.icon, description: m.description, author: m.author, apps: m.apps, version: m.version }, ...readPanel(e) };
+    } else {
+      editing = { id: null, meta: { name: t('editor.newName'), icon: '' }, panel: newPanel(), images: {}, warnings: [] };
+    }
+    editing.dirty = false;
+    editor = new BrowserWindow({
+      width: 1280, height: 840, minWidth: 1000, minHeight: 620, title: t('editor.windowTitle'),
+      backgroundColor: '#0d1b2a', icon: path.join(__dirname, 'viewer', 'brand', 'icon-512.png'),
+      webPreferences: {
+        preload: path.join(__dirname, 'desktop', 'editor-preload.js'),
+        contextIsolation: true,
+        sandbox: true,
+        nodeIntegration: false,
+      },
+    });
+    // No menu: Alt has to reach the key capture, and there are no reload shortcuts to lose work with
+    editor.setMenu(null);
+    editor.webContents.on('will-navigate', (e) => e.preventDefault());
+    // The canvas iframe stays on the preview page (a file dropped on it would open that file)
+    editor.webContents.on('will-frame-navigate', (e) => { if (!e.isMainFrame && !samePage(e.url, PREVIEW_URL)) e.preventDefault(); });
+    editor.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    editor.on('close', async (e) => {
+      if (quitting || !editing?.dirty) return;
+      e.preventDefault();
+      const { response } = await dialog.showMessageBox(editor, {
+        type: 'question', buttons: [t('editor.discard'), t('action.cancel')], defaultId: 1, cancelId: 1, noLink: true,
+        message: t('editor.unsaved'), detail: t('editor.unsavedDetail'),
+      });
+      if (response === 0 && editor) { editing.dirty = false; editor.close(); }
+    });
+    editor.on('closed', () => { editor = null; editing = null; });
+    editor.loadFile(EDITOR_PAGE);
+    log.info('editor-opened', { shard: editing.id || undefined });
+  }
+  handle('editor:open', (id) => { openEditor(typeof id === 'string' ? id : null); });
+
+  editorHandle('editor:init', () => ({
+    ok: true, platform: process.platform, locale, strings: i18n.strings(locale), icons: iconBodies, limits: PANEL_LIMITS,
+    id: editing.id, meta: { name: editing.meta.name || '', icon: editing.meta.icon || '' },
+    panel: editing.panel, images: editing.images, warnings: editing.warnings,
+  }));
+  // The live warnings: the install review's risk classes, and keys this system can't press
+  editorHandle('editor:check', (combos) => {
+    if (!Array.isArray(combos) || combos.length > 1000 || combos.some((c) => typeof c !== 'string')) throw new Error('Invalid keys');
+    const valid = combos.filter((c) => { try { keys.parse(c); return true; } catch { return false; } });
+    return { ok: true, risk: classifyKeys(valid), unavailable: valid.filter((c) => keys.unavailable(c).length) };
+  });
+  editorHandle('editor:dirty', (on) => { if (editing) editing.dirty = on === true; });
+  editorHandle('editor:close', () => { editor.close(); });
+  editorHandle('editor:save', (panel, meta) => {
+    const existing = editing.id ? store.all().find((x) => x.id === editing.id) : null;
+    const r = validatePanel(panel, { files: new Set(existing ? panelImages(existing.root) : []) });
+    if (!r.ok) throw new Error(r.errors.join('\n'));
+    // The editor never produces anything validatePanel would drop: if it did, saving would lose it
+    if (r.warnings.length) throw new Error(t('editor.invalid', { details: r.warnings.slice(0, 5).join('\n') }));
+    const name = typeof meta?.name === 'string' ? meta.name.trim() : '';
+    if (!name) throw new Error(t('editor.nameRequired'));
+    const icon = typeof meta?.icon === 'string' ? [...meta.icon.trim()].slice(0, 4).join('') : '';
+    const template = {};
+    for (const f of fs.readdirSync(PANEL_TEMPLATE)) template[f] = fs.readFileSync(path.join(PANEL_TEMPLATE, f), 'utf8');
+    const built = buildShard({ panel: r.panel, meta: { ...editing.meta, id: editing.id || undefined, name, icon }, template });
+    const checked = validateManifest(built.manifest, { appVersion: app.getVersion() });
+    if (!checked.ok) throw new Error(checked.errors.join('\n'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'libreshard-save-'));
+    try {
+      for (const [f, content] of Object.entries(built.files)) fs.writeFileSync(path.join(dir, f), content);
+      const images = imagesOf(r.panel);
+      if (images.length) fs.mkdirSync(path.join(dir, 'images'));
+      for (const f of images) fs.copyFileSync(path.join(existing.root, f), path.join(dir, f));
+      store.install(dir, checked.manifest);
+    } catch (e) {
+      log.error('panel-save-failed', { shard: built.manifest.id, error: e });
+      throw e;
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    // Tablets showing this panel reload it (like a development shard); new ones see it in the menu
+    store.emit('files', built.manifest.id);
+    log.info('panel-saved', {
+      shard: built.manifest.id, version: built.manifest.version, new: !editing.id,
+      pages: r.panel.pages.length, buttons: r.panel.pages.reduce((n, p) => n + p.buttons.length, 0),
+    });
+    editing.id = built.manifest.id;
+    editing.meta = { ...editing.meta, name, icon, version: built.manifest.version };
+    editing.dirty = false;
+    return { ok: true, id: built.manifest.id, version: built.manifest.version };
+  });
+
   /* ---------- Local panel ("This PC") ---------- */
 
   // For a touch screen on this PC: the viewer in its own window that never takes the focus, so the
@@ -932,7 +1074,10 @@ async function start() {
     }
   });
   // Closing the window for real (no tray, or quitting) takes the panel with it
-  win.on('closed', () => { if (panel) panel.destroy(); });
+  win.on('closed', () => {
+    if (panel) panel.destroy();
+    if (editor) editor.destroy();
+  });
   win.loadFile(DESKTOP_PAGE);
 }
 

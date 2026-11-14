@@ -8,13 +8,17 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Panel editor:** make your own panel without writing code. **New panel** in the Shards tab
+  opens it in its own window: a grid (up to 24×24) with pages, where each button presses a key,
+  holds it, repeats it while held, toggles between two keys, opens another page or just shows
+  text, and can span several cells. Give it a text, one of LibreShard's icons or an emoji, and
+  colors. Keys are captured from the keyboard or picked from a list (for Win, media keys and F13 to
+  F24), with the same warnings as the install review. The preview draws the panel exactly as the
+  tablet will, in landscape, portrait or phone size, and warns about buttons too small for a
+  finger. Saving installs it like any shard, with its keys approved, and tablets showing it reload.
+  **Edit** on a panel's card opens it again, also for panels made on another PC.
 - Installing a new version of a shard you already have keeps it where it was: favorite, place in
   the menu, turned off and its settings. Before, they went back to the defaults.
-
-### Project
-
-- Groundwork for panels made without code (0.4): `panel.json`, the format the panel editor will
-  save, and the code that draws it on the tablet. Nothing in the app uses it yet.
 
 ## [0.3.0] - 2026-11-12
 

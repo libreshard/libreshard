@@ -18,6 +18,7 @@ This guide covers everything a shard author needs. The quickest start is the
 - [Design rules](#design-rules)
 - [What a shard can't do](#what-a-shard-cant-do)
 - [Sharing your shard](#sharing-your-shard)
+- [Panels made in the editor](#panels-made-in-the-editor)
 
 ## The smallest shard
 
@@ -254,3 +255,14 @@ Two side effects: `mask-image` with a file from the shard may fail (embed masks 
   icons and uses no game artwork for that reason.
 - **Name it clearly.** "Photo tools for LibreShard" is fine; see [TRADEMARKS.md](../TRADEMARKS.md).
 - Then tell people about it: open a discussion in the LibreShard repository.
+
+## Panels made in the editor
+
+You don't need any of the above for a grid of buttons: **New panel** in the Shards tab opens an
+editor where you place buttons, choose their keys, texts, icons and colors, and add pages. Saving
+installs the panel as a normal shard, ready on the tablet.
+
+A panel's folder has one extra file, `panel.json`, which is what the editor reads back; the
+rest (`index.html`, `layout.js`, the styles and scripts) is generated from it, so editing those
+files by hand is lost on the next save. `panel.json` may still change before LibreShard 1.0.
+For anything beyond a grid, write a shard as described in this guide.

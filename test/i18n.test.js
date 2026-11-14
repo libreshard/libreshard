@@ -19,7 +19,7 @@ test('both languages use the same {placeholders} in every string', () => {
 test('every key the code asks for exists', () => {
   const root = path.join(__dirname, '..');
   const used = new Set();
-  for (const file of ['main.js', 'desktop/app.js', 'desktop/index.html', 'viewer/app.js', 'viewer/index.html']) {
+  for (const file of ['main.js', 'desktop/app.js', 'desktop/index.html', 'viewer/app.js', 'viewer/index.html', 'desktop/editor.js', 'desktop/editor.html']) {
     const src = fs.readFileSync(path.join(root, file), 'utf8');
     for (const m of src.matchAll(/\bt\('([\w.]+)'\s*[,)]/g)) used.add(m[1]); // whole keys, not 'prefix.' + x
     for (const m of src.matchAll(/data-i18n(?:-aria)?="([\w.]+)"/g)) used.add(m[1]);
