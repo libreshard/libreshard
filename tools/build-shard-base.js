@@ -3,12 +3,16 @@
 // authors' template), since a shard can only load files from its own folder:
 //   libreshard.css  shard-base/base.css + one .i-<name> class per icon in shard-base/icons.js
 //   libreshard.js   shard-base/libreshard.js
+// It also writes the panel template (desktop/panel-template/), the files every panel made with the
+// editor shares: the app copies them into each panel's folder, and the editor's preview loads them.
+// Its libreshard.css adds shard-base/panel.css.
 // Usage: node tools/build-shard-base.js [--check]   (--check only reports stale copies, exit 1)
 const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..');
 const base = path.join(root, 'shard-base');
+const PANEL_TEMPLATE = path.join(root, 'desktop', 'panel-template');
 
 function iconCss() {
   const icons = require(path.join(base, 'icons.js'));
@@ -33,21 +37,34 @@ function outputs() {
   };
 }
 
-// Every bundled shard folder, plus the template for authors
+// The panel template: the shared files plus the panel's own code, page and styles
+function panelOutputs() {
+  const out = outputs();
+  return {
+    ...out,
+    'libreshard.css': out['libreshard.css'] + '\n/* Panels */\n' + read('panel.css'),
+    'panel.js': read('panel.js'),
+    'index.html': read('panel.html'),
+  };
+}
+
+// Every bundled shard folder plus the template for authors, each with the files it gets
 function targets() {
   const shards = path.join(root, 'shards');
+  const out = outputs();
   return fs.readdirSync(shards)
     .map((d) => path.join(shards, d))
     .filter((d) => fs.existsSync(path.join(d, 'manifest.json')))
-    .concat(path.join(root, 'docs', 'shard-template'));
+    .concat(path.join(root, 'docs', 'shard-template'))
+    .map((dir) => ({ dir, files: out }))
+    .concat({ dir: PANEL_TEMPLATE, files: panelOutputs() });
 }
 
 // Returns the copies that are missing or differ from the source
 function stale() {
-  const out = outputs();
   const bad = [];
-  for (const dir of targets()) {
-    for (const [name, content] of Object.entries(out)) {
+  for (const { dir, files } of targets()) {
+    for (const [name, content] of Object.entries(files)) {
       const file = path.join(dir, name);
       if (!fs.existsSync(file) || lf(fs.readFileSync(file, 'utf8')) !== content) bad.push(path.relative(root, file));
     }
@@ -61,12 +78,12 @@ if (require.main === module) {
     if (bad.length) { console.error('Stale copies (run npm run shards:base):\n  ' + bad.join('\n  ')); process.exit(1); }
     console.log('All shard base copies are up to date.');
   } else {
-    const out = outputs();
-    for (const dir of targets()) {
-      for (const [name, content] of Object.entries(out)) fs.writeFileSync(path.join(dir, name), content);
+    for (const { dir, files } of targets()) {
+      fs.mkdirSync(dir, { recursive: true });
+      for (const [name, content] of Object.entries(files)) fs.writeFileSync(path.join(dir, name), content);
       console.log('updated', path.relative(root, dir));
     }
   }
 }
 
-module.exports = { stale, targets };
+module.exports = { stale, targets, PANEL_TEMPLATE };

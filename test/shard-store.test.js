@@ -124,6 +124,49 @@ test('install replaces an installed copy but refuses bundled and linked ids', ()
   }
 });
 
+test('installing over an installed shard keeps its favorite, position, disabled state and settings', () => {
+  const t = setup();
+  const settings = [{ id: 'mode', type: 'select', label: 'Mode', options: ['a', 'b'] }];
+  const src = makeShardDir({ v2: { manifest: { id: 'mine', version: '2.0.0', ...keys('f13', 'f16'), settings } } });
+  try {
+    fs.writeFileSync(path.join(t.user, 'mine', 'manifest.json'), JSON.stringify({ id: 'mine', ...keys('f13'), settings }));
+    const s = t.make();
+    s.approve('mine');
+    s.setFavorite('mine', true);
+    s.setEnabled('mine', false);
+    s.setSettings('mine', { mode: 'b' });
+    s.move('media', 1);
+    const before = { ...s.state.mine };
+    s.install(path.join(src, 'v2'), { id: 'mine', keys: ['f13', 'f16'] });
+    assert.deepEqual(s.state.mine, { ...before, approved: ['f13', 'f16'] });
+    const e = t.make().mustGet('mine'); // get() hides disabled shards
+    assert.equal(e.manifest.version, '2.0.0');
+    assert.equal(e.enabled, false);
+    assert.deepEqual(e.settings, { mode: 'b' });
+    assert.deepEqual(e.pendingKeys, []);
+  } finally {
+    t.cleanup();
+    fs.rmSync(src, { recursive: true, force: true });
+  }
+});
+
+test('a user shard with panel.json is a panel; bundled and linked ones never are', () => {
+  const t = setup();
+  const dev = makeShardDir({ devpanel: { manifest: { id: 'devpanel', ...keys('f13') }, files: { 'panel.json': '{}' } } });
+  try {
+    fs.writeFileSync(path.join(t.user, 'mine', 'panel.json'), '{}');
+    fs.writeFileSync(path.join(t.bundled, 'media', 'panel.json'), '{}');
+    fs.symlinkSync(path.join(dev, 'devpanel'), path.join(t.user, 'devpanel'), 'junction');
+    const s = t.make();
+    assert.equal(s.get('mine').panel, true);
+    assert.equal(s.get('media').panel, false);
+    assert.equal(s.get('devpanel').panel, false);
+  } finally {
+    t.cleanup();
+    fs.rmSync(dev, { recursive: true, force: true });
+  }
+});
+
 test('uninstalling a linked shard removes only the link, never the folder it points to', () => {
   const t = setup();
   const dev = makeShardDir({ devshard: { manifest: { id: 'devshard', ...keys('f13') }, files: { 'work.js': 'precious' } } });

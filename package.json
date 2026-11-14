@@ -73,6 +73,7 @@
       "updates.js",
       "linux-session.js",
       "backup.js",
+      "panel-format.js",
       "focus/**",
       "i18n/**",
       "desktop/**",

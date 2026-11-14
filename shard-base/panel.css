@@ -1,0 +1,53 @@
+/* SPDX-License-Identifier: MIT-0 */
+/* Panels made with the editor (shard-base/panel.js). Only the panel template's libreshard.css
+   includes this part. Every look setting is a --lsp-* variable set by panel.js from panel.json;
+   without one, panels look like the bundled shards. */
+body.lsp-body { background: var(--lsp-bg, radial-gradient(110% 80% at 100% 0%, #133452 0%, transparent 60%), var(--ls-navy)); }
+
+.lsp-tabs { min-width: 0; display: flex; gap: calc(var(--ls-gap) / 2); overflow-x: auto; scrollbar-width: none; }
+.lsp-tab {
+  appearance: none; margin: 0; font: inherit; cursor: pointer; flex: none;
+  min-height: 40px; padding: 0 1em; border-radius: 999px;
+  border: 1px solid var(--ls-line); background: transparent; color: var(--ls-muted);
+  font-size: clamp(13px, 2vmin, 16px); white-space: nowrap;
+}
+.lsp-tab[aria-pressed="true"] { background: var(--ls-raised); border-color: var(--ls-cyan); color: var(--ls-text); }
+
+.lsp-grid { display: grid; gap: var(--ls-gap); height: 100%; }
+
+/* A panel button: the size comes from the grid, so the 48 px minimum of .ls-btn doesn't apply here
+   (the editor warns about buttons that end up smaller) */
+.lsp-btn {
+  position: relative; min-width: 0; min-height: 0;
+  background: var(--lsp-fill, linear-gradient(180deg, var(--ls-raised), var(--ls-surface)));
+  border: var(--lsp-border, 1px) solid var(--lsp-border-color, var(--ls-line));
+  border-radius: var(--lsp-radius, var(--ls-radius));
+  box-shadow: var(--lsp-shadow, none);
+  color: var(--lsp-text, var(--ls-text));
+  font-family: var(--lsp-font, var(--ls-font));
+  font-size: calc(clamp(13px, 2.2vmin, 19px) * var(--lsp-scale, 1));
+}
+.lsp-btn:active, .lsp-btn.is-active {
+  background: var(--lsp-active, var(--ls-cyan)); border-color: var(--lsp-active, var(--ls-cyan));
+  color: var(--lsp-active-text, var(--ls-navy));
+}
+.lsp-btn.lsp-top { justify-content: flex-start; }
+.lsp-btn.lsp-bottom { justify-content: flex-end; }
+.lsp-text { position: relative; white-space: pre-line; overflow-wrap: anywhere; }
+.lsp-s { font-size: .8em; }
+.lsp-l { font-size: 1.3em; }
+.lsp-emoji { font-size: 2.2em; line-height: 1; }
+.lsp-btn .ls-i { width: 2.2em; height: 2.2em; }
+
+/* An image fills the button; its text goes over it, as on a hardware key pad */
+.lsp-img { position: absolute; inset: 8%; width: 84%; height: 84%; object-fit: contain; pointer-events: none; }
+.lsp-bleed .lsp-img { inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.lsp-btn.lsp-has-img { padding: .35em; }
+.lsp-has-img .lsp-text { text-shadow: 0 1px 2px #000, 0 0 4px #000; color: #fff; }
+.lsp-bleed .lsp-btn.lsp-has-img { border-width: 0; }
+
+/* Text without an action, and imported buttons that have none */
+.lsp-label { background: var(--lsp-label-fill, transparent); border-color: transparent; box-shadow: none; cursor: default; }
+.lsp-label:active { background: var(--lsp-label-fill, transparent); border-color: transparent; color: var(--lsp-text, var(--ls-text)); transform: none; }
+.lsp-none { opacity: .4; cursor: default; }
+.lsp-none:active { background: var(--lsp-fill, linear-gradient(180deg, var(--ls-raised), var(--ls-surface))); color: var(--lsp-text, var(--ls-text)); transform: none; }

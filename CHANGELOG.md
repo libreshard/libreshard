@@ -6,6 +6,16 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### App
+
+- Installing a new version of a shard you already have keeps it where it was: favorite, place in
+  the menu, turned off and its settings. Before, they went back to the defaults.
+
+### Project
+
+- Groundwork for panels made without code (0.4): `panel.json`, the format the panel editor will
+  save, and the code that draws it on the tablet. Nothing in the app uses it yet.
+
 ## [0.3.0] - 2026-11-12
 
 ### App
