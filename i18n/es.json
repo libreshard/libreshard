@@ -373,5 +373,11 @@
   "editor.addKey": "+ añadir tecla",
   "editor.removeKey": "(quitar)",
   "editor.comboTooLong": "Esa combinación es demasiado larga.",
-  "editor.captureHint": "Mantén las teclas y suéltalas todas para terminar. Para un código Alt de Windows, mantén Alt y teclea los números en el teclado numérico."
+  "editor.captureHint": "Mantén las teclas y suéltalas todas para terminar. Para un código Alt de Windows, mantén Alt y teclea los números en el teclado numérico.",
+  "editor.icon.image": "Imagen",
+  "editor.icon.pickImage": "Elegir imagen…",
+  "editor.icon.changeImage": "Cambiar…",
+  "editor.imageInvalid": "Ese archivo no es una imagen que LibreShard pueda usar (PNG, JPEG, WebP o GIF).",
+  "editor.imageTooBig": "Esa imagen es demasiado grande (20 MB como máximo).",
+  "editor.imageHint": "Se reduce a 288 px y se guarda como PNG. El texto va encima."
 }

@@ -403,15 +403,51 @@ function iconImg(name, color = '#e6f1fa') {
   return h('img', { src: 'data:image/svg+xml,' + encodeURIComponent(svg), alt: '' });
 }
 
-// Icon of a button or of a toggle's second state: none, one of LibreShard's, an emoji, or (imported)
-// an image, which can only be removed here
+// Turns an image file into one of the panel's images and returns its name ("images/<hash>.png").
+// This sandboxed page decodes it (Chromium reads PNG, JPEG, WebP and a GIF's first frame) and
+// shrinks it to 288 px; the main process checks the PNG, encodes it again and keeps it in the draft.
+async function addImageFile(file) {
+  if (file.size > 20 * 1024 * 1024) throw new Error(t('editor.imageTooBig'));
+  let bitmap;
+  try { bitmap = await createImageBitmap(file); } catch { throw new Error(t('editor.imageInvalid')); }
+  const scale = Math.min(1, init.limits.image / Math.max(bitmap.width, bitmap.height));
+  const canvas = new OffscreenCanvas(Math.max(1, Math.round(bitmap.width * scale)), Math.max(1, Math.round(bitmap.height * scale)));
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const png = new Uint8Array(await (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer());
+  const r = await api.addImage(png);
+  if (!r || r.ok === false) throw new Error(((r && r.errors) || [t('editor.imageInvalid')]).join('\n'));
+  S.images[r.file] = r.url;
+  return r.file;
+}
+
+// Lets the user pick an image file; resolves with its name in the panel, or null
+function pickImage() {
+  return new Promise((resolve) => {
+    const input = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp,image/gif' });
+    input.addEventListener('cancel', () => resolve(null));
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (!file) { resolve(null); return; }
+      addImageFile(file).then(resolve, (e) => { toast(e.message, true); resolve(null); });
+    });
+    input.click();
+  });
+}
+
+// Icon of a button or of a toggle's second state: none, one of LibreShard's, an emoji or an image
 function iconField(obj) {
   const icon = obj.icon;
   const kind = icon ? icon.kind : 'none';
   const set = (v) => change(() => { if (v) obj.icon = v; else delete obj.icon; });
-  const tabs = h('div', { class: 'ed-seg' }, ['none', 'builtin', 'emoji'].map((k) => h('button', {
+  const chooseImage = async () => { const file = await pickImage(); if (file) set({ kind: 'image', file }); };
+  const tabs = h('div', { class: 'ed-seg' }, ['none', 'builtin', 'emoji', 'image'].map((k) => h('button', {
     class: 'btn small' + (kind === k ? ' on' : ''),
-    onclick: () => { if (k !== kind) set(k === 'none' ? null : k === 'builtin' ? { kind: 'builtin', name: Object.keys(init.icons)[0] } : { kind: 'emoji', text: '⭐' }); },
+    onclick: () => {
+      if (k === kind) return;
+      if (k === 'image') chooseImage();
+      else set(k === 'none' ? null : k === 'builtin' ? { kind: 'builtin', name: Object.keys(init.icons)[0] } : { kind: 'emoji', text: '⭐' });
+    },
   }, t('editor.icon.' + k))));
   let body = null;
   if (kind === 'builtin') {
@@ -425,9 +461,13 @@ function iconField(obj) {
       oninput: (e) => { const text = graphemes(e.target.value.trim(), 2); if (text) change(() => { obj.icon = { kind: 'emoji', text }; }, { coalesce: 'emoji', props: false }); },
     });
   } else if (kind === 'image') {
-    body = h('div', { class: 'row' },
-      S.images[icon.file] ? h('img', { class: 'ed-thumb', src: S.images[icon.file], alt: '' }) : null,
-      h('button', { class: 'btn small', onclick: () => set(null) }, t('editor.icon.removeImage')));
+    body = [
+      h('div', { class: 'row' },
+        S.images[icon.file] ? h('img', { class: 'ed-thumb', src: S.images[icon.file], alt: '' }) : null,
+        h('button', { class: 'btn small', onclick: chooseImage }, t('editor.icon.changeImage')),
+        h('button', { class: 'btn small', onclick: () => set(null) }, t('editor.icon.removeImage'))),
+      h('div', { class: 'hint small' }, t('editor.imageHint')),
+    ];
   }
   return h('div', { class: 'ed-prop' }, h('label', null, t('editor.icon')), tabs, body);
 }

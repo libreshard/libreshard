@@ -8,6 +8,9 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Images on panel buttons:** in the panel editor, a button's icon can now be your own image (PNG,
+  JPEG, WebP or a GIF's first frame). It's shrunk to 288 px and saved again as PNG, so nothing but
+  the pixels ends up in the panel, and its text goes over it.
 - **Panel editor:** make your own panel without writing code. **New panel** in the Shards tab
   opens it in its own window: a grid (up to 24×24) with pages, where each button presses a key,
   holds it, repeats it while held, toggles between two keys, opens another page or just shows

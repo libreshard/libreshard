@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const vm = require('vm');
-const { validatePanel, keysOf, imagesOf, buildShard, panelId, nextVersion, LIMITS } = require('../panel-format');
+const { validatePanel, keysOf, imagesOf, imageFile, buildShard, panelId, nextVersion, LIMITS } = require('../panel-format');
 const { validateManifest } = require('../manifest');
 const installer = require('../installer');
 const { PANEL_TEMPLATE } = require('../tools/build-shard-base');
@@ -157,6 +157,14 @@ test('images must be under images/, named like the app names them and present', 
   for (const bad of ['images/../manifest.json', '../images/a.png', 'images/a.svg', 'images/sub/a.png', '/images/a.png', 'images\\a.png', 'https://x/a.png']) {
     assert.equal(iconOf(bad), undefined, bad);
   }
+});
+
+test('an image is named after its bytes, in the shape validatePanel accepts', () => {
+  const a = imageFile(Buffer.from('one image'));
+  assert.match(a, /^images\/[0-9a-f]{12}\.png$/);
+  assert.equal(imageFile(Buffer.from('one image')), a, 'the same bytes, the same name');
+  assert.notEqual(imageFile(Buffer.from('another')), a);
+  assert.deepEqual(validatePanel(panelWith([btn({ icon: { kind: 'image', file: a } })]), { files: new Set([a]) }).warnings, []);
 });
 
 test('button ids that are missing, invalid or repeated get a new unique one', () => {

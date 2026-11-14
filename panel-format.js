@@ -10,7 +10,7 @@ const { parse, normalize } = require('./keys');
 
 const FORMAT = 1;
 const MIN_APP_VERSION = '0.4.0';
-const LIMITS = { grid: 24, pages: 50, text: 60, note: 120, keys: 300, combo: 64, repeat: [50, 1000] };
+const LIMITS = { grid: 24, pages: 50, text: 60, note: 120, keys: 300, combo: 64, image: 288, background: 1920, repeat: [50, 1000] };
 
 const TYPES = ['press', 'hold', 'repeat', 'toggle', 'page', 'label', 'none'];
 const KEYED = new Set(['press', 'hold', 'repeat']);
@@ -282,6 +282,10 @@ function panelId(name, random = crypto.randomBytes(2).toString('hex')) {
   return `panel-${slug || 'panel'}-${random}`;
 }
 
+// The name an image gets in a panel: 12 hex characters of the sha256 of its PNG bytes, so the same
+// image added twice is stored once
+const imageFile = (png) => 'images/' + crypto.createHash('sha256').update(png).digest('hex').slice(0, 12) + '.png';
+
 // "1.0.4" → "1.0.5"; anything else starts at "1.0.0"
 function nextVersion(v) {
   const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(String(v || '').trim());
@@ -320,4 +324,4 @@ function buildShard({ panel, meta = {}, template = {} }) {
   };
 }
 
-module.exports = { validatePanel, keysOf, imagesOf, buildShard, panelId, nextVersion, FORMAT, LIMITS, MIN_APP_VERSION };
+module.exports = { validatePanel, keysOf, imagesOf, imageFile, buildShard, panelId, nextVersion, FORMAT, LIMITS, MIN_APP_VERSION };
