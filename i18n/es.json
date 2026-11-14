@@ -369,5 +369,9 @@
   "editor.unavailable": "Esta PC no tiene la tecla {keys} en su teclado: esos botones no harían nada en esta PC (en otra pueden funcionar).",
   "editor.tooManyKeys": "El panel usa {count} teclas distintas; el límite es {max}.",
   "editor.small": "{count} botones miden menos de 48 px en este tamaño de vista previa: cuesta acertarles con el dedo.",
-  "editor.loadWarnings": "Algunas partes de este panel no eran válidas y se dejaron fuera: {details}"
+  "editor.loadWarnings": "Algunas partes de este panel no eran válidas y se dejaron fuera: {details}",
+  "editor.addKey": "+ añadir tecla",
+  "editor.removeKey": "(quitar)",
+  "editor.comboTooLong": "Esa combinación es demasiado larga.",
+  "editor.captureHint": "Mantén las teclas y suéltalas todas para terminar. Para un código Alt de Windows, mantén Alt y teclea los números en el teclado numérico."
 }

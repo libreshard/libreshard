@@ -10,7 +10,7 @@ const { parse, normalize } = require('./keys');
 
 const FORMAT = 1;
 const MIN_APP_VERSION = '0.4.0';
-const LIMITS = { grid: 24, pages: 50, text: 60, note: 120, keys: 300, repeat: [50, 1000] };
+const LIMITS = { grid: 24, pages: 50, text: 60, note: 120, keys: 300, combo: 64, repeat: [50, 1000] };
 
 const TYPES = ['press', 'hold', 'repeat', 'toggle', 'page', 'label', 'none'];
 const KEYED = new Set(['press', 'hold', 'repeat']);
@@ -51,6 +51,7 @@ function emoji(v) {
 function key(v) {
   if (typeof v !== 'string' || !v.trim()) return undefined;
   const k = normalize(v);
+  if (k.length > LIMITS.combo) return undefined; // the server refuses longer ones
   try { parse(k); return k; } catch { return undefined; }
 }
 

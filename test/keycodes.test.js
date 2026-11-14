@@ -81,10 +81,17 @@ test('labels, and splitting and joining combos', () => {
   assert.equal(K.label('win+d', 'linux'), 'Super+D');
   assert.equal(K.label('cmd+c', 'darwin'), 'Cmd+C');
   assert.equal(K.label('numpad3', 'win32'), 'Num 3');
-  assert.deepEqual(K.split('shift+ctrl+f5'), { mods: ['ctrl', 'shift'], key: 'f5' });
-  assert.deepEqual(K.split('alt'), { mods: ['alt'], key: '' });
-  assert.deepEqual(K.split('meta+e'), { mods: ['win'], key: 'e' });
+  assert.deepEqual(K.split('shift+ctrl+f5'), { mods: ['ctrl', 'shift'], keys: ['f5'] });
+  assert.deepEqual(K.split('alt'), { mods: ['alt'], keys: [] });
+  assert.deepEqual(K.split('meta+e'), { mods: ['win'], keys: ['e'] });
+  // Several keys keep their order (a Windows Alt code), without repeats
+  assert.deepEqual(K.split('alt+numpad1+numpad6+numpad4'), { mods: ['alt'], keys: ['numpad1', 'numpad6', 'numpad4'] });
   assert.equal(K.join(['shift', 'ctrl'], 'f5'), 'ctrl+shift+f5');
+  assert.equal(K.join(['alt'], ['numpad1', 'numpad6', 'numpad4']), 'alt+numpad1+numpad6+numpad4');
+  assert.equal(K.join(['win', 'ctrl', 'shift'], ['b']), 'ctrl+shift+win+b');
+  assert.equal(K.join([], ['a', '', 'a', 'b']), 'a+b');
   assert.equal(K.join(['alt'], ''), 'alt');
-  assert.equal(K.join([], ''), '');
+  assert.equal(K.join([], []), '');
+  assert.equal(K.label('alt+numpad1+numpad6+numpad4', 'win32'), 'Alt+Num 1+Num 6+Num 4');
+  assert.doesNotThrow(() => parse('alt+numpad1+numpad6+numpad4'));
 });

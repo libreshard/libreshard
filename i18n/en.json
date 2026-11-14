@@ -369,5 +369,9 @@
   "editor.unavailable": "This PC's keyboard has no {keys} key: those buttons would do nothing on this PC (they may work on another one).",
   "editor.tooManyKeys": "The panel uses {count} different keys; the limit is {max}.",
   "editor.small": "{count} buttons are smaller than 48 px at this preview size: hard to hit with a finger.",
-  "editor.loadWarnings": "Some parts of this panel were invalid and were left out: {details}"
+  "editor.loadWarnings": "Some parts of this panel were invalid and were left out: {details}",
+  "editor.addKey": "+ add a key",
+  "editor.removeKey": "(remove)",
+  "editor.comboTooLong": "That combination is too long.",
+  "editor.captureHint": "Hold the keys, then release them all to finish. For a Windows Alt code, hold Alt and type the digits on the numeric keypad."
 }

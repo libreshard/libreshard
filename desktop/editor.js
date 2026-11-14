@@ -287,38 +287,47 @@ function setGrid(cols, rows) {
 
 /* ---------- Choosing keys ---------- */
 
+// A combo: modifiers, then one or more keys pressed in order (Alt + Num 1 + Num 6 + Num 4 is a
+// Windows Alt code). "Choose…" has a select per key plus an empty one to add another.
 function keyField(value, onChange, labelKey) {
   const capturing = S.capture && S.capture.field === labelKey;
-  const box = h('div', { class: 'ed-keyfield' });
-  const chooser = h('div', { class: 'ed-chooser', hidden: true });
-  const { mods, key } = K.split(value);
-  const checks = K.MODIFIERS.map((m) => h('label', { class: 'ed-check' },
-    h('input', { type: 'checkbox', checked: mods.includes(m), onchange: () => apply() }), ' ', K.label(m, init.platform)));
-  const select = h('select', { onchange: () => apply(), 'aria-label': t('editor.key') },
-    h('option', { value: '' }, t('editor.noMainKey')),
-    Object.entries(K.GROUPS).map(([group, names]) => h('optgroup', { label: t('keys.group.' + group) },
-      names.map((n) => h('option', { value: n, selected: n === key }, K.label(n, init.platform))))));
-  function apply() {
-    const chosen = K.MODIFIERS.filter((m, i) => checks[i].querySelector('input').checked);
-    onChange(K.join(chosen, select.value));
+  const shown = capturing && S.capture.preview ? S.capture.preview : value;
+  const { mods, keys } = K.split(value);
+  const checks = K.MODIFIERS.map((m) => h('input', { type: 'checkbox', checked: mods.includes(m), onchange: () => apply() }));
+  const keyOptions = (selected) => Object.entries(K.GROUPS).map(([group, names]) => h('optgroup', { label: t('keys.group.' + group) },
+    names.map((n) => h('option', { value: n, selected: n === selected }, K.label(n, init.platform)))));
+  const selects = keys.map((k) => h('select', { onchange: () => apply(), 'aria-label': t('editor.key') },
+    h('option', { value: '' }, t('editor.removeKey')), keyOptions(k)));
+  if (keys.length < K.MAX_KEYS) {
+    selects.push(h('select', { onchange: () => apply(), 'aria-label': t('editor.addKey') },
+      h('option', { value: '', selected: true }, keys.length ? t('editor.addKey') : t('editor.noMainKey')), keyOptions(null)));
   }
-  fill(chooser, h('div', { class: 'row' }, checks), select);
-  return fill(box,
+  function apply() {
+    const combo = K.join(K.MODIFIERS.filter((m, i) => checks[i].checked), selects.map((s) => s.value));
+    if (combo.length > K.MAX_LENGTH) { toast(t('editor.comboTooLong'), true); renderProps(); return; }
+    onChange(combo);
+  }
+  const where = S.sel + ':' + labelKey; // the chooser stays open while its button is the one shown
+  const open = S.chooser === where;
+  return h('div', { class: 'ed-keyfield' },
     h('div', { class: 'label' }, t(labelKey)),
     h('div', { class: 'ed-keyrow' },
-      h('span', { class: 'key' + (value ? '' : ' empty') }, value ? K.label(value, init.platform) : t('editor.noKey')),
+      h('span', { class: 'key' + (shown ? '' : ' empty') }, shown ? K.label(shown, init.platform) : t('editor.noKey')),
       h('button', {
         class: 'btn small' + (capturing ? ' primary' : ''),
         onclick: () => (capturing ? stopCapture() : startCapture(labelKey, onChange)),
       }, capturing ? t('editor.capturing') : t('editor.capture')),
-      h('button', { class: 'btn small', onclick: () => { chooser.hidden = !chooser.hidden; } }, t('editor.chooseKey'))),
-    chooser);
+      h('button', { class: 'btn small' + (open ? ' on' : ''), onclick: () => { S.chooser = open ? null : where; renderProps(); } }, t('editor.chooseKey'))),
+    open ? h('div', { class: 'ed-chooser' },
+      h('div', { class: 'row' }, K.MODIFIERS.map((m, i) => h('label', { class: 'ed-check' }, checks[i], ' ', K.label(m, init.platform)))),
+      selects) : null,
+    capturing ? h('div', { class: 'hint small' }, t('editor.captureHint')) : null);
 }
 
-// "Capture" listens for the next key: a combo ends it at once; a modifier alone counts when it's
-// released without another key (to hold Shift, say)
+// "Capture" collects the keys pressed until every key is released: modifiers, then the other keys
+// in the order they went down (no repeats). A modifier alone also counts (to hold Shift, say).
 function startCapture(field, done) {
-  S.capture = { field, done, peak: [] };
+  S.capture = { field, done, mods: [], keys: [], down: new Set(), preview: '' };
   renderProps();
   // The current layout's map, asked anew each time: the user may have switched layouts since
   refreshLayout();
@@ -342,23 +351,35 @@ function finishCapture(combo) {
   done(combo);
   renderProps();
 }
+const MODIFIER_FLAGS = { ctrl: 'ctrlKey', shift: 'shiftKey', alt: 'altKey', win: 'metaKey' };
 window.addEventListener('keydown', (e) => {
-  if (!S.capture) return;
+  const c = S.capture;
+  if (!c) return;
   e.preventDefault();
   e.stopPropagation();
+  if (e.repeat) return;
   const r = K.fromEvent(e, init.platform, layoutMap);
-  if (r.modifier !== undefined) {
-    if (r.mods.length > S.capture.peak.length) S.capture.peak = r.mods;
-    return;
-  }
   if (r.unknown) { stopCapture(); toast(t('editor.keyUnknown', { key: r.unknown }), true); return; }
-  finishCapture(r.combo);
+  const got = r.modifier !== undefined ? { mods: r.mods, keys: [] } : K.split(r.combo);
+  for (const m of got.mods) if (!c.mods.includes(m)) c.mods.push(m);
+  for (const k of got.keys) if (!c.keys.includes(k) && c.keys.length < K.MAX_KEYS) c.keys.push(k);
+  c.down.add(e.code);
+  const combo = K.join(c.mods, c.keys);
+  if (combo.length > K.MAX_LENGTH) { stopCapture(); toast(t('editor.comboTooLong'), true); return; }
+  c.preview = combo;
+  renderProps();
 }, true);
 window.addEventListener('keyup', (e) => {
-  if (!S.capture) return;
+  const c = S.capture;
+  if (!c) return;
   e.preventDefault();
-  const stillDown = [e.ctrlKey, e.shiftKey, e.altKey, e.metaKey].some(Boolean);
-  if (!stillDown && S.capture.peak.length) finishCapture(K.join(S.capture.peak, ''));
+  c.down.delete(e.code);
+  // A modifier whose release the system kept (Win often) still ends the capture once it's up
+  for (const code of [...c.down]) {
+    const m = K.fromEvent({ code, key: '' }, init.platform).modifier;
+    if (m && !e[MODIFIER_FLAGS[m]]) c.down.delete(code);
+  }
+  if (!c.down.size && (c.mods.length || c.keys.length)) finishCapture(K.join(c.mods, c.keys));
 }, true);
 window.addEventListener('blur', () => { if (S.capture) stopCapture(); });
 

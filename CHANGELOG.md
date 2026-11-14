@@ -13,7 +13,8 @@ All notable changes to LibreShard are listed here. The format follows
   holds it, repeats it while held, toggles between two keys, opens another page or just shows
   text, and can span several cells. Give it a text, one of LibreShard's icons or an emoji, and
   colors. Keys are captured from the keyboard or picked from a list (for Win, media keys and F13 to
-  F24), with the same warnings as the install review. The preview draws the panel exactly as the
+  F24), with the same warnings as the install review. A combo can hold several keys, pressed in
+  order: Alt + Num 1 + Num 6 + Num 4 types ñ with a Windows Alt code. The preview draws the panel exactly as the
   tablet will, in landscape, portrait or phone size, and warns about buttons too small for a
   finger. Saving installs it like any shard, with its keys approved, and tablets showing it reload.
   **Edit** on a panel's card opens it again, also for panels made on another PC.

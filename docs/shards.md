@@ -150,6 +150,12 @@ Things worth knowing:
 - **Numpad digits** only type digits with Num Lock on; otherwise Windows and X11 treat them as
   navigation keys.
 - **Win + L** can't be injected on Windows (the lock screen ignores synthetic input).
+- **Symbols depend on the layout.** On Windows and Linux a letter or symbol is pressed as "the key
+  that types it" on the PC's current keyboard layout: `minus` presses the key that types `-`,
+  wherever it is. Characters without a name above (ñ, ´) can't be pressed directly.
+- **A combo can hold several keys** after the modifiers: they go down in the order written and come
+  up the other way round. `alt+numpad1+numpad6+numpad4` is a Windows Alt code (it types ñ). A key
+  can't appear twice in one combo, and a combo is at most 64 characters.
 - **Global shortcuts** registered by another program swallow that combo for everyone.
 - When you declare system combos (`win+…`, `ctrl+alt+…`, `alt+f4`), the install review shows them in
   red. A shard that has system combos *and* can type text gets a prominent warning. Declare only what

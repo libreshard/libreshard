@@ -115,6 +115,15 @@ test('an action that cannot work becomes a button without action, keeping its lo
   assert.equal(r.warnings.length, 4);
 });
 
+test('a combo can have several keys in order, up to the 64 characters the server accepts', () => {
+  const keyOf = (key) => validatePanel(panelWith([btn({ key })])).panel.pages[0].buttons[0];
+  assert.equal(keyOf('alt+numpad1+numpad6+numpad4').key, 'alt+numpad1+numpad6+numpad4');
+  assert.equal(keyOf('ctrl+shift+win+b').key, 'ctrl+shift+win+b');
+  const long = 'ctrl+shift+alt+win+numpad1+numpad2+numpad3+numpad4+numpad5+numpad6';
+  assert.ok(long.length > 64);
+  assert.equal(keyOf(long).type, 'none');
+});
+
 test('texts, emoji, colors and repeat values are cleaned', () => {
   const long = 'x'.repeat(100);
   const r = validatePanel(panelWith([

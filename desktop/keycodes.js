@@ -103,16 +103,18 @@
     }).join('+');
   }
 
-  // "ctrl+shift+f13" → { mods: ['ctrl', 'shift'], key: 'f13' }; a combo of modifiers only has key ''
+  // A combo is modifiers (in a fixed order) and then one or more keys, pressed in that order and
+  // released the other way round: 'alt+numpad1+numpad6+numpad4' types ñ with a Windows Alt code.
+  // "shift+ctrl+f13" → { mods: ['ctrl', 'shift'], keys: ['f13'] }; modifiers only → keys: []
   function split(combo) {
     const parts = String(combo || '').split('+').filter(Boolean);
     const mods = MODIFIERS.filter((m) => parts.includes(m) || (m === 'win' && (parts.includes('meta') || parts.includes('cmd'))));
-    const key = parts.filter((p) => !MODIFIERS.includes(p) && !['meta', 'cmd', 'control'].includes(p)).pop() || '';
-    return { mods, key };
+    const keys = parts.filter((p) => !MODIFIERS.includes(p) && !['meta', 'cmd', 'control'].includes(p));
+    return { mods, keys: [...new Set(keys)] };
   }
-  const join = (mods, key) => [...MODIFIERS.filter((m) => mods.includes(m)), key].filter(Boolean).join('+');
+  const join = (mods, keys) => [...MODIFIERS.filter((m) => mods.includes(m)), ...new Set([].concat(keys || []).filter(Boolean))].join('+');
 
-  const api = { fromEvent, mainKey, label, split, join, GROUPS, MODIFIERS };
+  const api = { fromEvent, mainKey, label, split, join, GROUPS, MODIFIERS, MAX_KEYS: 6, MAX_LENGTH: 64 };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else window.Keycodes = api;
 })();
