@@ -379,5 +379,6 @@
   "editor.icon.changeImage": "Change…",
   "editor.imageInvalid": "That file isn't an image LibreShard can use (PNG, JPEG, WebP or GIF).",
   "editor.imageTooBig": "That image is too big (20 MB at most).",
-  "editor.imageHint": "It is shrunk to 288 px and saved as PNG. The text goes over it."
+  "editor.imageHint": "It is shrunk to 288 px and saved as PNG. The text goes over it.",
+  "editor.bgImage": "Background image"
 }

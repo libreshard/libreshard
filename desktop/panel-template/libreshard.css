@@ -222,6 +222,20 @@ body.lsp-body { background: var(--lsp-bg, radial-gradient(110% 80% at 100% 0%, #
 .lsp-has-img .lsp-text { text-shadow: 0 1px 2px #000, 0 0 4px #000; color: #fff; }
 .lsp-bleed .lsp-btn.lsp-has-img { border-width: 0; }
 
+/* A background image covers the button (its color shows through transparent parts); pressing it
+   lays the pressed color over the image instead of hiding it */
+.lsp-btn.lsp-has-bg, .lsp-btn.lsp-has-bg:active, .lsp-btn.lsp-has-bg.is-active {
+  background: var(--lsp-bg-image) center / cover no-repeat, var(--lsp-bg-color, var(--ls-surface));
+}
+.lsp-has-bg::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: var(--lsp-active, var(--ls-cyan)); opacity: 0; transition: opacity .08s;
+}
+.lsp-has-bg:active::before, .lsp-has-bg.is-active::before { opacity: .45; }
+.lsp-btn.lsp-has-bg:active, .lsp-btn.lsp-has-bg.is-active { color: var(--lsp-text, #fff); }
+.lsp-has-bg .lsp-text, .lsp-has-bg .ls-key { text-shadow: 0 1px 2px #000, 0 0 4px #000; color: #fff; }
+.lsp-has-bg .lsp-emoji, .lsp-has-bg .ls-i, .lsp-has-bg .ls-key { position: relative; }
+
 /* Text without an action, and imported buttons that have none */
 .lsp-label { background: var(--lsp-label-fill, transparent); border-color: transparent; box-shadow: none; cursor: default; }
 .lsp-label:active { background: var(--lsp-label-fill, transparent); border-color: transparent; color: var(--lsp-text, var(--ls-text)); transform: none; }

@@ -65,3 +65,4 @@ body.editor { height: 100vh; overflow: hidden; }
 .ed-chooser { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--cell); }
 .ed-chooser select { width: 100%; }
 .ed-keyrow .btn.on { border-color: var(--accent); background: #0e3442; }
+.ed-thumb.cover { object-fit: cover; }

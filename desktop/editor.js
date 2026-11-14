@@ -406,30 +406,31 @@ function iconImg(name, color = '#e6f1fa') {
 // Turns an image file into one of the panel's images and returns its name ("images/<hash>.png").
 // This sandboxed page decodes it (Chromium reads PNG, JPEG, WebP and a GIF's first frame) and
 // shrinks it to 288 px; the main process checks the PNG, encodes it again and keeps it in the draft.
-async function addImageFile(file) {
+async function addImageFile(file, use = 'icon') {
   if (file.size > 20 * 1024 * 1024) throw new Error(t('editor.imageTooBig'));
   let bitmap;
   try { bitmap = await createImageBitmap(file); } catch { throw new Error(t('editor.imageInvalid')); }
-  const scale = Math.min(1, init.limits.image / Math.max(bitmap.width, bitmap.height));
+  const max = use === 'button' ? init.limits.buttonImage : init.limits.image;
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const canvas = new OffscreenCanvas(Math.max(1, Math.round(bitmap.width * scale)), Math.max(1, Math.round(bitmap.height * scale)));
   canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
   const png = new Uint8Array(await (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer());
-  const r = await api.addImage(png);
+  const r = await api.addImage(png, use);
   if (!r || r.ok === false) throw new Error(((r && r.errors) || [t('editor.imageInvalid')]).join('\n'));
   S.images[r.file] = r.url;
   return r.file;
 }
 
 // Lets the user pick an image file; resolves with its name in the panel, or null
-function pickImage() {
+function pickImage(use = 'icon') {
   return new Promise((resolve) => {
     const input = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp,image/gif' });
     input.addEventListener('cancel', () => resolve(null));
     input.addEventListener('change', () => {
       const file = input.files && input.files[0];
       if (!file) { resolve(null); return; }
-      addImageFile(file).then(resolve, (e) => { toast(e.message, true); resolve(null); });
+      addImageFile(file, use).then(resolve, (e) => { toast(e.message, true); resolve(null); });
     });
     input.click();
   });
@@ -480,8 +481,22 @@ function lookFields(obj, prefix) {
     })),
     iconField(obj),
     colorField('editor.buttonColor', obj, 'color', '#1a3150'),
+    bgImageField(obj),
     colorField('editor.textColor', obj, 'textColor', '#e6eef7'),
   ];
+}
+
+// An image that covers the whole button, under its icon and text (up to 640 px)
+function bgImageField(obj) {
+  const choose = async () => { const file = await pickImage('button'); if (file) change(() => { obj.bgImage = file; }); };
+  return h('div', { class: 'ed-prop' },
+    h('label', null, t('editor.bgImage')),
+    obj.bgImage
+      ? h('div', { class: 'row' },
+        S.images[obj.bgImage] ? h('img', { class: 'ed-thumb cover', src: S.images[obj.bgImage], alt: '' }) : null,
+        h('button', { class: 'btn small', onclick: choose }, t('editor.icon.changeImage')),
+        h('button', { class: 'btn small', onclick: () => change(() => { delete obj.bgImage; }) }, t('editor.icon.removeImage')))
+      : h('div', { class: 'row' }, h('button', { class: 'btn small', onclick: choose }, t('editor.icon.pickImage'))));
 }
 
 function renderProps() {
