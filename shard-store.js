@@ -126,6 +126,8 @@ class ShardStore extends EventEmitter {
           realRoot: fs.realpathSync(root),
           bundled: !!bundled,
           linked: fs.lstatSync(root).isSymbolicLink(),
+          // Made with the editor: panel.json is its source (bundled and linked shards are never edited)
+          panel: !bundled && !fs.lstatSync(root).isSymbolicLink() && fs.existsSync(path.join(root, 'panel.json')),
           enabled: !st.disabled,
           allowed: new Set(manifest.keys.filter((k) => approved.has(k))),
           pendingKeys: manifest.keys.filter((k) => !approved.has(k)),
@@ -252,7 +254,9 @@ class ShardStore extends EventEmitter {
     fs.mkdirSync(this.installDir, { recursive: true });
     // Links inside the source are skipped: an installed shard is plain files only
     fs.cpSync(sourceDir, target, { recursive: true, filter: (src) => !fs.lstatSync(src).isSymbolicLink() });
-    this.state[manifest.id] = { approved: [...manifest.keys] };
+    // Only the approval changes: favorite, menu position, disabled and settings stay (saving a panel
+    // or updating a shard shouldn't reset them)
+    this.state[manifest.id] = { ...this.state[manifest.id], approved: [...manifest.keys] };
     this.saveState();
     this.load();
     return this.entries.get(manifest.id);

@@ -59,6 +59,7 @@ libreshard/
 ├── updates.js            the daily check for a new version (GitHub's latest release), and version comparison
 ├── linux-session.js      Linux: watches the session manager over D-Bus to quit before the session ends
 ├── backup.js             backups: one zip with settings, app rules, shard states and installed shards
+├── panel-format.js       panels made with the editor: panel.json validation and the shard folder built from it
 ├── focus/                foreground app detection
 │   ├── index.js          createFocus(): picks a provider; check(), active(), openApps()
 │   ├── apps.js           app entries ({ exe } / { match }), normalizeApp, appMatches, appLabel
@@ -67,7 +68,8 @@ libreshard/
 │   ├── title.js          fallback provider: window title via nut-js
 │   └── elevation.js      Windows: whether the app in front runs above LibreShard (as administrator), via koffi
 ├── desktop/              the PC window: index.html, app.js, style.css and preload.js (the only bridge);
-│                         panel-preload.js and monitor.svg for the local panel
+│                         panel-preload.js and monitor.svg for the local panel;
+│                         panel-template/ (generated): the files every editor panel shares
 ├── i18n/                 UI strings: index.js (pickLocale, strings, translator), es.json, en.json
 ├── brand/
 │   ├── render-icons.js   generates the PNGs and logo-full.svg from the mark (npm run icons)
@@ -89,9 +91,11 @@ libreshard/
 ├── shards/               shards bundled with the app (see "Bundled shards" in section 5)
 │   ├── desarrollo/  discord-basico/  edicion-imagen/  escritorio/
 │   └── multimedia/  obs/  teclado-numerico/  videollamadas/
-├── shard-base/           shared look of the bundled shards: base.css, icons.js (own icon set), libreshard.js
+├── shard-base/           shared look of the bundled shards: base.css, icons.js (own icon set), libreshard.js;
+│                         and of editor panels: panel.js (draws panel.json), panel.css, panel.html
 ├── tools/
-│   └── build-shard-base.js   copies libreshard.css/libreshard.js into every bundled shard (npm run shards:base)
+│   └── build-shard-base.js   copies libreshard.css/libreshard.js into every bundled shard and writes
+│                             desktop/panel-template/ (npm run shards:base)
 ├── docs/shards.md        the guide for shard authors (public; keep it in step with section 5)
 ├── docs/shard-template/  minimal shard for authors (manifest, index.html, README, base copies)
 ├── docs/images/          README screenshots
@@ -144,7 +148,7 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - **Approvals** live in `shards-state.json` (`{ id: { approved: [...], disabled: true } }`). Bundled shards are approved as they are. A user shard (copied by hand or linked) starts with no approved keys; keys added to a manifest later stay blocked until `approve(id)`.
 - **Menu order:** `all()` (and so the PC list and the tablet menu) sorts favorites first, then by the saved `position`, then by name. `setFavorite(id, on)` and `move(id, ±1)` (within the favorites group or the rest, never across) save `favorite` / `position` in `shards-state.json`.
 - `get(id)` only returns enabled shards; `publicList()` is what the tablet gets (with `pending` when keys await approval, and `favorite`).
-- `install(sourceDir, manifest)` copies to `installDir/<id>` (skipping links), approves the reviewed keys and replaces an installed copy. It refuses bundled ids, linked shards and ids installed somewhere else.
+- `install(sourceDir, manifest)` copies to `installDir/<id>` (skipping links), approves the reviewed keys and replaces an installed copy, keeping its state (favorite, position, disabled, settings). It refuses bundled ids, linked shards and ids installed somewhere else.
 - `uninstall(id)` removes a user shard. A linked shard only loses its link (`removeShardFolder` never follows links, and `fs.rmSync` doesn't follow links inside a copied shard either).
 - **App rules** (`app-rules.json`): `{ id: { mode: 'any' } | { mode: 'only', apps: [entries] } }`. Entries expose `apps` (effective entries), `customApps` (the user has a rule) and `suggestedApps` (the manifest's). `setRule(id, rule)`, `resetRule(id)` and `addApp(id, { exe, name })` write the file through `writeRules()`, which keeps every other rule and refuses to overwrite a file with invalid JSON.
 - **Settings:** `entry.settings` holds every declared setting with a valid value (saved in `shards-state.json` under `settings`, else the default). `setSettings(id, values)` checks each value against the manifest and emits `settings` (id, values); `resetSettings(id)` goes back to the defaults.
@@ -216,6 +220,11 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - `createBackup({ appVersion, config, rules, state, shards })` returns a zip (its own small writer: deflate, UTF-8 names): `backup.json` (`format: 1`, the non-internal settings, `app-rules.json`, per shard `disabled`/`favorite`/`position`/`settings`, and the ids of the shards the user installed) plus `shards/<id>/…` for those shards (never bundled ones or development links; links inside are skipped). Never key approvals, devices, the log or what tablets store.
 - `readBackup(file, { settings })` extracts with `installer.extractZip` (wider limits: 300 MB, 20,000 files) and `checkBackup()` keeps only valid values: each setting through its `valid()`, rules through `cleanRule`, ids by the manifest's rule (also safe as folder names). Refuses files that aren't LibreShard backups and newer formats.
 - In `main.js`: `backup:export` (save dialog), `backup:pick` (open dialog → summary: settings that change, rules, states, shards to install and shards kept), `backup:apply` and `backup:cancel`. Applying uses `applySetting()` (the same path as Ajustes), `store.writeRules()` and `store.restoreState()` (drops settings values the manifest doesn't accept, never touches approvals) for shards already here, then queues the others: each goes through `prepareInstall()` and the usual review (`install:review`), one after another; its saved state is applied after the user confirms it (`after`), and cancelling one moves to the next. Shards already installed here are kept as they are. The window flags security settings (port, public networks, confirm devices, apps from the tablet) in the summary.
+
+**panel-format.js**
+- A panel is a normal shard whose folder also has `panel.json`, the editor's source (see "Panels" in section 5). `validatePanel(raw, { files })` cleans it like `validateManifest`: known fields only, texts trimmed (60 characters, line breaks kept), colors `#rrggbb`, keys through `keys.parse`, cells inside the grid and not overlapping, unique page and button ids, images only as `images/<name>.png` (and present, when `files` is given). A problem with one button or one style value drops just that and is listed in `warnings` (an action that can't work, such as an unknown key or a missing page, turns the button into `none`, keeping its look); a problem with the whole panel (format, grid, pages, an unknown page `layout`, more than 300 different keys) is an error. The editor's own output has no warnings.
+- `keysOf(panel)` gives `permissions.keys`, `imagesOf(panel)` the images in use. `buildShard({ panel, meta, template })` returns the manifest and the files to write: the template files, `manifest.json` (`minAppVersion` 0.4.0; a new panel gets `panel-<ascii slug>-<4 hex>`, at most 64 characters, and `1.0.0`; saving again raises the patch version and keeps the rest of `meta`), `panel.json` and `layout.js` (`window.LS_PANEL` and `window.LS_PANEL_NAME`, escaped so no text can close the script).
+- `ShardStore` marks an entry `panel: true` when a user-installed (not bundled, not linked) folder has `panel.json`.
 
 **linux-session.js**
 - `watchSessionEnd({ onEnd })` runs `gdbus monitor --session --dest <manager>` for the desktop in `XDG_CURRENT_DESKTOP` and calls `onEnd(manager)` once when the session is ending: GNOME's `ClientPrivate.EndSession` (the logout can no longer be cancelled; `QueryEndSession` is ignored because it can), or XFCE's `Manager.StateChanged` to 3 or 4. These are broadcast signals, so nothing registers with the session manager. Returns `stop()`, which `main.js` calls on process exit so gdbus doesn't outlive a normal quit. No gdbus or another desktop: nothing is watched (logged once).
@@ -395,6 +404,8 @@ Usage from HTML/JS:
 
 **Template:** [docs/shard-template/](docs/shard-template/) is a minimal shard for authors, with the manifest explained in its README.
 
+**Panels.** Shards made with the editor (0.4) are normal shards with one more file, `panel.json` (`format: 1`): a grid (`cols`/`rows`, 1–24, the same on every page), `pageBar`, an optional `style` (theme, background, buttons, spacing, text) and `pages` (`id`, `name`, `layout: "grid"`, reserved for a future free-form mode, and `buttons`). Each button has an `id`, `col`/`row`/`w`/`h` and a `type`: `press`, `hold`, `repeat` (`key`, `repeat` ms), `toggle` (`keys`: two, and `alt`, the look of the second state), `page` (a page id, `back`, `next` or `prev`), `label` (text only) or `none` (no action, drawn dimmed; imported buttons that can't work), plus `label`, `labelPos`, `labelSize`, `icon` (`builtin`, `emoji` or `image`), `color`, `textColor` and `note`. The rest of the folder comes from `desktop/panel-template/` (`index.html`, `libreshard.css` with `shard-base/panel.css`, `libreshard.js`, `panel.js`) and `layout.js`, which carries `panel.json` as a script because the CSP forbids `fetch`. `shard-base/panel.js` draws it with `textContent` and `data-key`/`data-hold`/`data-repeat`; it handles toggles (`Shard.press`, state per button id in `Shard.save`, on that tablet) and page changes itself, and draws without `Shard`, so the editor's preview can call `LibrePanel.render()`. The format can still change before 1.0.
+
 Supported keys (aliases in `keys.js`): letters `a-z`, digits `0-9`, `f1`-`f24`, `ctrl`, `shift`, `alt` (left; also `lctrl`, `lshift`, `lalt`), `rctrl`, `rshift`, `ralt` (right), `win`/`meta`/`cmd`, `enter`, `esc`, `tab`, `space`, `backspace`, `delete`, `insert`, `home`, `end`, `pageup`, `pagedown`, arrows `up/down/left/right`, `comma`, `period`, `minus`, `equal`, `grave`, `slash`, `backslash`, `semicolon`, `apostrophe`, `lbracket`, `rbracket`, numpad `numpad0`-`numpad9`, `numpadplus`, `numpadminus`, `numpadmul`, `numpaddiv`, `numpaddot`, `numpadenter`, `numlock`, `print` (also `printscreen`), and media `mute`, `volup`, `voldown`, `playpause`, `next`, `prev`. `+` separates keys, which is why numpad plus is written `numpadplus`.
 
 ### Limiting a shard to certain apps
@@ -500,7 +511,7 @@ npm install
 npm start          # opens the app and the server on the configured port (7878 by default)
 npm test           # node:test suite, no extra dependencies
 npm run test:linux # the suite plus real key injection and app detection on Linux (needs Docker)
-npm run shards:base # after editing shard-base/: copies libreshard.css/.js into every bundled shard
+npm run shards:base # after editing shard-base/: copies libreshard.css/.js into every bundled shard and rebuilds desktop/panel-template/
 ```
 
 Testing without a tablet: the **This PC** card in the Connect tab opens the local panel. To debug a shard, open `http://localhost:7878/` in a browser instead, type the code shown in the window and use the developer tools on the iframe (the panel never takes the focus, so its developer tools can't be opened). Keys pressed from that browser land in the browser itself, since it is in front.
@@ -521,7 +532,8 @@ Tests (`test/`):
 - `keys.test.js`, `focus.test.js`, `net.test.js`, `pairing.test.js` and `manifest.test.js`: unit tests.
 - `server.test.js`: starts the real server on a random port with a fake keyboard, a fake `focus` and an in-memory paired device (from `test/helpers.js`), and talks to it over WebSocket and HTTP: tokens, pairing, rate limiting, revocation, `Origin` and `Host` checks, headers, denied keys, blocked apps, `up` never blocked, release on disconnect and on quit, every protocol limit, manifest validation, repeated ids, path traversal through links and dotfiles, user rules and `EADDRINUSE`.
 - When a test needs symlinks it creates junctions (`fs.symlinkSync(target, path, 'junction')`), which Windows allows without administrator rights.
-- `bundled-shards.test.js` loads every bundled shard and checks manifests, keys, base copies (`tools/build-shard-base.js --check` does the same from the command line) and translations.
+- `bundled-shards.test.js` loads every bundled shard and checks manifests, keys, base copies and the panel template (`tools/build-shard-base.js --check` does the same from the command line) and translations.
+- `panel-format.test.js`: panel.json validation with hostile values, the 300-key limit, ids, `layout.js` escaping, and that a generated folder passes the install review. How a panel looks and behaves is checked with Edge in headless mode (`--screenshot`, and `--dump-dom` with a probe script that fakes `Shard`).
 - `shard-store.test.js` and `installer.test.js` cover approvals, enable/disable, install/replace/refuse, uninstall through links, hot reload, and hostile zips (built by the tiny writer in `test/zip.js`, which real zip libraries won't do). `i18n.test.js` keeps the languages in sync.
 - `test/linux/` builds a Debian image with Xvfb, openbox, xdotool and xmodmap, runs `npm test`, then `injection.js`: it opens an `xev` window (giving it `_NET_WM_PID` and `WM_CLASS`, which real apps set and active-win needs), checks detection by executable, and types combos one per process (`type-one.js`) to compare with what xev received. F13/F24 must come out as "refused" there, because Xvfb's keymap lacks them.
 - **Ubuntu desktop VM:** `test/linux/proxmox-ubuntu-desktop-vm.sh`, run as root on a Proxmox host, creates an Ubuntu 24.04 VM from the cloud image, with GNOME on Xorg, automatic login, no screen lock, SSH by key and the test tools, then takes a `clean` snapshot. It uses Ubuntu's own kernel, so AppArmor's user namespace restriction applies, unlike in an LXC; that's what the `.deb` must be tested against.
