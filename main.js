@@ -9,7 +9,7 @@ const { startServer } = require('./server');
 const { Pairing, Devices, RateLimiter } = require('./pairing');
 const { ShardStore } = require('./shard-store');
 const { classifyKeys, validateManifest } = require('./manifest');
-const { validatePanel, imagesOf, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
+const { validatePanel, imagesOf, imageFile, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
 const keys = require('./keys');
 const installer = require('./installer');
 const focus = require('./focus');
@@ -715,8 +715,15 @@ async function start() {
   // "Save" writes a shard: validated here (validatePanel), built from desktop/panel-template/ and
   // installed with store.install(), which approves its keys, since the user chose them on this PC.
   // A panel made on another PC is edited from its panel.json alone; the rest is generated again.
+  // Images live in a draft folder per editor session (libreshard-draft-*, removed on close and, if
+  // left behind by a crash, on the next start); saving copies only the ones still in use.
   let editor = null;
-  let editing = null; // { id, meta, panel, images, warnings, dirty } while the editor is open
+  let editing = null; // { id, meta, panel, images, warnings, draft, dirty } while the editor is open
+  const DRAFT_PREFIX = 'libreshard-draft-';
+  for (const name of fs.readdirSync(os.tmpdir())) {
+    if (!name.startsWith(DRAFT_PREFIX)) continue;
+    try { fs.rmSync(path.join(os.tmpdir(), name), { recursive: true, force: true }); log.info('draft-removed', { folder: name }); } catch { /* in use or gone */ }
+  }
   const editorHandle = (channel, fn) => handleFor(() => editor, EDITOR_URL, channel, fn);
   const iconBodies = require('./shard-base/icons.js');
 
@@ -755,6 +762,9 @@ async function start() {
       editing = { id: null, meta: { name: t('editor.newName'), icon: '' }, panel: newPanel(), images: {}, warnings: [] };
     }
     editing.dirty = false;
+    editing.draft = fs.mkdtempSync(path.join(os.tmpdir(), DRAFT_PREFIX));
+    fs.mkdirSync(path.join(editing.draft, 'images'));
+    if (id) for (const f of panelImages(entry(id).root)) fs.copyFileSync(path.join(entry(id).root, f), path.join(editing.draft, f));
     editor = new BrowserWindow({
       width: 1280, height: 840, minWidth: 1000, minHeight: 620, title: t('editor.windowTitle'),
       backgroundColor: '#0d1b2a', icon: path.join(__dirname, 'viewer', 'brand', 'icon-512.png'),
@@ -780,7 +790,11 @@ async function start() {
       });
       if (response === 0 && editor) { editing.dirty = false; editor.close(); }
     });
-    editor.on('closed', () => { editor = null; editing = null; });
+    editor.on('closed', () => {
+      if (editing?.draft) fs.rmSync(editing.draft, { recursive: true, force: true });
+      editor = null;
+      editing = null;
+    });
     editor.loadFile(EDITOR_PAGE);
     log.info('editor-opened', { shard: editing.id || undefined });
   }
@@ -797,11 +811,26 @@ async function start() {
     const valid = combos.filter((c) => { try { keys.parse(c); return true; } catch { return false; } });
     return { ok: true, risk: classifyKeys(valid), unavailable: valid.filter((c) => keys.unavailable(c).length) };
   });
+  // An image for a button. The editor already decoded the user's file (PNG, JPEG, WebP or GIF) in its
+  // sandboxed page and sends a PNG of at most 288 px (640 px for a button background); here it's checked, shrunk if needed and encoded
+  // again (dropping anything but the pixels), then kept in the draft under its hash.
+  editorHandle('editor:add-image', (bytes, use) => {
+    if (!(bytes instanceof Uint8Array) || !bytes.length || bytes.length > 4 * 1024 * 1024) throw new Error(t('editor.imageInvalid'));
+    // An icon is small; a button's background can cover several cells
+    let img = nativeImage.createFromBuffer(Buffer.from(bytes));
+    if (img.isEmpty()) throw new Error(t('editor.imageInvalid'));
+    const { width, height } = img.getSize();
+    const max = use === 'button' ? PANEL_LIMITS.buttonImage : PANEL_LIMITS.image;
+    if (width > max || height > max) img = img.resize(width >= height ? { width: max, quality: 'best' } : { height: max, quality: 'best' });
+    const png = img.toPNG();
+    const file = imageFile(png);
+    fs.writeFileSync(path.join(editing.draft, file), png);
+    return { ok: true, file, url: 'data:image/png;base64,' + png.toString('base64') };
+  });
   editorHandle('editor:dirty', (on) => { if (editing) editing.dirty = on === true; });
   editorHandle('editor:close', () => { editor.close(); });
   editorHandle('editor:save', (panel, meta) => {
-    const existing = editing.id ? store.all().find((x) => x.id === editing.id) : null;
-    const r = validatePanel(panel, { files: new Set(existing ? panelImages(existing.root) : []) });
+    const r = validatePanel(panel, { files: new Set(panelImages(editing.draft)) });
     if (!r.ok) throw new Error(r.errors.join('\n'));
     // The editor never produces anything validatePanel would drop: if it did, saving would lose it
     if (r.warnings.length) throw new Error(t('editor.invalid', { details: r.warnings.slice(0, 5).join('\n') }));
@@ -818,7 +847,7 @@ async function start() {
       for (const [f, content] of Object.entries(built.files)) fs.writeFileSync(path.join(dir, f), content);
       const images = imagesOf(r.panel);
       if (images.length) fs.mkdirSync(path.join(dir, 'images'));
-      for (const f of images) fs.copyFileSync(path.join(existing.root, f), path.join(dir, f));
+      for (const f of images) fs.copyFileSync(path.join(editing.draft, f), path.join(dir, f));
       store.install(dir, checked.manifest);
     } catch (e) {
       log.error('panel-save-failed', { shard: built.manifest.id, error: e });

@@ -373,5 +373,12 @@
   "editor.addKey": "+ add a key",
   "editor.removeKey": "(remove)",
   "editor.comboTooLong": "That combination is too long.",
-  "editor.captureHint": "Hold the keys, then release them all to finish. For a Windows Alt code, hold Alt and type the digits on the numeric keypad."
+  "editor.captureHint": "Hold the keys, then release them all to finish. For a Windows Alt code, hold Alt and type the digits on the numeric keypad.",
+  "editor.icon.image": "Image",
+  "editor.icon.pickImage": "Choose image…",
+  "editor.icon.changeImage": "Change…",
+  "editor.imageInvalid": "That file isn't an image LibreShard can use (PNG, JPEG, WebP or GIF).",
+  "editor.imageTooBig": "That image is too big (20 MB at most).",
+  "editor.imageHint": "It is shrunk to 288 px and saved as PNG. The text goes over it.",
+  "editor.bgImage": "Background image"
 }

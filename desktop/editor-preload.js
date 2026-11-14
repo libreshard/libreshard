@@ -9,5 +9,6 @@ contextBridge.exposeInMainWorld('libreshardEditor', {
   check: invoke('editor:check'),
   setDirty: invoke('editor:dirty'),
   save: invoke('editor:save'),
+  addImage: invoke('editor:add-image'),
   close: invoke('editor:close'),
 });

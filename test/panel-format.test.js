@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const vm = require('vm');
-const { validatePanel, keysOf, imagesOf, buildShard, panelId, nextVersion, LIMITS } = require('../panel-format');
+const { validatePanel, keysOf, imagesOf, imageFile, buildShard, panelId, nextVersion, LIMITS } = require('../panel-format');
 const { validateManifest } = require('../manifest');
 const installer = require('../installer');
 const { PANEL_TEMPLATE } = require('../tools/build-shard-base');
@@ -30,7 +30,7 @@ const FULL = {
     {
       id: 'p1', name: 'Main', layout: 'grid',
       buttons: [
-        { id: 'copy', col: 0, row: 0, w: 1, h: 1, type: 'press', key: 'ctrl+c', label: 'Copy', labelPos: 'bottom', labelSize: 'm', icon: { kind: 'builtin', name: 'copy' }, color: '#1a3150', textColor: '#e6eef7' },
+        { id: 'copy', col: 0, row: 0, w: 1, h: 1, type: 'press', key: 'ctrl+c', label: 'Copy', labelPos: 'bottom', labelSize: 'm', icon: { kind: 'builtin', name: 'copy' }, color: '#1a3150', textColor: '#e6eef7', bgImage: 'images/0123456789ab.png' },
         { id: 'alt', col: 1, row: 0, w: 1, h: 1, type: 'hold', key: 'alt' },
         { id: 'vol', col: 2, row: 0, w: 1, h: 1, type: 'repeat', key: 'volup', repeat: 200, icon: { kind: 'emoji', text: '🔊' } },
         { id: 'mic', col: 3, row: 0, w: 2, h: 2, type: 'toggle', keys: ['f14', 'f15'], label: 'Mic on', icon: { kind: 'image', file: 'images/0123456789ab.png', imported: 'streamdeck' }, alt: { label: 'Mic off', color: '#7f1d1d' } },
@@ -157,6 +157,30 @@ test('images must be under images/, named like the app names them and present', 
   for (const bad of ['images/../manifest.json', '../images/a.png', 'images/a.svg', 'images/sub/a.png', '/images/a.png', 'images\\a.png', 'https://x/a.png']) {
     assert.equal(iconOf(bad), undefined, bad);
   }
+});
+
+test('an image is named after its bytes, in the shape validatePanel accepts', () => {
+  const a = imageFile(Buffer.from('one image'));
+  assert.match(a, /^images\/[0-9a-f]{12}\.png$/);
+  assert.equal(imageFile(Buffer.from('one image')), a, 'the same bytes, the same name');
+  assert.notEqual(imageFile(Buffer.from('another')), a);
+  assert.deepEqual(validatePanel(panelWith([btn({ icon: { kind: 'image', file: a } })]), { files: new Set([a]) }).warnings, []);
+});
+
+test('a button background image follows the same rules as an image icon', () => {
+  const files = new Set(['images/aaaaaaaaaaaa.png', 'images/bbbbbbbbbbbb.png']);
+  const r = validatePanel(panelWith([
+    btn({ id: 'a', bgImage: 'images/aaaaaaaaaaaa.png' }),
+    btn({ id: 'b', col: 1, type: 'toggle', keys: ['f13', 'f14'], alt: { bgImage: 'images/bbbbbbbbbbbb.png' } }),
+    btn({ id: 'c', col: 2, bgImage: 'images/cccccccccccc.png' }),
+    btn({ id: 'd', col: 3, bgImage: '../manifest.json' }),
+  ]), { files });
+  const [a, b, c, d] = r.panel.pages[0].buttons;
+  assert.equal(a.bgImage, 'images/aaaaaaaaaaaa.png');
+  assert.deepEqual(b.alt, { bgImage: 'images/bbbbbbbbbbbb.png' });
+  assert.equal(c.bgImage, undefined, 'missing file');
+  assert.equal(d.bgImage, undefined, 'outside images/');
+  assert.deepEqual(imagesOf(r.panel).sort(), ['images/aaaaaaaaaaaa.png', 'images/bbbbbbbbbbbb.png']);
 });
 
 test('button ids that are missing, invalid or repeated get a new unique one', () => {

@@ -88,6 +88,11 @@
     const fillKind = (panelStyle.button || {}).fill || 'gradient';
     if (look.color) btn.style.setProperty(btn.classList.contains('lsp-label') ? '--lsp-label-fill' : '--lsp-fill', fill(fillKind === 'none' ? 'flat' : fillKind, look.color));
     if (look.textColor) btn.style.setProperty('--lsp-text', look.textColor);
+    if (look.bgImage) {
+      btn.classList.add('lsp-has-bg');
+      btn.style.setProperty('--lsp-bg-image', `url("${imageUrl(look.bgImage)}")`);
+      if (look.color) btn.style.setProperty('--lsp-bg-color', look.color);
+    }
   }
 
   let panelStyle = {};

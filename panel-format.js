@@ -10,7 +10,7 @@ const { parse, normalize } = require('./keys');
 
 const FORMAT = 1;
 const MIN_APP_VERSION = '0.4.0';
-const LIMITS = { grid: 24, pages: 50, text: 60, note: 120, keys: 300, combo: 64, repeat: [50, 1000] };
+const LIMITS = { grid: 24, pages: 50, text: 60, note: 120, keys: 300, combo: 64, image: 288, buttonImage: 640, background: 1920, repeat: [50, 1000] };
 
 const TYPES = ['press', 'hold', 'repeat', 'toggle', 'page', 'label', 'none'];
 const KEYED = new Set(['press', 'hold', 'repeat']);
@@ -86,6 +86,7 @@ function cleanLook(raw, files) {
     icon: cleanIcon(raw.icon, files),
     color: color(raw.color),
     textColor: color(raw.textColor),
+    bgImage: cleanImage(raw.bgImage, files), // covers the whole button, under the icon and text
   };
 }
 
@@ -266,11 +267,14 @@ function keysOf(panel) {
   return [...keys];
 }
 
-// Every image a panel uses (buttons, toggle second states and the background)
+// Every image a panel uses (icons and backgrounds of buttons and toggle second states, and the panel background)
 function imagesOf(panel) {
   const files = new Set();
   const icon = (i) => { if (i?.kind === 'image') files.add(i.file); };
-  for (const p of panel.pages) for (const b of p.buttons) { icon(b.icon); icon(b.alt?.icon); }
+  const bg = (f) => { if (f) files.add(f); };
+  for (const p of panel.pages) {
+    for (const b of p.buttons) { icon(b.icon); icon(b.alt?.icon); bg(b.bgImage); bg(b.alt?.bgImage); }
+  }
   if (panel.style?.background?.kind === 'image') files.add(panel.style.background.file);
   return [...files];
 }
@@ -281,6 +285,10 @@ function panelId(name, random = crypto.randomBytes(2).toString('hex')) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64 - 'panel--'.length - random.length).replace(/-+$/, '');
   return `panel-${slug || 'panel'}-${random}`;
 }
+
+// The name an image gets in a panel: 12 hex characters of the sha256 of its PNG bytes, so the same
+// image added twice is stored once
+const imageFile = (png) => 'images/' + crypto.createHash('sha256').update(png).digest('hex').slice(0, 12) + '.png';
 
 // "1.0.4" → "1.0.5"; anything else starts at "1.0.0"
 function nextVersion(v) {
@@ -320,4 +328,4 @@ function buildShard({ panel, meta = {}, template = {} }) {
   };
 }
 
-module.exports = { validatePanel, keysOf, imagesOf, buildShard, panelId, nextVersion, FORMAT, LIMITS, MIN_APP_VERSION };
+module.exports = { validatePanel, keysOf, imagesOf, imageFile, buildShard, panelId, nextVersion, FORMAT, LIMITS, MIN_APP_VERSION };
