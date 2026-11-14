@@ -325,6 +325,15 @@ function stopCapture() {
   S.capture = null;
   renderProps();
 }
+// Ends the capture with a combo. The properties are always drawn again: capturing the combo the
+// button already had changes nothing in the panel, so change() alone wouldn't redraw them and the
+// button would stay on "Press the keys…" with the capture already over.
+function finishCapture(combo) {
+  const { done } = S.capture;
+  S.capture = null;
+  done(combo);
+  renderProps();
+}
 window.addEventListener('keydown', (e) => {
   if (!S.capture) return;
   e.preventDefault();
@@ -334,20 +343,14 @@ window.addEventListener('keydown', (e) => {
     if (r.mods.length > S.capture.peak.length) S.capture.peak = r.mods;
     return;
   }
-  const { done } = S.capture;
-  S.capture = null;
-  if (r.unknown) { renderProps(); toast(t('editor.keyUnknown', { key: r.unknown }), true); return; }
-  done(r.combo);
+  if (r.unknown) { stopCapture(); toast(t('editor.keyUnknown', { key: r.unknown }), true); return; }
+  finishCapture(r.combo);
 }, true);
 window.addEventListener('keyup', (e) => {
   if (!S.capture) return;
   e.preventDefault();
   const stillDown = [e.ctrlKey, e.shiftKey, e.altKey, e.metaKey].some(Boolean);
-  if (!stillDown && S.capture.peak.length) {
-    const { done, peak } = S.capture;
-    S.capture = null;
-    done(K.join(peak, ''));
-  }
+  if (!stillDown && S.capture.peak.length) finishCapture(K.join(S.capture.peak, ''));
 }, true);
 window.addEventListener('blur', () => { if (S.capture) stopCapture(); });
 
