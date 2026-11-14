@@ -320,6 +320,14 @@ function keyField(value, onChange, labelKey) {
 function startCapture(field, done) {
   S.capture = { field, done, peak: [] };
   renderProps();
+  // The current layout's map, asked anew each time: the user may have switched layouts since
+  refreshLayout();
+}
+let layoutMap = null;
+function refreshLayout() {
+  if (navigator.keyboard && navigator.keyboard.getLayoutMap) {
+    navigator.keyboard.getLayoutMap().then((m) => { layoutMap = m; }).catch(() => {});
+  }
 }
 function stopCapture() {
   S.capture = null;
@@ -338,7 +346,7 @@ window.addEventListener('keydown', (e) => {
   if (!S.capture) return;
   e.preventDefault();
   e.stopPropagation();
-  const r = K.fromEvent(e, init.platform);
+  const r = K.fromEvent(e, init.platform, layoutMap);
   if (r.modifier !== undefined) {
     if (r.mods.length > S.capture.peak.length) S.capture.peak = r.mods;
     return;
@@ -626,6 +634,7 @@ async function start() {
   $('close').addEventListener('click', () => api.close());
   document.addEventListener('focusout', () => { S.coalesce = null; });
 
+  refreshLayout();
   new ResizeObserver(layoutPreview).observe($('stage'));
   layoutPreview();
   render();

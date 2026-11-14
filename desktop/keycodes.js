@@ -2,10 +2,12 @@
 // pick from, and readable labels. Used by desktop/editor.js (as window.Keycodes) and by the tests.
 //
 // What a captured key must become depends on how nut-js presses it on that system:
-// - Windows: by virtual-key code (VK). Letters follow the layout's character and the OEM keys
-//   (punctuation) are whatever VK the layout gives them, and Chromium's keyCode is that same VK,
-//   so keyCode is what round-trips.
-// - Linux (X11): by keysym, so the character the key types (unshifted) is what round-trips.
+// - Windows and Linux: by character. For a letter or a symbol, libnut asks the system which key
+//   types that character on the layout in use when it presses (VkKeyScan on Windows, the keysym on
+//   X11). So the name must be the character the captured key types, without Shift, on the current
+//   layout: the keyboard layout map gives it whatever modifiers are held. Checked 2026-11-14 on
+//   Windows: with Spanish (Mexico), "grave" is pressed as the key that types ` there, the } key.
+//   Characters keys.js has no name for (ñ, ´, + on a Spanish layout) can't be captured.
 // - macOS: by physical key code, so e.code.
 // Function keys, the numpad, navigation and media keys are the same everywhere (e.code).
 (() => {
@@ -30,46 +32,42 @@
   for (let i = 0; i <= 9; i++) { CODES['Digit' + i] = String(i); CODES['Numpad' + i] = 'numpad' + i; }
   for (let i = 1; i <= 24; i++) CODES['F' + i] = 'f' + i;
 
-  // Punctuation by position (macOS, and the fallback elsewhere)
+  // Punctuation by position (macOS, and without a layout map elsewhere)
   const PUNCT_CODES = {
     Minus: 'minus', Equal: 'equal', Comma: 'comma', Period: 'period', Slash: 'slash', Backslash: 'backslash',
     Semicolon: 'semicolon', Quote: 'apostrophe', Backquote: 'grave', BracketLeft: 'lbracket', BracketRight: 'rbracket',
   };
-  // Windows OEM virtual-key codes (keyCode) → the name nut-js presses with that VK
-  const PUNCT_VK = {
-    186: 'semicolon', 187: 'equal', 188: 'comma', 189: 'minus', 190: 'period', 191: 'slash',
-    192: 'grave', 219: 'lbracket', 220: 'backslash', 221: 'rbracket', 222: 'apostrophe',
-  };
-  // The character a key types (Linux) → name
+  // The character a key types (Windows, Linux) → name
   const PUNCT_CHARS = {
     '-': 'minus', '=': 'equal', ',': 'comma', '.': 'period', '/': 'slash', '\\': 'backslash',
     ';': 'semicolon', "'": 'apostrophe', '`': 'grave', '[': 'lbracket', ']': 'rbracket',
   };
 
-  // The main (non-modifier) key of a keydown, as a keys.js name, or null if keys.js has none
-  function mainKey(e, platform) {
+  // The main (non-modifier) key of a keydown, as a keys.js name, or null if keys.js has none.
+  // `layout` is the keyboard layout map (navigator.keyboard.getLayoutMap(): e.code → the character
+  // that key types without modifiers).
+  function mainKey(e, platform, layout) {
     if (CODES[e.code]) return CODES[e.code];
-    if (platform === 'win32') {
-      if (e.keyCode >= 65 && e.keyCode <= 90) return String.fromCharCode(e.keyCode + 32);
-      if (PUNCT_VK[e.keyCode]) return PUNCT_VK[e.keyCode];
-    } else if (platform === 'linux') {
-      const k = String(e.key || '');
-      if (/^[a-z]$/i.test(k)) return k.toLowerCase();
-      if (PUNCT_CHARS[k]) return PUNCT_CHARS[k];
-    }
-    if (/^Key[A-Z]$/.test(e.code)) return e.code.slice(3).toLowerCase();
-    return PUNCT_CODES[e.code] || null;
+    const byPosition = () => (/^Key[A-Z]$/.test(e.code) ? e.code.slice(3).toLowerCase() : PUNCT_CODES[e.code] || null);
+    if (platform === 'darwin') return byPosition();
+    const plain = String(e.key || '');
+    const ch = (layout && layout.get(e.code)) || (plain.length === 1 && !e.shiftKey ? plain : '');
+    if (!ch) return layout ? null : byPosition();
+    const c = ch.toLowerCase();
+    if (/^[a-z]$/.test(c)) return c;
+    if (/^[0-9]$/.test(c)) return c;
+    return PUNCT_CHARS[c] || null;
   }
 
   // A keydown → { combo } (modifiers in a fixed order, then the key), { modifier } while only a
   // modifier is down, or { unknown } for a key keys.js can't press
-  function fromEvent(e, platform) {
+  function fromEvent(e, platform, layout) {
     const mods = [e.ctrlKey && 'ctrl', e.shiftKey && 'shift', e.altKey && 'alt', e.metaKey && 'win'].filter(Boolean);
     if (MODIFIER_CODES[e.code] || ['Control', 'Shift', 'Alt', 'Meta', 'OS', 'AltGraph'].includes(e.key)) {
       return { modifier: MODIFIER_CODES[e.code] || null, mods };
     }
-    const key = mainKey(e, platform);
-    if (!key) return { unknown: e.key || e.code || '?' };
+    const key = mainKey(e, platform, layout);
+    if (!key) return { unknown: (layout && layout.get(e.code)) || e.key || e.code || '?' };
     return { combo: [...mods, key].join('+') };
   }
 

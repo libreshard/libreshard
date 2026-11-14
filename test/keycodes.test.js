@@ -30,26 +30,41 @@ test('layout-independent keys come from e.code on every system', () => {
   assert.equal(K.fromEvent(ev({ code: 'F13' }), 'linux').combo, 'f13');
 });
 
-test('Windows: letters and punctuation follow the virtual-key code, as nut-js presses them', () => {
-  const win = (o) => K.fromEvent(ev(o), 'win32').combo;
-  assert.equal(win({ code: 'KeyA', key: 'a', keyCode: 65 }), 'a');
-  assert.equal(win({ code: 'KeyQ', key: 'a', keyCode: 65 }), 'a', 'AZERTY: the key labelled A');
-  assert.equal(win({ code: 'KeyC', key: 'c', keyCode: 67, ctrlKey: true, shiftKey: true }), 'ctrl+shift+c');
-  // Spanish layout: the key right of 0 types ' and Windows gives it VK_OEM_4
-  assert.equal(win({ code: 'Minus', key: "'", keyCode: 219 }), 'lbracket');
-  assert.equal(win({ code: 'Slash', key: '-', keyCode: 189 }), 'minus');
-  assert.equal(win({ code: 'Semicolon', key: 'ñ', keyCode: 192 }), 'grave');
-  assert.deepEqual(K.fromEvent(ev({ code: 'IntlBackslash', key: '<', keyCode: 226 }), 'win32'), { unknown: '<' });
+// What navigator.keyboard.getLayoutMap() gives for a few keys (the character typed without modifiers)
+const US = new Map(Object.entries({
+  KeyA: 'a', KeyQ: 'q', KeyZ: 'z', Semicolon: ';', Quote: "'", Backslash: '\\', Minus: '-', Equal: '=',
+  BracketLeft: '[', BracketRight: ']', Backquote: '`', Comma: ',', Period: '.', Slash: '/',
+}));
+const ES_MX = new Map(Object.entries({
+  KeyA: 'a', KeyQ: 'q', KeyZ: 'z', Semicolon: 'ñ', Quote: '{', Backslash: '}', Minus: "'", Equal: '¿',
+  BracketLeft: '´', BracketRight: '+', Backquote: '|', Comma: ',', Period: '.', Slash: '-', IntlBackslash: '<',
+}));
+const AZERTY = new Map(Object.entries({ KeyQ: 'a', KeyA: 'q', KeyW: 'z' }));
+
+test('Windows and Linux: the character the key types on the current layout, as libnut presses it', () => {
+  for (const platform of ['win32', 'linux']) {
+    const press = (o, layout) => K.fromEvent(ev(o), platform, layout);
+    assert.equal(press({ code: 'Semicolon', key: ';' }, US).combo, 'semicolon');
+    assert.equal(press({ code: 'Backquote', key: '`' }, US).combo, 'grave');
+    // Spanish (Mexico): the key that types ñ has no keys.js name (libnut would press ` instead,
+    // the } key there), and the key that types - is "minus" whatever its position
+    assert.deepEqual(press({ code: 'Semicolon', key: 'ñ' }, ES_MX), { unknown: 'ñ' });
+    assert.deepEqual(press({ code: 'BracketRight', key: '+' }, ES_MX), { unknown: '+' });
+    assert.equal(press({ code: 'Slash', key: '-' }, ES_MX).combo, 'minus');
+    assert.equal(press({ code: 'Minus', key: "'" }, ES_MX).combo, 'apostrophe');
+    assert.equal(press({ code: 'Slash', key: '_', shiftKey: true }, ES_MX).combo, 'shift+minus', 'Shift doesn\'t change the key');
+    assert.equal(press({ code: 'KeyZ', key: 'z', ctrlKey: true }, ES_MX).combo, 'ctrl+z');
+    assert.equal(press({ code: 'KeyQ', key: 'a' }, AZERTY).combo, 'a', 'AZERTY: the key that types a');
+    assert.equal(press({ code: 'Digit1', key: '!', shiftKey: true }, ES_MX).combo, 'shift+1');
+  }
 });
 
-test('Linux: the character the key types; macOS: the physical key', () => {
+test('without a layout map: the unshifted character, else the US position; macOS: the physical key', () => {
   const linux = (o) => K.fromEvent(ev(o), 'linux').combo;
   assert.equal(linux({ code: 'KeyQ', key: 'a' }), 'a');
   assert.equal(linux({ code: 'Minus', key: "'" }), 'apostrophe');
-  assert.equal(linux({ code: 'Slash', key: '-' }), 'minus');
-  assert.equal(linux({ code: 'Digit1', key: '!', shiftKey: true }), 'shift+1');
-  assert.equal(linux({ code: 'Minus', key: '_', shiftKey: true }), 'shift+minus', 'a shifted symbol falls back to the position');
-  const mac = (o) => K.fromEvent(ev(o), 'darwin').combo;
+  assert.equal(linux({ code: 'Minus', key: '_', shiftKey: true }), 'shift+minus');
+  const mac = (o) => K.fromEvent(ev(o), 'darwin', ES_MX).combo;
   assert.equal(mac({ code: 'KeyQ', key: 'a', metaKey: true }), 'win+q');
   assert.equal(mac({ code: 'Minus', key: "'" }), 'minus');
 });

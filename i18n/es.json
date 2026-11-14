@@ -333,7 +333,7 @@
   "editor.capture": "Capturar",
   "editor.capturing": "Pulsa las teclas…",
   "editor.chooseKey": "Elegir…",
-  "editor.keyUnknown": "LibreShard no puede pulsar \"{key}\". Elige una tecla de la lista.",
+  "editor.keyUnknown": "LibreShard todavía no puede pulsar \"{key}\". Puede pulsar las teclas de la lista \"Elegir…\".",
   "keys.group.letters": "Letras",
   "keys.group.digits": "Números",
   "keys.group.function": "Teclas de función",

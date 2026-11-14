@@ -333,7 +333,7 @@
   "editor.capture": "Capture",
   "editor.capturing": "Press the keys…",
   "editor.chooseKey": "Choose…",
-  "editor.keyUnknown": "LibreShard can't press \"{key}\". Choose a key from the list.",
+  "editor.keyUnknown": "LibreShard can't press \"{key}\" yet. It can press the keys listed in \"Choose…\".",
   "keys.group.letters": "Letters",
   "keys.group.digits": "Digits",
   "keys.group.function": "Function keys",
