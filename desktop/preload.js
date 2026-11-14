@@ -49,4 +49,5 @@ contextBridge.exposeInMainWorld('libreshard', {
   pickDevInstall: invoke('install:pick-dev'),
   setShardFavorite: invoke('shard:favorite'),
   moveShard: invoke('shard:move'),
+  openEditor: invoke('editor:open'),
 });

@@ -18,6 +18,7 @@ This guide covers everything a shard author needs. The quickest start is the
 - [Design rules](#design-rules)
 - [What a shard can't do](#what-a-shard-cant-do)
 - [Sharing your shard](#sharing-your-shard)
+- [Panels made in the editor](#panels-made-in-the-editor)
 
 ## The smallest shard
 
@@ -149,6 +150,12 @@ Things worth knowing:
 - **Numpad digits** only type digits with Num Lock on; otherwise Windows and X11 treat them as
   navigation keys.
 - **Win + L** can't be injected on Windows (the lock screen ignores synthetic input).
+- **Symbols depend on the layout.** On Windows and Linux a letter or symbol is pressed as "the key
+  that types it" on the PC's current keyboard layout: `minus` presses the key that types `-`,
+  wherever it is. Characters without a name above (ñ, ´) can't be pressed directly.
+- **A combo can hold several keys** after the modifiers: they go down in the order written and come
+  up the other way round. `alt+numpad1+numpad6+numpad4` is a Windows Alt code (it types ñ). A key
+  can't appear twice in one combo, and a combo is at most 64 characters.
 - **Global shortcuts** registered by another program swallow that combo for everyone.
 - When you declare system combos (`win+…`, `ctrl+alt+…`, `alt+f4`), the install review shows them in
   red. A shard that has system combos *and* can type text gets a prominent warning. Declare only what
@@ -254,3 +261,14 @@ Two side effects: `mask-image` with a file from the shard may fail (embed masks 
   icons and uses no game artwork for that reason.
 - **Name it clearly.** "Photo tools for LibreShard" is fine; see [TRADEMARKS.md](../TRADEMARKS.md).
 - Then tell people about it: open a discussion in the LibreShard repository.
+
+## Panels made in the editor
+
+You don't need any of the above for a grid of buttons: **New panel** in the Shards tab opens an
+editor where you place buttons, choose their keys, texts, icons and colors, and add pages. Saving
+installs the panel as a normal shard, ready on the tablet.
+
+A panel's folder has one extra file, `panel.json`, which is what the editor reads back; the
+rest (`index.html`, `layout.js`, the styles and scripts) is generated from it, so editing those
+files by hand is lost on the next save. `panel.json` may still change before LibreShard 1.0.
+For anything beyond a grid, write a shard as described in this guide.
