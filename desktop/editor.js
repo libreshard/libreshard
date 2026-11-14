@@ -12,7 +12,7 @@ const KEYED = ['press', 'hold', 'repeat'];
 let init = null; // what the main process sent: strings, platform, icons, limits
 const S = {
   id: null, meta: { name: '', icon: '' }, panel: null, images: {},
-  page: 0, sel: null, size: 'landscape',
+  page: 0, sel: null, size: 'landscape', tab: 'button',
   undo: [], redo: [], saved: '', coalesce: null,
   small: [], check: null, loadWarnings: [],
   capture: null, // { done(combo) } while capturing a key
@@ -220,6 +220,7 @@ function createButton(col, row) {
     const b = { id: newButtonId(), col, row, w: 1, h: 1, type: 'press', key: '' };
     page().buttons.push(b);
     S.sel = b.id;
+    S.tab = 'button';
   });
 }
 
@@ -410,7 +411,7 @@ async function addImageFile(file, use = 'icon') {
   if (file.size > 20 * 1024 * 1024) throw new Error(t('editor.imageTooBig'));
   let bitmap;
   try { bitmap = await createImageBitmap(file); } catch { throw new Error(t('editor.imageInvalid')); }
-  const max = use === 'button' ? init.limits.buttonImage : init.limits.image;
+  const max = { button: init.limits.buttonImage, background: init.limits.background }[use] || init.limits.image;
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const canvas = new OffscreenCanvas(Math.max(1, Math.round(bitmap.width * scale)), Math.max(1, Math.round(bitmap.height * scale)));
   canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
@@ -499,9 +500,144 @@ function bgImageField(obj) {
       : h('div', { class: 'row' }, h('button', { class: 'btn small', onclick: choose }, t('editor.icon.pickImage'))));
 }
 
+/* ---------- The panel's look ("Look" tab) ---------- */
+
+const THEMES = window.LS_THEMES;
+const look = () => THEMES.resolve(S.panel.style);
+
+// Changes the panel's own style settings (the ones over its theme); empty groups are dropped
+function setStyle(fn, opts) {
+  change(() => {
+    const s = S.panel.style || (S.panel.style = {});
+    fn(s);
+    for (const k of ['button', 'text']) if (s[k] && !Object.keys(s[k]).length) delete s[k];
+    if (!Object.keys(s).length) delete S.panel.style;
+  }, opts);
+}
+const setGroup = (group, key, value, opts) => setStyle((s) => {
+  const g = s[group] || (s[group] = {});
+  if (value === undefined) delete g[key]; else g[key] = value;
+}, opts);
+
+// The color the panel's text sits on: the buttons', or the background's when buttons have no fill
+function textBackdrop(st) {
+  if (st.button.fill !== 'none') return st.button.color;
+  const bg = st.background;
+  return bg?.kind === 'color' ? bg.color : bg?.kind === 'gradient' ? bg.colors[0] : null;
+}
+function lowContrast() {
+  const st = look().style;
+  const under = textBackdrop(st);
+  return under && THEMES.contrast(st.text.color, under) < 4.5 ? THEMES.contrast(st.text.color, under) : 0;
+}
+
+// A small picture of a theme: its background and three buttons
+function themeThumb(name) {
+  const st = THEMES.resolve({ theme: name }).style;
+  const box = h('div', { class: 'ed-theme-thumb' });
+  const bg = st.background;
+  box.style.background = bg?.kind === 'color' ? bg.color : bg?.kind === 'gradient' ? `linear-gradient(160deg, ${bg.colors[0]}, ${bg.colors[1]})`
+    : 'radial-gradient(110% 80% at 100% 0%, #133452 0%, transparent 60%), #0d1b2a';
+  for (let i = 0; i < 3; i++) {
+    const b = h('span');
+    b.style.background = st.button.fill === 'none' ? 'transparent' : st.button.color;
+    b.style.border = `${Math.min(2, st.button.border)}px solid ${st.button.borderColor}`;
+    b.style.borderRadius = Math.round(st.button.radius / 4) + 'px';
+    b.style.color = st.text.color;
+    b.textContent = 'A';
+    box.append(b);
+  }
+  return box;
+}
+
+function renderLook(box) {
+  const own = S.panel.style || {};
+  const st = look().style;
+  const b = st.button;
+  const pick = (label, value, options, onchange) => h('div', { class: 'ed-prop ed-row2' }, h('label', null, t(label)),
+    h('select', { onchange: (e) => onchange(e.target.value) }, options.map(([v, l]) => h('option', { value: v, selected: v === value }, t(l)))));
+  const colorInput = (value, set) => h('input', { type: 'color', value, oninput: (e) => set(e.target.value, { coalesce: 'look-color', props: false }), onchange: (e) => { set(e.target.value); renderProps(); } });
+  const range = (label, value, min, max, set) => h('div', { class: 'ed-prop ed-row2' }, h('label', null, t(label)),
+    h('span', { class: 'row' },
+      h('input', { type: 'range', min: String(min), max: String(max), value: String(value), oninput: (e) => { e.target.nextSibling.textContent = e.target.value; set(Number(e.target.value), { coalesce: 'look-range-' + label, props: false }); }, onchange: (e) => { set(Number(e.target.value)); renderProps(); } }),
+      h('span', { class: 'ed-count' }, String(value))));
+
+  // Background
+  const bg = own.background;
+  const bgKind = bg ? bg.kind : 'theme';
+  const bgBody = [];
+  if (bgKind === 'color') bgBody.push(h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.color')), colorInput(bg.color, (v, o) => setStyle((s) => { s.background = { kind: 'color', color: v }; }, o))));
+  if (bgKind === 'gradient') {
+    bgBody.push(h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.colors')), h('span', { class: 'row' },
+      colorInput(bg.colors[0], (v, o) => setStyle((s) => { s.background = { kind: 'gradient', colors: [v, s.background.colors[1]] }; }, o)),
+      colorInput(bg.colors[1], (v, o) => setStyle((s) => { s.background = { kind: 'gradient', colors: [s.background.colors[0], v] }; }, o)))));
+  }
+  if (bgKind === 'image') {
+    bgBody.push(h('div', { class: 'row' },
+      S.images[bg.file] ? h('img', { class: 'ed-thumb cover', src: S.images[bg.file], alt: '' }) : null,
+      h('button', { class: 'btn small', onclick: () => chooseBackground() }, t('editor.icon.changeImage'))));
+    bgBody.push(range('look.dim', bg.dim || 0, 0, 80, (v, o) => setStyle((s) => { s.background = { ...s.background, dim: v }; if (!v) delete s.background.dim; }, o)));
+  }
+  async function chooseBackground() {
+    const file = await pickImage('background');
+    if (file) setStyle((s) => { s.background = { kind: 'image', file, dim: (s.background && s.background.dim) || 40 }; });
+  }
+  const setBgKind = (kind) => {
+    if (kind === 'image') { chooseBackground(); renderProps(); return; }
+    setStyle((s) => {
+      const base = textBackdrop(st) || '#0d1b2a';
+      if (kind === 'theme') delete s.background;
+      else if (kind === 'color') s.background = { kind: 'color', color: st.background?.kind === 'color' ? st.background.color : '#0d1b2a' };
+      else s.background = { kind: 'gradient', colors: st.background?.kind === 'gradient' ? st.background.colors : ['#0d1b2a', base] };
+    });
+  };
+
+  const contrast = lowContrast();
+  const custom = Object.keys(own).some((k) => k !== 'theme');
+  fill(box,
+    h('h2', null, t('look.theme')),
+    h('div', { class: 'ed-themes' }, THEMES.NAMES.map((name) => h('button', {
+      class: 'ed-theme' + (st.theme === name ? ' on' : ''),
+      onclick: () => setStyle((s) => { for (const k of Object.keys(s)) delete s[k]; if (name !== 'libreshard') s.theme = name; }),
+    }, themeThumb(name), h('span', null, t('theme.' + name))))),
+    h('div', { class: 'hint small' }, t('look.themeHint')),
+    custom ? h('button', { class: 'btn small', onclick: () => setStyle((s) => { for (const k of Object.keys(s)) if (k !== 'theme') delete s[k]; }) }, t('look.reset')) : null,
+    contrast ? h('div', { class: 'warnbox warn' }, t('look.contrast', { ratio: contrast.toFixed(1) })) : null,
+
+    h('h2', null, t('look.background')),
+    pick('look.kind', bgKind, [['theme', 'look.bg.theme'], ['color', 'look.bg.color'], ['gradient', 'look.bg.gradient'], ['image', 'look.bg.image']], setBgKind),
+    bgBody,
+
+    h('h2', null, t('look.buttons')),
+    range('look.radius', b.radius, 0, 40, (v, o) => setGroup('button', 'radius', v, o)),
+    range('look.border', b.border, 0, 4, (v, o) => setGroup('button', 'border', v, o)),
+    b.border ? h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.borderColor')), colorInput(b.borderColor, (v, o) => setGroup('button', 'borderColor', v, o))) : null,
+    pick('look.fill', b.fill, [['gradient', 'look.fill.gradient'], ['flat', 'look.fill.flat'], ['none', 'look.fill.none']], (v) => setGroup('button', 'fill', v)),
+    b.fill !== 'none' ? h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.buttonColor')), colorInput(b.color, (v, o) => setGroup('button', 'color', v, o))) : null,
+    h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.activeColor')), colorInput(b.activeColor, (v, o) => setGroup('button', 'activeColor', v, o))),
+    h('label', { class: 'ed-check' }, h('input', { type: 'checkbox', checked: b.shadow, onchange: (e) => setGroup('button', 'shadow', e.target.checked) }), ' ', t('look.shadow')),
+    pick('look.imageFit', b.imageFit, [['inset', 'look.imageFit.inset'], ['bleed', 'look.imageFit.bleed']], (v) => setGroup('button', 'imageFit', v)),
+    pick('look.spacing', st.spacing, [['compact', 'look.spacing.compact'], ['normal', 'look.spacing.normal'], ['wide', 'look.spacing.wide']], (v) => setStyle((s) => { s.spacing = v; })),
+
+    h('h2', null, t('look.text')),
+    h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.textColor')), colorInput(st.text.color, (v, o) => setGroup('text', 'color', v, o))),
+    pick('look.textSize', st.text.size, [['s', 'editor.labelSize.s'], ['m', 'editor.labelSize.m'], ['l', 'editor.labelSize.l']], (v) => setGroup('text', 'size', v)),
+    pick('look.font', st.text.font, [['system', 'look.font.system'], ['mono', 'look.font.mono'], ['serif', 'look.font.serif']], (v) => setGroup('text', 'font', v)),
+  );
+}
+
+// The right side: the selected button's properties, or the panel's look
 function renderProps() {
+  const tabs = h('div', { class: 'ed-tabs' }, ['button', 'look'].map((k) => h('button', {
+    class: 'ed-tab' + (S.tab === k ? ' on' : ''), onclick: () => { S.tab = k; renderProps(); },
+  }, t('editor.tab.' + k))));
+  const box = h('div', { class: 'ed-props-body' });
+  fill($('props'), tabs, box);
+  if (S.tab === 'look') renderLook(box); else renderButtonProps(box);
+}
+
+function renderButtonProps(box) {
   const b = selected();
-  const box = $('props');
   if (!b) {
     fill(box,
       h('h2', null, t('editor.button')),
@@ -599,6 +735,8 @@ function renderWarnings() {
   if (S.check && S.check.unavailable.length) out.push(h('div', { class: 'warnbox warn' }, t('editor.unavailable', { keys: S.check.unavailable.join(', ') })));
   const keyCount = keysInUse().length;
   if (keyCount > init.limits.keys) out.push(h('div', { class: 'warnbox danger' }, t('editor.tooManyKeys', { count: keyCount, max: init.limits.keys })));
+  const contrast = lowContrast();
+  if (contrast) out.push(h('div', { class: 'warnbox warn' }, t('look.contrast', { ratio: contrast.toFixed(1) })));
   if (S.small.length) out.push(h('div', { class: 'warnbox warn' }, t('editor.small', { count: S.small.length })));
   if (S.loadWarnings.length) out.push(h('div', { class: 'warnbox warn' }, t('editor.loadWarnings', { details: S.loadWarnings.slice(0, 3).join('; ') })));
   fill($('warnings'), out);
@@ -656,7 +794,8 @@ window.addEventListener('message', (e) => {
   if (d.t === 'ready') { S.previewReady = true; sendPreview(); return; }
   if (S.capture) stopCapture();
   if (d.t === 'select') {
-    if (S.sel !== d.id) { S.sel = typeof d.id === 'string' ? d.id : null; S.coalesce = null; render(); }
+    if (typeof d.id === 'string') S.tab = 'button';
+    if (S.sel !== d.id) { S.sel = typeof d.id === 'string' ? d.id : null; S.coalesce = null; render(); } else render();
   } else if (d.t === 'create') {
     if (fits(d.col, d.row, 1, 1, null)) createButton(d.col, d.row);
   } else if (d.t === 'move') {

@@ -295,7 +295,7 @@ test('a generated panel folder with the template passes the install review', () 
   try {
     const template = {};
     for (const name of fs.readdirSync(PANEL_TEMPLATE)) template[name] = fs.readFileSync(path.join(PANEL_TEMPLATE, name), 'utf8');
-    assert.deepEqual(Object.keys(template).sort(), ['index.html', 'libreshard.css', 'libreshard.js', 'panel.js']);
+    assert.deepEqual(Object.keys(template).sort(), ['index.html', 'libreshard.css', 'libreshard.js', 'panel.js', 'themes.js']);
     const { panel } = validatePanel(FULL);
     const { manifest, files } = buildShard({ panel, meta: { name: 'Stream' }, template });
     for (const [name, content] of Object.entries(files)) fs.writeFileSync(path.join(dir, name), content);
