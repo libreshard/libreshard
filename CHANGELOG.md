@@ -8,6 +8,11 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **New versions of your shards:** the daily check for new versions also reads the gallery's list
+  when you have shards installed (the same setting turns it off). A shard from the gallery, or the
+  same shard by the same author installed from its file, shows "Version x available" on its card:
+  **Update** downloads the reviewed file and shows what changed first, and a paid one links to its
+  author's shop. A shard taken out of the gallery says so. Nothing updates by itself.
 - **Gallery:** "Explore the gallery" in the Shards tab lists shards reviewed for LibreShard, with
   search and categories, their keys, apps and license, and whether they're free or paid, installed,
   or have a newer version. Installing downloads the file its author published and only goes ahead if

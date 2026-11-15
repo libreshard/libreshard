@@ -123,8 +123,8 @@
   "update.available": "LibreShard {version} está disponible.",
   "update.download": "Descargar",
   "update.dismiss": "Ignorar esta versión",
-  "settings.checkUpdates": "Buscar versiones nuevas",
-  "settings.checkUpdatesHint": "Una vez al día LibreShard pregunta a GitHub cuál es la última versión. No envía nada sobre ti ni tus dispositivos, y nunca instala nada por su cuenta.",
+  "settings.checkUpdates": "Buscar versiones nuevas de LibreShard y de los shards de la galería",
+  "settings.checkUpdatesHint": "Una vez al día LibreShard pregunta a GitHub cuál es la última versión y, si instalaste shards, lee la lista de la galería en libreshard.com. No envía nada sobre ti, tus dispositivos ni tus shards, y nunca instala nada por su cuenta.",
   "about.version": "LibreShard {version}",
   "about.license": "Software libre y de código abierto con licencia Apache 2.0.",
   "about.website": "Web",
@@ -559,5 +559,8 @@
   "shards.newHint": "Crea tu propio panel, sin programar",
   "shards.installGroup": "Instalar un shard",
   "shards.authorsGroup": "Para autores de shards",
-  "gallery.unavailable": "No se pudo cargar la galería: {reason}"
+  "gallery.unavailable": "No se pudo cargar la galería: {reason}",
+  "gallery.toShop": "Ir a la tienda",
+  "shards.galleryGone": "Ya no está en la galería",
+  "shards.updatesIntro": "Shards con una versión nueva en la galería: {count}. Al actualizar, primero ves qué cambia."
 }

@@ -113,6 +113,8 @@ h2:first-child { margin-top: 0; }
 .warnbox { padding: 10px 12px; border-radius: 10px; line-height: 1.45; }
 .warnbox.danger { background: var(--danger-bg); border: 1px solid var(--danger); color: #ffd0d0; }
 .warnbox.warn { background: var(--warn-bg); border: 1px solid var(--gold); color: #ffe7a8; }
+.warnbox.info { background: rgba(34, 211, 238, .08); border: 1px solid rgba(34, 211, 238, .45); color: var(--text); }
+.warnbox + .warnbox { margin-top: 10px; }
 .dialog .buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--cell2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; max-width: 80vw; z-index: 50; white-space: pre-line; }
 .toast.error { border-color: var(--danger); }

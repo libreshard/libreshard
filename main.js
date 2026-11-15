@@ -339,7 +339,7 @@ async function start() {
       devices: devices.all(),
       shards: await Promise.all(store.all().map(async (e) => ({
         id: e.id, name: e.manifest.name, author: e.manifest.author, version: e.manifest.version,
-        license: e.manifest.license, url: e.manifest.url, source: store.sourceOf(e.id),
+        license: e.manifest.license, url: e.manifest.url, source: store.sourceOf(e.id), gallery: galleryStatus(e),
         icon: e.manifest.icon, description: e.manifest.description, keys: e.manifest.keys,
         bundled: e.bundled, linked: e.linked, enabled: e.enabled, apps: e.apps.map(appLabel),
         appEntries: await withIcons(e.apps), customApps: e.customApps, suggestedApps: e.suggestedApps,
@@ -412,6 +412,7 @@ async function start() {
   const UPDATE_FIRST_MS = 60 * 1000;
   const UPDATE_EVERY_MS = 24 * 60 * 60 * 1000;
   const update = { latest: null, newer: false, checkedAt: null, checking: false, failed: false };
+  let galleryCache = null; // the gallery's entries once read: { at, entries } (see "Gallery" below)
   async function checkForUpdates({ manual = false } = {}) {
     if ((!manual && !cfg.checkUpdates) || update.checking) return;
     update.checking = true;
@@ -422,11 +423,15 @@ async function start() {
     } catch (e) {
       update.failed = true;
       log.warn('update-check-failed', { manual, error: e });
-    } finally {
-      update.checking = false;
-      update.checkedAt = Date.now();
-      push();
     }
+    // New versions of shards from the gallery: its list is read too, but only when the user has
+    // installed shards (bundled ones and development links never come from it)
+    if (store.all().some((e) => !e.bundled && !e.linked)) {
+      try { await loadGallery(true); } catch { /* logged as gallery-failed; the cards keep what they knew */ }
+    }
+    update.checking = false;
+    update.checkedAt = Date.now();
+    push();
   }
   setTimeout(() => {
     checkForUpdates();
@@ -603,7 +608,6 @@ async function start() {
   // from it is installed only if the file is the one its entry pins (sha256 and size) and its
   // manifest has the entry's id and version; then the usual review.
   const GALLERY_TTL_MS = 10 * 60 * 1000;
-  let galleryCache = null; // { at, entries }
   async function loadGallery(refresh = false) {
     if (!refresh && galleryCache && Date.now() - galleryCache.at < GALLERY_TTL_MS) return galleryCache.entries;
     const started = Date.now();
@@ -624,11 +628,25 @@ async function start() {
     log.info('gallery-fetched', { entries: entries.length, ms: Date.now() - started, local: localIndex ? true : undefined });
     return entries;
   }
+  // What the gallery says about an installed shard, from the last list read (null if none was read
+  // yet, or the shard has nothing to do with it): { update, paid, needsApp }, { listed } or { gone }
+  // (installed from the gallery, no longer in it)
+  function galleryStatus(e) {
+    if (!galleryCache || e.bundled || e.linked) return null;
+    const source = store.sourceOf(e.id);
+    const shard = { id: e.id, version: e.manifest.version, author: e.manifest.author, source };
+    const entry = gallery.entryFor(galleryCache.entries, shard);
+    if (!entry) return source?.kind === 'gallery' ? { gone: true } : null;
+    const [a] = gallery.annotate([entry], [shard], app.getVersion());
+    if (!a.update) return { listed: true };
+    return { update: entry.version, paid: entry.paid || undefined, needsApp: a.needsApp ? entry.minAppVersion : undefined };
+  }
   const installedForGallery = () => store.all().map((e) => ({
     id: e.id, version: e.manifest.version, author: e.manifest.author, source: store.sourceOf(e.id), bundled: e.bundled,
   }));
   handle('gallery:list', async (opts) => {
     const entries = await loadGallery(opts?.refresh === true);
+    push(); // the shard cards show what the fresh list says
     return {
       ok: true,
       entries: gallery.annotate(entries, installedForGallery(), app.getVersion()).map((e) => ({ ...e, risk: classifyKeys(e.keys) })),
