@@ -101,6 +101,7 @@ async function authed({ port, token }) {
   c.send({ type: 'auth', token });
   const ok = await c.next();
   if (ok.type !== 'ok') throw new Error('auth failed: ' + JSON.stringify(ok));
+  c.session = ok.session;
   return c;
 }
 

@@ -9,6 +9,10 @@ const { ShardStore, loadRules, resolveApps } = require('../shard-store');
 const { RateLimiter, Devices } = require('../pairing');
 const { makeShardDir, fakeFocus, start, connect, closeClients, authed, waitFor, rawGet } = require('./helpers');
 
+// The shard list and files are only for paired devices: sign in to get a session token
+const sessionOf = async (s) => (await authed(s)).session;
+const shardList = async (s) => (await fetch(s.base + '/api/shards', { headers: { 'X-LibreShard-Session': await sessionOf(s) } })).json();
+
 const shardDir = makeShardDir({
   demo: {
     manifest: { id: 'demo', name: 'Demo', permissions: { keys: ['ctrl+shift+m', 'f13', 'shift', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'] } },
@@ -59,7 +63,10 @@ test('a paired device authenticates with its token', () => withServer({}, async 
   const c = connect(s.port);
   await c.opened;
   c.send({ type: 'auth', token: s.token });
-  assert.deepEqual(await c.next(), { type: 'ok', device: { id: s.device.id, name: 'Test tablet' }, paused: false });
+  const ok = await c.next();
+  assert.match(ok.session, /^[0-9a-f]{32}$/, 'a session token for the shard list and files');
+  delete ok.session;
+  assert.deepEqual(ok, { type: 'ok', device: { id: s.device.id, name: 'Test tablet' }, paused: false });
 }));
 
 test('an unknown token closes the socket with 4001', () => withServer({}, async ({ port }) => {
@@ -190,8 +197,9 @@ test('the viewer gets a CSP that only allows itself', () => withServer({}, async
 }));
 
 test('too many HTTP requests from one address get 429, and the WebSocket still works', () => withServer({ httpRate: 3 }, async (s) => {
-  for (let i = 0; i < 3; i++) assert.equal((await rawGet(s.port, '/shards/demo/style.css')).status, 200);
-  const r = await rawGet(s.port, '/shards/demo/index.html');
+  const { session } = await authed(s);
+  for (let i = 0; i < 3; i++) assert.equal((await rawGet(s.port, `/s/${session}/demo/style.css`)).status, 200);
+  const r = await rawGet(s.port, `/s/${session}/demo/index.html`);
   assert.equal(r.status, 429);
   assert.ok(r.headers['retry-after']);
   assert.equal((await rawGet(s.port, '/api/shards')).status, 429);
@@ -469,8 +477,8 @@ test('no more than 10 combos can be held at once', () => withServer({}, async (s
 
 /* ---------- Shards and files ---------- */
 
-test('/api/shards lists valid shards with their effective apps', () => withServer({}, async ({ base }) => {
-  const list = await (await fetch(base + '/api/shards')).json();
+test('/api/shards lists valid shards with their effective apps', () => withServer({}, async (s) => {
+  const list = await shardList(s);
   const byId = Object.fromEntries(list.map((s) => [s.id, s]));
   assert.deepEqual(Object.keys(byId).sort(), ['demo', 'linked', 'restricted']);
   assert.deepEqual(byId.demo.apps, []);
@@ -487,17 +495,18 @@ test('invalid shards are skipped with their reasons', () => withServer({}, async
 test('with a repeated id the first shard wins', async () => {
   const dupDir = makeShardDir({ 'demo-copy': { manifest: { id: 'demo', permissions: { keys: ['f13'] } }, files: { 'index.html': 'impostor' } } });
   try {
-    await withServer({ shardDirs: [shardDir, dupDir] }, async ({ port, server }) => {
-      assert.match((await rawGet(port, '/shards/demo/index.html')).body, /data-key="f13"/);
-      assert.ok(server.store.rejected.some((r) => r.root.endsWith('demo-copy') && /already used/.test(r.errors[0])));
+    await withServer({ shardDirs: [shardDir, dupDir] }, async (s) => {
+      assert.match((await rawGet(s.port, `/s/${await sessionOf(s)}/demo/index.html`)).body, /data-key="f13"/);
+      assert.ok(s.server.store.rejected.some((r) => r.root.endsWith('demo-copy') && /already used/.test(r.errors[0])));
     });
   } finally {
     fs.rmSync(dupDir, { recursive: true, force: true });
   }
 });
 
-test('shard index.html gets the API injected and a strict CSP', () => withServer({}, async ({ port }) => {
-  const r = await rawGet(port, '/shards/demo/index.html');
+test('shard index.html gets the API injected and a strict CSP', () => withServer({}, async (s) => {
+  const session = await sessionOf(s);
+  const r = await rawGet(s.port, `/s/${session}/demo/index.html`);
   assert.equal(r.status, 200);
   assert.match(r.body, /<script src="\/shard-api\.js"><\/script>\s*$/);
   const csp = r.headers['content-security-policy'];
@@ -505,27 +514,59 @@ test('shard index.html gets the API injected and a strict CSP', () => withServer
   assert.match(csp, /connect-src 'none'/);
   assert.match(csp, /frame-ancestors 'self'/);
 
-  const css = await rawGet(port, '/shards/demo/style.css');
+  const css = await rawGet(s.port, `/s/${session}/demo/style.css`);
   assert.equal(css.status, 200);
   assert.equal(css.body, 'button{}');
 }));
 
-test('shard files cannot escape their folder', () => withServer({}, async ({ port }) => {
+test('shard files cannot escape their folder', () => withServer({}, async (s) => {
+  const session = await sessionOf(s);
   for (const p of [
-    '/shards/demo/../restricted/manifest.json',
-    '/shards/demo/../../package.json',
-    '/shards/demo/..%2f..%2fpackage.json',
-    '/shards/demo/escape/secret.txt', // a link inside the shard pointing outside
-    '/shards/demo/.secret', // dotfiles
-    '/shards/demo/missing.css',
-    '/shards/nope/index.html',
+    'demo/../restricted/manifest.json',
+    'demo/../../package.json',
+    'demo/..%2f..%2fpackage.json',
+    'demo/escape/secret.txt', // a link inside the shard pointing outside
+    'demo/.secret', // dotfiles
+    'demo/missing.css',
+    'nope/index.html',
   ]) {
-    assert.equal((await rawGet(port, p)).status, 404, p);
+    assert.equal((await rawGet(s.port, `/s/${session}/${p}`)).status, 404, p);
   }
 }));
 
-test('a shard whose folder is a link still loads', () => withServer({}, async ({ port }) => {
-  const r = await rawGet(port, '/shards/linked/index.html');
+test('the shard list and files need a paired device\'s live session', () => withServer({ sessionGraceMs: 150 }, async (s) => {
+  // Nothing for devices that haven't signed in
+  assert.equal((await rawGet(s.port, '/api/shards')).status, 401);
+  assert.equal((await rawGet(s.port, '/api/shards', { 'X-LibreShard-Session': 'f'.repeat(32) })).status, 401);
+  assert.equal((await rawGet(s.port, '/shards/demo/index.html')).status, 404, 'the old public path is gone');
+  assert.equal((await rawGet(s.port, '/s/' + 'a'.repeat(32) + '/demo/index.html')).status, 404);
+  assert.equal((await rawGet(s.port, '/s/not-a-token/demo/index.html')).status, 404);
+
+  const c = await authed(s);
+  assert.equal((await rawGet(s.port, '/api/shards', { 'X-LibreShard-Session': c.session })).status, 200);
+  assert.equal((await rawGet(s.port, `/s/${c.session}/demo/index.html`)).status, 200);
+  // A second connection of the same device (or a reconnect) gets the same token
+  const c2 = await authed(s);
+  assert.equal(c2.session, c.session);
+  // It outlives its connections briefly, then expires
+  c.ws.close();
+  c2.ws.close();
+  await Promise.all([c.closed, c2.closed]);
+  await new Promise((r) => setTimeout(r, 20)); // the server sees the close
+  assert.equal((await rawGet(s.port, `/s/${c.session}/demo/style.css`)).status, 200, 'within the grace period');
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal((await rawGet(s.port, `/s/${c.session}/demo/style.css`)).status, 404, 'after it');
+  const c3 = await authed(s);
+  assert.notEqual(c3.session, c.session, 'a new one after it expired');
+  // Unpairing the device ends its session at once
+  s.devices.remove(s.device.id);
+  await c3.closed;
+  assert.equal((await rawGet(s.port, '/api/shards', { 'X-LibreShard-Session': c3.session })).status, 401);
+  assert.equal((await rawGet(s.port, `/s/${c3.session}/demo/index.html`)).status, 404);
+}));
+
+test('a shard whose folder is a link still loads', () => withServer({}, async (s) => {
+  const r = await rawGet(s.port, `/s/${await sessionOf(s)}/linked/index.html`);
   assert.equal(r.status, 200);
   assert.match(r.body, /^linked shard/);
 }));
@@ -536,8 +577,8 @@ test('user rules replace the manifest apps, and mode "any" removes the restricti
   const rulesFile = path.join(os.tmpdir(), `libreshard-rules-${process.pid}.json`);
   fs.writeFileSync(rulesFile, JSON.stringify({ restricted: { mode: 'any' }, demo: { mode: 'only', apps: [{ match: 'krita' }] } }));
   try {
-    await withServer({ rulesFile }, async ({ base }) => {
-      const list = await (await fetch(base + '/api/shards')).json();
+    await withServer({ rulesFile }, async (s) => {
+      const list = await shardList(s);
       const byId = Object.fromEntries(list.map((s) => [s.id, s]));
       assert.deepEqual(byId.restricted.apps, []);
       assert.deepEqual(byId.demo.apps, ['krita']);
@@ -583,7 +624,7 @@ test('keys of a user shard are denied until the user approves them', async () =>
   const { store, cleanup } = userStore();
   try {
     await withServer({ store }, async (s) => {
-      const list = await (await fetch(s.base + '/api/shards')).json();
+      const list = await shardList(s);
       assert.equal(list.find((x) => x.id === 'demo').pending, true);
       const c = await authed(s);
       c.send({ type: 'press', shard: 'demo', keys: 'f13' });
@@ -602,9 +643,9 @@ test('disabled shards are neither listed nor served', async () => {
   try {
     store.setEnabled('demo', false);
     await withServer({ store }, async (s) => {
-      const list = await (await fetch(s.base + '/api/shards')).json();
+      const list = await shardList(s);
       assert.ok(!list.some((x) => x.id === 'demo'));
-      assert.equal((await rawGet(s.port, '/shards/demo/index.html')).status, 404);
+      assert.equal((await rawGet(s.port, `/s/${await sessionOf(s)}/demo/index.html`)).status, 404);
     });
   } finally { cleanup(); }
 });
@@ -856,8 +897,8 @@ test('/api/shards follows the menu order and marks favorites', async () => {
   const { store, cleanup } = userStore();
   try {
     store.setFavorite('restricted', true);
-    await withServer({ store }, async ({ base }) => {
-      const list = await (await fetch(base + '/api/shards')).json();
+    await withServer({ store }, async (s) => {
+      const list = await shardList(s);
       assert.equal(list[0].id, 'restricted');
       assert.equal(list[0].favorite, true);
       assert.ok(list.slice(1).every((s) => s.favorite === false));

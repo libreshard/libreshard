@@ -8,6 +8,10 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Shards are only shown to paired devices:** the list of your shards and their files were
+  served to any device on your network; now only to paired ones. Each tablet gets a session token
+  when it signs in, kept while it's connected and for 10 minutes after (a short disconnection
+  doesn't interrupt the open shard), and gone at once when you unpair it.
 - **Install from a web address:** "Install from URL…" in the Shards tab downloads a `.libreshard` or
   `.zip` from an `https://` address and shows the usual review, with the server it came from. Only
   servers on the internet: LibreShard refuses addresses on your own network (checking where it
