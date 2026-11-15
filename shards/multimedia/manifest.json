@@ -5,5 +5,7 @@
   "version": "2.0.0",
   "icon": "🎵",
   "description": "Play, pause and skip tracks, and change the volume of whatever is playing",
+  "license": "Apache-2.0",
+  "url": "https://github.com/libreshard/libreshard/tree/main/shards/multimedia",
   "permissions": { "keys": ["prev", "playpause", "next", "voldown", "volup", "mute"] }
 }

@@ -491,5 +491,9 @@
   "import.reason.missingPage": "Stream Deck: the folder this button opened is missing from the file.",
   "import.reason.tooManyPages": "Stream Deck: this folder would go over the limit of 50 pages.",
   "shards.aiHint": "Something more than a grid of buttons?",
-  "shards.aiGuide": "Make a shard with an AI assistant"
+  "shards.aiGuide": "Make a shard with an AI assistant",
+  "shards.license": "License: {license}",
+  "shards.noLicense": "No license given",
+  "shards.page": "Shard's page",
+  "review.license": "License"
 }

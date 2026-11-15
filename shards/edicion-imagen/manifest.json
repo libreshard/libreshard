@@ -5,6 +5,8 @@
   "version": "1.0.0",
   "icon": "🎨",
   "description": "Tools, brush size, zoom, undo and save for Photoshop, Affinity Photo, Krita or GIMP",
+  "license": "Apache-2.0",
+  "url": "https://github.com/libreshard/libreshard/tree/main/shards/edicion-imagen",
   "apps": ["photoshop", "affinity", "krita", "gimp"],
   "settings": [
     {

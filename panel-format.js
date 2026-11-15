@@ -330,7 +330,7 @@ const scriptJson = (v) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/\u
 // The files of a panel's shard folder, except its images: manifest.json, panel.json and layout.js,
 // plus the template files (index.html, libreshard.css, …) given as { name: content }.
 // `meta` is what the manifest says besides keys: { id?, name, icon, description, author, apps,
-// version }. Without an id it's a new panel; the version goes up on every save.
+// version, license, url } (license and url are kept as they were; the install check validates them). Without an id it's a new panel; the version goes up on every save.
 function buildShard({ panel, meta = {}, template = {} }) {
   const manifest = compact({
     id: meta.id || panelId(meta.name),
@@ -339,6 +339,8 @@ function buildShard({ panel, meta = {}, template = {} }) {
     version: meta.id ? nextVersion(meta.version) : '1.0.0',
     icon: typeof meta.icon === 'string' && meta.icon.trim() ? meta.icon.trim().slice(0, 16) : undefined,
     description: text(meta.description, 300),
+    license: typeof meta.license === 'string' ? meta.license : undefined,
+    url: typeof meta.url === 'string' ? meta.url : undefined,
     minAppVersion: MIN_APP_VERSION,
     apps: Array.isArray(meta.apps) && meta.apps.length ? meta.apps : undefined,
     permissions: { keys: keysOf(panel) },

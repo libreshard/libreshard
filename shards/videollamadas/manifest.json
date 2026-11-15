@@ -5,6 +5,8 @@
   "version": "1.0.0",
   "icon": "📞",
   "description": "Microphone, camera, raise hand, share screen and leave in Zoom, Teams or Google Meet",
+  "license": "Apache-2.0",
+  "url": "https://github.com/libreshard/libreshard/tree/main/shards/videollamadas",
   "apps": ["zoom", "teams", "chrome", "msedge", "firefox"],
   "settings": [
     {

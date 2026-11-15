@@ -195,6 +195,7 @@ function shardCard(s) {
           s.author ? t('shards.by', { author: s.author }) : null,
           t('shards.keyCount', { count: s.keys.length }),
           s.apps.length ? t('shards.onlyIn', { apps: s.apps.join(', ') }) : t('shards.anyApp'),
+          s.license ? t('shards.license', { license: s.license }) : null,
         ].filter(Boolean).join(' · '))),
       h('div', { class: 'order' },
         h('button', { class: 'icon-btn star' + (s.favorite ? ' on' : ''), title: s.favorite ? t('shards.unfavorite') : t('shards.favorite'),
@@ -210,13 +211,14 @@ function shardCard(s) {
       h('button', { class: 'btn small', onclick: () => appsEditor(s) }, t('shards.apps')),
       s.settingsSchema.length ? h('button', { class: 'btn small', onclick: () => settingsEditor(s) }, t('shards.settings')) : null,
       h('button', { class: 'btn small', onclick: () => call(api.setShardEnabled, s.id, !s.enabled) }, s.enabled ? t('shards.disable') : t('shards.enable')),
+      s.url ? h('button', { class: 'btn small', title: s.url, onclick: () => call(api.openShardPage, { shard: s.id }) }, t('shards.page')) : null,
       h('button', { class: 'btn small', onclick: () => api.openShardFolder(s.id) }, t('shards.openFolder')),
       s.bundled || s.linked ? null : h('button', { class: 'btn small', onclick: () => exportShard(s) }, t('shards.export')),
       s.bundled ? null : h('button', { class: 'btn danger small', onclick: () => call(api.uninstallShard, s.id) }, t('shards.uninstall'))));
 }
 
 const approvalView = (s) => ({
-  manifest: { id: s.id, name: s.name, author: s.author, version: s.version, icon: s.icon, description: s.description, apps: s.apps, keys: s.keys },
+  manifest: { id: s.id, name: s.name, author: s.author, version: s.version, icon: s.icon, description: s.description, apps: s.apps, keys: s.keys, license: s.license, url: s.url },
   risk: s.risk,
   newKeys: s.pendingKeys,
   linked: s.linked,
@@ -283,6 +285,10 @@ function review(data, mode) {
     h('div', { class: 'section' },
       h('div', { class: 'label' }, t('review.apps')),
       h('div', null, m.apps && m.apps.length ? m.apps.join(', ') : t('shards.anyApp'))),
+    h('div', { class: 'section' },
+      h('div', { class: 'label' }, t('review.license')),
+      h('div', null, m.license || t('shards.noLicense'), ' ',
+        m.url ? h('button', { class: 'btn small', title: m.url, onclick: () => call(api.openShardPage, mode === 'install' ? { candidate: data.id } : { shard: m.id }) }, t('shards.page')) : null)),
     data.size ? h('div', { class: 'hint small' }, t('review.size', { files: data.size.files, size: fmtSize(data.size.bytes) })) : null,
     h('div', { class: 'buttons' },
       mode === 'view'

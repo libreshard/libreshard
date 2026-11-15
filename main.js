@@ -8,7 +8,7 @@ const QRCode = require('qrcode');
 const { startServer } = require('./server');
 const { Pairing, Devices, RateLimiter } = require('./pairing');
 const { ShardStore } = require('./shard-store');
-const { classifyKeys, validateManifest } = require('./manifest');
+const { classifyKeys, validateManifest, httpsUrl } = require('./manifest');
 const { validatePanel, imagesOf, importedImages, imageFile, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
 const zip = require('./zip');
 const streamdeck = require('./streamdeck');
@@ -330,6 +330,7 @@ async function start() {
       devices: devices.all(),
       shards: await Promise.all(store.all().map(async (e) => ({
         id: e.id, name: e.manifest.name, author: e.manifest.author, version: e.manifest.version,
+        license: e.manifest.license, url: e.manifest.url,
         icon: e.manifest.icon, description: e.manifest.description, keys: e.manifest.keys,
         bundled: e.bundled, linked: e.linked, enabled: e.enabled, apps: e.apps.map(appLabel),
         appEntries: await withIcons(e.apps), customApps: e.customApps, suggestedApps: e.suggestedApps,
@@ -731,6 +732,14 @@ async function start() {
     log.info('shard-exported', { shard: e.id, version: e.manifest.version, files: files.length, bytes });
     return { ok: true, saved: true };
   });
+  // A shard's page (manifest "url"), for an installed shard or one waiting in the install review.
+  // The address comes from the validated manifest here, never from the page, and is checked again.
+  handle('shard:open-page', async (ref) => {
+    const m = ref?.candidate ? candidates.get(ref.candidate)?.manifest : ref?.shard ? entry(ref.shard).manifest : null;
+    const url = httpsUrl(m?.url);
+    if (!url) throw new Error('This shard has no page');
+    await shell.openExternal(url);
+  });
   handle('shard:uninstall', async (id) => {
     const e = entry(id);
     if (e.bundled) throw new Error('Bundled shards can be disabled, not uninstalled');
@@ -792,7 +801,7 @@ async function start() {
       const e = entry(id);
       if (!e.panel) throw new Error('Not a panel');
       const m = e.manifest;
-      editing = { id: e.id, meta: { name: m.name, icon: m.icon, description: m.description, author: m.author, apps: m.apps, version: m.version }, ...readPanel(e) };
+      editing = { id: e.id, meta: { name: m.name, icon: m.icon, description: m.description, author: m.author, apps: m.apps, version: m.version, license: m.license, url: m.url }, ...readPanel(e) };
     } else {
       editing = { id: null, meta: { name: t('editor.newName'), icon: '' }, panel: newPanel(), images: {}, warnings: [] };
     }

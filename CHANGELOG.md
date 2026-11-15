@@ -6,6 +6,12 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### App
+
+- **License and page of a shard:** a shard's manifest can say its license (`"license": "MIT"`, as
+  an SPDX identifier) and its page (`"url"`, https only). The install review and the shard's card
+  show the license, and a "Shard's page" button opens the page. Nothing of it reaches the tablet.
+
 ## [0.4.1] - 2026-11-15
 
 ### App

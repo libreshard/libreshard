@@ -491,5 +491,9 @@
   "import.reason.missingPage": "Stream Deck: falta en el archivo la carpeta que abría este botón.",
   "import.reason.tooManyPages": "Stream Deck: esta carpeta pasaría del límite de 50 páginas.",
   "shards.aiHint": "¿Algo más que una cuadrícula de botones?",
-  "shards.aiGuide": "Crea un shard con un asistente de IA"
+  "shards.aiGuide": "Crea un shard con un asistente de IA",
+  "shards.license": "Licencia: {license}",
+  "shards.noLicense": "Sin licencia indicada",
+  "shards.page": "Página del shard",
+  "review.license": "Licencia"
 }

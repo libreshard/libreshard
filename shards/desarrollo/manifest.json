@@ -5,6 +5,8 @@
   "version": "1.0.0",
   "icon": "💻",
   "description": "Command palette, quick open, terminal, comments, search, format and debugging in Visual Studio Code",
+  "license": "Apache-2.0",
+  "url": "https://github.com/libreshard/libreshard/tree/main/shards/desarrollo",
   "apps": ["visual studio code", "code"],
   "permissions": {
     "keys": [
