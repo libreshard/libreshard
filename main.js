@@ -12,6 +12,7 @@ const { classifyKeys, validateManifest, httpsUrl } = require('./manifest');
 const { validatePanel, imagesOf, importedImages, imageFile, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
 const zip = require('./zip');
 const download = require('./download');
+const links = require('./links');
 const streamdeck = require('./streamdeck');
 const keys = require('./keys');
 const installer = require('./installer');
@@ -115,6 +116,7 @@ let win = null;
 let server = null;
 let log = nullLog; // the log on disk, once this is the running instance (see below)
 let pendingFile = null; // a .libreshard opened before the window was ready
+let pendingLink = null; // a libreshard:// link opened before the window was ready
 
 // Linux: Chromium encrypts its cookie store with a key kept in the desktop keyring. The panel's web
 // page wakes that up, and where the keyring is locked (automatic login) GNOME asks to create one,
@@ -131,9 +133,12 @@ if (!app.requestSingleInstanceLock()) {
   startLog();
   app.on('second-instance', (_e, argv) => {
     showWindow();
-    openShardFile(argv.find((a) => SHARD_FILE.test(a)));
+    const link = links.linkInArgs(argv);
+    if (link) openLink(link);
+    else openShardFile(argv.find((a) => SHARD_FILE.test(a)));
   });
   app.on('open-file', (e, file) => { e.preventDefault(); openShardFile(file); }); // macOS
+  app.on('open-url', (e, url) => { e.preventDefault(); openLink(url); }); // macOS
   app.whenReady().then(start);
 }
 
@@ -165,6 +170,7 @@ async function quitNow(reason, details = {}) {
 }
 
 let openShardFile = (file) => { if (file) pendingFile = file; };
+let openLink = (url) => { if (url) pendingLink = url; };
 
 // The log on disk, and what the process reports that would otherwise only reach a console nobody
 // sees. None of these change how the app behaves: an uncaught exception still ends it (the monitor
@@ -565,7 +571,7 @@ async function start() {
   // into a temporary folder, then the usual review. The log keeps only the server's name, since
   // download links often carry tokens.
   const DOWNLOAD_ERRORS = ['badUrl', 'notHttps', 'privateAddress', 'tooManyRedirects', 'httpStatus', 'tooBig', 'timeout', 'network'];
-  handle('install:url', async (url) => {
+  async function installFromUrl(url) {
     if (typeof url !== 'string' || !url.trim() || url.length > download.LIMITS.maxUrl) throw new Error(t('download.error.badUrl'));
     const started = Date.now();
     let d;
@@ -584,7 +590,43 @@ async function start() {
     } finally {
       d.cleanup();
     }
-  });
+  }
+  handle('install:url', installFromUrl);
+
+  // A libreshard:// link from a web page. It only names a file: LibreShard asks before downloading
+  // anything, then shows the usual review. While one question is open, other links are ignored, so
+  // a page can't stack dialogs.
+  let linkOpen = false;
+  openLink = async (raw) => {
+    const link = links.parseLink(raw);
+    if (!link) { log.warn('link-ignored', { link: String(raw).slice(0, 40) }); return; }
+    if (linkOpen) { log.warn('link-ignored', { reason: 'busy' }); return; }
+    let host = '';
+    try { host = new URL(link.url).hostname; } catch { /* download.js says why */ }
+    linkOpen = true;
+    try {
+      showWindow();
+      const { response } = await dialog.showMessageBox(win, {
+        type: 'question', buttons: [t('url.download'), t('action.cancel')], defaultId: 0, cancelId: 1, noLink: true,
+        message: t('link.installMessage', { host: host || '?' }), detail: t('link.installDetail'),
+      });
+      log.info('link-opened', { host, accepted: response === 0 });
+      if (response !== 0) return;
+      const r = await installFromUrl(link.url);
+      if (r.ok) win.webContents.send('install:review', r.review);
+      else dialog.showErrorBox('LibreShard', r.errors.join('\n'));
+    } catch (e) {
+      dialog.showErrorBox('LibreShard', e.message);
+    } finally {
+      linkOpen = false;
+    }
+  };
+  // Windows: the installed app registers the scheme for this user on every start (a moved install
+  // keeps working). Linux gets it from the .desktop file of the package, macOS from Info.plist.
+  if (process.platform === 'win32' && app.isPackaged && !app.isDefaultProtocolClient('libreshard')) {
+    app.setAsDefaultProtocolClient('libreshard');
+  }
+
   handle('install:pick-dev', async () => {
     const r = await dialog.showOpenDialog(win, { title: t('dialog.pickDevFolder'), properties: ['openDirectory'] });
     if (r.canceled || !r.filePaths[0]) return { ok: true };
@@ -1228,9 +1270,12 @@ async function start() {
   win.on('responsive', () => log.info('window-responsive'));
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.once('did-finish-load', () => {
+    const link = pendingLink || links.linkInArgs(process.argv.slice(1));
     const file = pendingFile || process.argv.slice(1).find((a) => SHARD_FILE.test(a));
     pendingFile = null;
-    openShardFile(file);
+    pendingLink = null;
+    if (link) openLink(link);
+    else openShardFile(file);
   });
   // With a tray, closing the window only hides it (the tablets keep working); the first time, say so
   let hintShown = false;

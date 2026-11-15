@@ -254,7 +254,16 @@ Two side effects: `mask-image` with a file from the shard may fail (embed masks 
   Limits: 50 MB uncompressed and 2,000 files.
 - **Installing:** users drag the file onto the LibreShard window (or use "Install from .zip…"). If
   you host the file on the web (a GitHub release, your site), "Install from URL…" downloads it from
-  its `https://` address.
+  its `https://` address. A link on your page can do it in one click:
+
+  ```html
+  <a href="libreshard://install?url=https%3A%2F%2Fgithub.com%2Fyou%2Fmy-shard%2Freleases%2Fdownload%2Fv1.0.0%2Fmy-shard-1.0.0.libreshard">Install in LibreShard</a>
+  ```
+
+  The `url` parameter is the file's address, URL-encoded (`encodeURIComponent`). LibreShard asks
+  before downloading and shows the review before installing. The browser asks first too. It works
+  where LibreShard was installed with its installer or `.deb` (not the AppImage); keep a plain
+  download link next to it.
   LibreShard shows a review with every key, the apps and the size before installing. Updates show
   what changed.
 - **Set `minAppVersion`** to the LibreShard version you tested with.

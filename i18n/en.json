@@ -510,5 +510,7 @@
   "download.error.httpStatus": "The server answered with an error ({status}).",
   "download.error.tooBig": "The file is bigger than 50 MB, the limit for a shard.",
   "download.error.timeout": "The download took too long and was stopped.",
-  "download.error.network": "The file couldn't be downloaded. Check the address and your connection."
+  "download.error.network": "The file couldn't be downloaded. Check the address and your connection.",
+  "link.installMessage": "A web page wants to install a shard from {host}",
+  "link.installDetail": "LibreShard will download it and show you its keys before installing anything. Continue only if you trust where it comes from."
 }

@@ -8,6 +8,10 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Install links:** a web page can offer a shard with a `libreshard://install?url=…` link. LibreShard
+  asks before downloading ("A web page wants to install a shard from …"), then shows the usual
+  review; nothing is installed without both. Works where LibreShard was installed with its
+  installer or `.deb` (not the AppImage).
 - **Install from a web address:** "Install from URL…" in the Shards tab downloads a `.libreshard` or
   `.zip` from an `https://` address and shows the usual review, with the server it came from. Only
   servers on the internet: LibreShard refuses addresses on your own network (checking where it

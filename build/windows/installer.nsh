@@ -55,6 +55,12 @@
     ${if} $R5 == "LibreShard shard"
       DeleteRegKey SHELL_CONTEXT "Software\Classes\.libreshard"
     ${endif}
+    ; The app registers libreshard:// links for this user (setAsDefaultProtocolClient): remove the
+    ; scheme if it still opens this LibreShard
+    ReadRegStr $R5 HKCU "Software\Classes\libreshard\shell\open\command" ""
+    ${if} $R5 == '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" "%1"'
+      DeleteRegKey HKCU "Software\Classes\libreshard"
+    ${endif}
     ${ifNot} ${Silent}
       !insertmacro lsRuleExists
       ${if} $R9 == 1
