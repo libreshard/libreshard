@@ -5,6 +5,8 @@
   "version": "2.0.0",
   "icon": "🎧",
   "description": "Push to talk, mute, deafen, camera and disconnect, with Discord's global keybinds in any app",
+  "license": "Apache-2.0",
+  "url": "https://github.com/libreshard/libreshard/tree/main/shards/discord-basico",
   "settings": [
     {
       "id": "keys", "type": "select", "default": "auto",

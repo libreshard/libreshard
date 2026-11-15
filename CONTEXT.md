@@ -211,7 +211,7 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - `cleanName()`: device names are plain text, without control characters, at most 60 characters, "Dispositivo" if empty.
 
 **manifest.js**
-- `validateManifest(m, { appVersion })` returns `{ ok, errors, manifest }`. It checks the id, the types and lengths of the text fields, `apps`, that every key in `permissions.keys` parses (at most 300), and `minAppVersion` against the running version. The returned manifest keeps only known fields, with keys normalized and deduplicated.
+- `validateManifest(m, { appVersion })` returns `{ ok, errors, manifest }`. It checks the id, the types and lengths of the text fields, `license` and `url`, `apps`, that every key in `permissions.keys` parses (at most 300), and `minAppVersion` against the running version. The returned manifest keeps only known fields, with keys normalized and deduplicated.
 - `classifyKeys(keys)` sorts keys for the future install review: `dangerous` (combos with `win`/`meta`/`cmd`, `alt+f4`, any ctrl+alt), `canType` (10 or more plain characters plus `enter`) and `warning` (both at once, for example `win+r` plus typing).
 
 **net.js**
@@ -234,6 +234,7 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 
 **zip.js**
 - `createZip([{ name, data }], { date })`: a plain zip (deflate, UTF-8 names, no dependencies), every entry dated `date` (now by default) in the MS-DOS format; zero, written before 0.4.1, is an invalid date. `filesUnder(root, { hidden })`: the plain files under a folder, links skipped, and with `hidden: false` names starting with a dot too. `shardZip(root)`: a shard folder as a `.libreshard`, files at the root, no hidden files or links.
+- **Shard's page** (`shard:open-page`, `{ shard: id }` or `{ candidate: id }` for one waiting in the install review): opens the manifest's `url` with `shell.openExternal` after checking it again with `httpsUrl()`; the address never comes from the page.
 - **Export** (`shard:export`, "Export…" on the cards of shards the user installed, not bundled or linked): refuses shards over the installer's limits (they couldn't be installed elsewhere), asks first when a panel has images imported from a Stream Deck profile (`importedImages()`), then a save dialog with `<id>-<version>.libreshard` in Documents. Logged as `shard-exported` (id, version, files, bytes).
 
 **backup.js**
@@ -399,7 +400,8 @@ A folder with at least `manifest.json` and `index.html`. It can include CSS, ima
 - `apps` (optional): list of applications where the shard may act (see below). Without this field, the shard acts in any app.
 - `permissions.keys`: closed list of combos the shard may type. They are compared normalized.
 - `author` is shown on the card. `version` is informational and not used in logic.
-- `minAppVersion` (optional): the oldest LibreShard version the shard works with, such as `"0.2.0"`. On older versions the shard is skipped with an explanation. Shards published in their own repository should set it.
+- `minAppVersion` (optional): the oldest LibreShard version the shard works with, such as `"0.2.0"`. On older versions the shard is skipped with an explanation.
+- `license` (optional): an SPDX license identifier or expression (`MIT`, `GPL-3.0-or-later`, `LicenseRef-Proprietary`), up to 64 characters; only its shape is checked. `url` (optional): the shard's page, `https://` only, up to 300 characters, no user name or password (`httpsUrl()`). A malformed one rejects the shard like any other bad field. Both show on the PC (install review, shard card with a "Shard's page" button), never on the tablet. Bundled shards carry `Apache-2.0` and their folder in the repository. Shards published in their own repository should set it.
 - Installing: the PC window installs from a `.zip`, a `.libreshard` (a zip with another extension, opened by double click once packaged) or a folder, after a review screen. A shard copied by hand into the shards folder also appears (hot reload), but its keys stay blocked until approved in the window.
 - `settings` (optional): settings the user can change on the PC, read by the shard with `Shard.settings()` and `Shard.onSettings(cb)`. Up to 30, each `{ id, type, label, default, ... }` with type `toggle`, `select` (`options`: texts or `{ value, label }`), `number` (`min`, `max`, `step`), `text` (`maxLength`, up to 200) or `color` (`#rrggbb`). A label is a text or `{ "en": "...", "es": "..." }`. Values are always checked against the declaration; an invalid declaration rejects the shard.
 - **Development mode:** "Load in development…" links a folder instead of copying it. Saving any file reloads the shard on the tablets showing it; changing `manifest.json` reloads its declaration (new keys need approval again).

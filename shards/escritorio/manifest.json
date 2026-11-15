@@ -5,6 +5,8 @@
   "version": "1.0.0",
   "icon": "🖥️",
   "description": "Copy and paste, screenshots, switching windows and virtual desktops, on Windows or Linux",
+  "license": "Apache-2.0",
+  "url": "https://github.com/libreshard/libreshard/tree/main/shards/escritorio",
   "settings": [
     {
       "id": "system", "type": "select", "default": "auto",

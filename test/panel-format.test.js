@@ -284,13 +284,15 @@ test('buildShard writes a valid manifest and a layout.js that cannot break out o
 
 test('saving an existing panel keeps its id and manifest details and raises the version', () => {
   const { panel } = validatePanel(FULL);
-  const meta = { id: 'panel-obs-1a2b', name: 'OBS', author: 'Ana', version: '1.0.7', description: 'Scenes', apps: ['obs64.exe'] };
+  const meta = { id: 'panel-obs-1a2b', name: 'OBS', author: 'Ana', version: '1.0.7', description: 'Scenes', apps: ['obs64.exe'], license: 'MIT', url: 'https://ana.example/obs' };
   const { manifest } = buildShard({ panel, meta });
   assert.equal(manifest.id, 'panel-obs-1a2b');
   assert.equal(manifest.version, '1.0.8');
   assert.equal(manifest.author, 'Ana');
   assert.equal(manifest.description, 'Scenes');
   assert.deepEqual(manifest.apps, ['obs64.exe']);
+  assert.equal(manifest.license, 'MIT');
+  assert.equal(manifest.url, 'https://ana.example/obs');
 });
 
 test('a generated panel folder with the template passes the install review', () => {

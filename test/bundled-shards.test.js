@@ -42,11 +42,11 @@ test('every bundled shard loads, none is rejected, and every key parses', () => 
   } finally { cleanup(); }
 });
 
-test('bundled manifests are complete: name, icon, description, author', () => {
+test('bundled manifests are complete: name, icon, description, author, license and page', () => {
   for (const id of EXPECTED) {
     const raw = JSON.parse(fs.readFileSync(path.join(shardsDir, id, 'manifest.json'), 'utf8'));
     assert.equal(raw.id, id, 'the folder is named after the id');
-    for (const field of ['name', 'icon', 'description', 'author', 'version']) assert.ok(raw[field], `${id}: ${field}`);
+    for (const field of ['name', 'icon', 'description', 'author', 'version', 'license', 'url']) assert.ok(raw[field], `${id}: ${field}`);
     assert.ok(raw.description.length <= 120, `${id}: the menu shows 120 characters`);
   }
 });

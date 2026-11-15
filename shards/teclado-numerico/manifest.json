@@ -5,6 +5,8 @@
   "version": "1.0.0",
   "icon": "🔢",
   "description": "A full numeric keypad, handy on laptops that don't have one",
+  "license": "Apache-2.0",
+  "url": "https://github.com/libreshard/libreshard/tree/main/shards/teclado-numerico",
   "settings": [
     {
       "id": "layout", "type": "select", "default": "calculator",

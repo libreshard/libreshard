@@ -17,6 +17,8 @@ JSON has no comments, so here is the template's manifest explained:
   "minAppVersion": "0.1.0",   // the oldest LibreShard it works with (older ones skip it)
   "icon": "⭐",               // an emoji or a letter for the menu card
   "description": "One line for the tablet's menu",
+  // "license": "MIT",       // optional: your license as an SPDX id (or "LicenseRef-Proprietary")
+  // "url": "https://…",     // optional: the shard's page (https only), shown on the PC
   // "apps": ["photoshop"],   // optional: only act while one of these programs is in front
   // "settings": [ ... ],     // optional: settings the user changes on the PC (see docs/shards.md)
   "permissions": {

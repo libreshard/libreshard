@@ -4,6 +4,18 @@ const { validateSchema } = require('./shard-settings');
 
 const ID = /^[a-z0-9-]{1,64}$/;
 const MAX_KEYS = 300;
+// An SPDX license identifier or expression ("MIT", "GPL-3.0-or-later", "MIT OR Apache-2.0",
+// "LicenseRef-Proprietary"). Its shape is checked, not the list of SPDX licenses.
+const LICENSE = /^(?=.*[A-Za-z0-9])[A-Za-z0-9.+\-() ]{1,64}$/;
+
+// The shard's page: https only, no user name or password in it. The normalized address, or null.
+function httpsUrl(v, max = 300) {
+  if (typeof v !== 'string' || !v.trim() || v.trim().length > max) return null;
+  try {
+    const u = new URL(v.trim());
+    return u.protocol === 'https:' && u.hostname && !u.username && !u.password ? u.href : null;
+  } catch { return null; }
+}
 
 // "1.2.3" → [1, 2, 3]; anything after a "-" or "+" (pre-release, build) is ignored
 function versionParts(v) {
@@ -43,6 +55,17 @@ function validateManifest(m, { appVersion } = {}) {
     icon: optionalString(m, 'icon', 16, errors),
     description: optionalString(m, 'description', 300, errors),
   };
+
+  // Shown on the PC (install review, shard card), never on the tablet
+  if (m.license !== undefined) {
+    if (typeof m.license !== 'string' || !LICENSE.test(m.license.trim())) errors.push('"license" must be an SPDX license identifier, such as "MIT" or "LicenseRef-Proprietary"');
+    else out.license = m.license.trim();
+  }
+  if (m.url !== undefined) {
+    const url = httpsUrl(m.url);
+    if (!url) errors.push('"url" must be an https:// address of up to 300 characters');
+    else out.url = url;
+  }
 
   if (m.apps !== undefined) {
     const apps = typeof m.apps === 'string' ? [m.apps] : m.apps;
@@ -107,4 +130,4 @@ function classifyKeys(keys) {
   return { dangerous, normal, canType, warning: dangerous.length > 0 && canType };
 }
 
-module.exports = { validateManifest, classifyKeys, compareVersions };
+module.exports = { validateManifest, classifyKeys, compareVersions, httpsUrl };

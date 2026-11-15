@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { validateManifest, classifyKeys, compareVersions } = require('../manifest');
+const { validateManifest, classifyKeys, compareVersions, httpsUrl } = require('../manifest');
 
 const base = { id: 'demo', name: 'Demo', permissions: { keys: ['ctrl+s', 'F5'] } };
 
@@ -73,4 +73,27 @@ test('classifyKeys detects shards that can type arbitrary text', () => {
   const r = classifyKeys(['win+r', ...letters, 'shift+a', 'enter']);
   assert.ok(r.canType);
   assert.ok(r.warning, 'win+r plus typing plus enter can run any command');
+});
+
+test('license and url: SPDX-shaped identifiers and https pages only', () => {
+  const ok = (extra) => validateManifest({ ...base, ...extra });
+  for (const license of ['MIT', 'GPL-3.0-or-later', 'MIT OR Apache-2.0', '(MIT AND CC-BY-4.0)', 'LicenseRef-Proprietary']) {
+    const r = ok({ license });
+    assert.equal(r.ok, true, license);
+    assert.equal(r.manifest.license, license);
+  }
+  assert.equal(ok({ license: '  MIT ' }).manifest.license, 'MIT');
+  for (const license of ['', '   ', 'MIT; rm -rf', 'x'.repeat(65), '<b>MIT</b>', 42, null]) assert.equal(ok({ license }).ok, false, String(license));
+
+  const r = ok({ url: 'https://autor.itch.io/sc-mfd' });
+  assert.equal(r.ok, true);
+  assert.equal(r.manifest.url, 'https://autor.itch.io/sc-mfd');
+  for (const url of ['http://autor.itch.io', 'javascript:alert(1)', 'file:///C:/x', 'https://user:pass@host.com/', 'not a url', 'https://x.com/' + 'a'.repeat(300), 7]) {
+    assert.equal(ok({ url }).ok, false, String(url));
+  }
+  const none = ok({});
+  assert.equal(none.manifest.license, undefined);
+  assert.equal(none.manifest.url, undefined);
+  assert.equal(httpsUrl('https://example.com/a b'), 'https://example.com/a%20b');
+  assert.equal(httpsUrl('ftp://example.com'), null);
 });

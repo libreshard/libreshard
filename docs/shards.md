@@ -80,6 +80,8 @@ and use the developer tools on the shard's iframe.
 | `description` | no | One line for the menu card. |
 | `apps` | no | Programs the shard is meant for (see [below](#limiting-a-shard-to-certain-apps)). |
 | `settings` | no | Settings the user changes on the PC (see [below](#settings-the-user-changes-on-the-pc)). |
+| `license` | no | Your shard's license as an [SPDX identifier](https://spdx.org/licenses/): `MIT`, `GPL-3.0-or-later`, `CC-BY-4.0`, or `LicenseRef-Proprietary` for your own terms. Shown on the PC before installing and on the shard's card. |
+| `url` | no | The shard's page (its repository, your shop): `https://` only. The PC shows a "Shard's page" button. |
 | `minAppVersion` | no | The oldest LibreShard the shard works with, such as `"0.1.0"`. Older versions skip it with an explanation. Set it if you publish your shard. |
 
 The manifest is validated when it loads. Unknown fields are dropped, text is trimmed to its limit,

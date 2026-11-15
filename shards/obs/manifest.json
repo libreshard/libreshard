@@ -5,6 +5,8 @@
   "version": "1.0.0",
   "icon": "🎬",
   "description": "Record, stream, save replays, mute audio and switch scenes in OBS Studio, with any app in front",
+  "license": "Apache-2.0",
+  "url": "https://github.com/libreshard/libreshard/tree/main/shards/obs",
   "settings": [
     {
       "id": "keys", "type": "select", "default": "auto",
