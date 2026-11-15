@@ -29,5 +29,5 @@ people always know whether what they install comes from this project.
 
 To ask, open an issue or write to hello@libreshard.com.
 
-Names of other programs that appear in LibreShard (Photoshop, Discord, OBS Studio, VS Code…) belong
+Names of other programs that appear in LibreShard (Photoshop, Discord, OBS Studio, VS Code, Stream Deck…) belong
 to their owners. They're only used to say which program a shard works with.

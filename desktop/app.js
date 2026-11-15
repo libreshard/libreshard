@@ -159,6 +159,7 @@ function renderShards() {
   fill(p,
     h('div', { class: 'row' },
       h('button', { class: 'btn primary', onclick: () => call(api.openEditor) }, t('shards.newPanel')),
+      h('button', { class: 'btn', onclick: () => call(api.importStreamDeck) }, t('shards.importStreamDeck')),
       h('button', { class: 'btn', onclick: () => install('zip') }, t('shards.installZip')),
       h('button', { class: 'btn', onclick: () => install('folder') }, t('shards.installFolder')),
       h('button', { class: 'btn', onclick: () => install('dev') }, t('shards.loadDev')),
@@ -593,7 +594,9 @@ document.addEventListener('drop', async (e) => {
   $('drop').hidden = true;
   const file = e.dataTransfer.files[0];
   if (!file) return;
-  const r = await call(api.prepareInstall, api.pathForFile(file));
+  const p = api.pathForFile(file);
+  if (/\.streamdeckprofile$/i.test(p)) { await call(api.importStreamDeck, p); return; }
+  const r = await call(api.prepareInstall, p);
   if (r && r.ok && r.review) review(r.review, 'install');
 });
 

@@ -273,3 +273,8 @@ A panel's folder has one extra file, `panel.json`, which is what the editor read
 rest (`index.html`, `layout.js`, the styles and scripts) is generated from it, so editing those
 files by hand is lost on the next save. `panel.json` may still change before LibreShard 1.0.
 For anything beyond a grid, write a shard as described in this guide.
+
+**From a Stream Deck profile:** "Import Stream Deck profile…" in the Shards tab (or dropping a
+`.streamDeckProfile` file on the window) opens a profile exported from the Stream Deck app as a
+new, unsaved panel: pages, folders, labels, images, hotkeys, hotkey switches and media keys. Buttons
+it can't import keep their label and image, marked in the editor with the reason in their note.

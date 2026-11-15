@@ -11,6 +11,7 @@ const { ShardStore } = require('./shard-store');
 const { classifyKeys, validateManifest } = require('./manifest');
 const { validatePanel, imagesOf, importedImages, imageFile, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
 const zip = require('./zip');
+const streamdeck = require('./streamdeck');
 const keys = require('./keys');
 const installer = require('./installer');
 const focus = require('./focus');
@@ -745,7 +746,7 @@ async function start() {
   // Images live in a draft folder per editor session (libreshard-draft-*, removed on close and, if
   // left behind by a crash, on the next start); saving copies only the ones still in use.
   let editor = null;
-  let editing = null; // { id, meta, panel, images, warnings, draft, dirty } while the editor is open
+  let editing = null; // { id, meta, panel, images, warnings, imported, draft, dirty } while the editor is open
   const DRAFT_PREFIX = 'libreshard-draft-';
   for (const name of fs.readdirSync(os.tmpdir())) {
     if (!name.startsWith(DRAFT_PREFIX)) continue;
@@ -774,13 +775,16 @@ async function start() {
     pages: [{ id: 'p1', name: t('editor.pageName', { n: 1 }), layout: 'grid', buttons: [] }],
   });
 
-  function openEditor(id) {
+  // `imported`: a Stream Deck profile read by importStreamDeck(), opened unsaved
+  function openEditor(id, imported) {
     if (editor) {
       if (editor.isMinimized()) editor.restore();
       editor.focus();
       return;
     }
-    if (id) {
+    if (imported) {
+      editing = { id: null, meta: imported.meta, panel: imported.panel, images: imported.images, warnings: imported.warnings, imported: { report: imported.report, marks: imported.marks } };
+    } else if (id) {
       const e = entry(id);
       if (!e.panel) throw new Error('Not a panel');
       const m = e.manifest;
@@ -792,6 +796,9 @@ async function start() {
     editing.draft = fs.mkdtempSync(path.join(os.tmpdir(), DRAFT_PREFIX));
     fs.mkdirSync(path.join(editing.draft, 'images'));
     if (id) for (const f of panelImages(entry(id).root)) fs.copyFileSync(path.join(entry(id).root, f), path.join(editing.draft, f));
+    if (imported) for (const [f, png] of imported.pngs) fs.writeFileSync(path.join(editing.draft, f), png);
+    // An imported panel is unsaved from the start: closing asks first
+    editing.dirty = !!imported;
     editor = new BrowserWindow({
       width: 1280, height: 840, minWidth: 1000, minHeight: 620, title: t('editor.windowTitle'),
       backgroundColor: '#0d1b2a', icon: path.join(__dirname, 'viewer', 'brand', 'icon-512.png'),
@@ -827,10 +834,76 @@ async function start() {
   }
   handle('editor:open', (id) => { openEditor(typeof id === 'string' ? id : null); });
 
+  // A Stream Deck profile as a new panel (streamdeck.js reads it; the profile stays on this PC).
+  // Its images are encoded again like the editor's own (at most 288 px, only the pixels) and the
+  // panel opens in the editor unsaved, with a summary of what was imported and what wasn't.
+  const IMPORT_ERRORS = ['notZip', 'notProfile', 'oldFormat', 'invalid', 'empty'];
+  async function importStreamDeck(file) {
+    if (editor) { openEditor(); throw new Error(t('import.editorOpen')); }
+    let r;
+    try {
+      r = await streamdeck.readProfile(file, { target: process.platform });
+    } catch (e) {
+      log.warn('streamdeck-import-failed', { error: e.code || e.message });
+      throw new Error(t('import.error.' + (IMPORT_ERRORS.includes(e.code) ? e.code : 'invalid')));
+    }
+    const pngs = new Map();
+    const files = [];
+    try {
+      for (const src of r.images) {
+        let img = nativeImage.createFromPath(src);
+        if (img.isEmpty()) { files.push(null); continue; }
+        const { width, height } = img.getSize();
+        const max = PANEL_LIMITS.image;
+        if (width > max || height > max) img = img.resize(width >= height ? { width: max, quality: 'best' } : { height: max, quality: 'best' });
+        const png = img.toPNG();
+        const f = imageFile(png);
+        pngs.set(f, png);
+        files.push(f);
+      }
+    } finally {
+      r.cleanup();
+    }
+    // Pages without a name get "Page n"; folders, the title of the button that opened them
+    r.panel.pages.forEach((p, n) => {
+      if (!p.name) p.name = p.folder ? p.folderTitle || t('import.folderName') : t('editor.pageName', { n: n + 1 });
+      for (const b of p.buttons) {
+        const m = r.marks[b.id];
+        if (m && m.kind === 'none') b.note = t('import.reason.' + m.reason, { detail: m.detail || '' });
+      }
+    });
+    const v = validatePanel(streamdeck.resolveImages(r.panel, files), { files: new Set(pngs.keys()) });
+    if (!v.ok) throw new Error(v.errors.join('\n'));
+    const images = {};
+    for (const f of imagesOf(v.panel)) images[f] = 'data:image/png;base64,' + pngs.get(f).toString('base64');
+    for (const f of [...pngs.keys()]) if (!images[f]) pngs.delete(f);
+    log.info('streamdeck-imported', {
+      format: r.format, model: String(r.model).slice(0, 40), os: r.source, pages: r.report.pages, buttons: r.report.buttons,
+      imported: r.report.imported, images: pngs.size,
+    });
+    openEditor(null, {
+      meta: { name: r.name || t('import.defaultName'), icon: '', apps: r.apps.length ? r.apps : undefined },
+      panel: v.panel, images, warnings: v.warnings, pngs, report: r.report, marks: r.marks,
+    });
+    return { ok: true };
+  }
+  handle('streamdeck:import', async (p) => {
+    if (typeof p === 'string') {
+      if (!/\.streamdeckprofile$/i.test(p) || !fs.existsSync(p)) throw new Error('File not found');
+      return importStreamDeck(p);
+    }
+    const r = await dialog.showOpenDialog(win, {
+      title: t('import.pick'), properties: ['openFile'],
+      filters: [{ name: t('import.filter'), extensions: ['streamDeckProfile'] }],
+    });
+    if (r.canceled || !r.filePaths[0]) return { ok: true };
+    return importStreamDeck(r.filePaths[0]);
+  });
+
   editorHandle('editor:init', () => ({
     ok: true, platform: process.platform, locale, strings: i18n.strings(locale), icons: iconBodies, limits: PANEL_LIMITS,
     id: editing.id, meta: { name: editing.meta.name || '', icon: editing.meta.icon || '' },
-    panel: editing.panel, images: editing.images, warnings: editing.warnings,
+    panel: editing.panel, images: editing.images, warnings: editing.warnings, imported: editing.imported || null,
   }));
   // The live warnings: the install review's risk classes, and keys this system can't press
   editorHandle('editor:check', (combos) => {
@@ -891,6 +964,7 @@ async function start() {
     });
     editing.id = built.manifest.id;
     editing.meta = { ...editing.meta, name, icon, version: built.manifest.version };
+    editing.imported = null;
     editing.dirty = false;
     return { ok: true, id: built.manifest.id, version: built.manifest.version };
   });

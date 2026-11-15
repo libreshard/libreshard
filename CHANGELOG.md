@@ -8,6 +8,14 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Import a Stream Deck profile:** "Import Stream Deck profile…" in the Shards tab (or dropping a
+  `.streamDeckProfile` file on the window) turns a profile exported from the Stream Deck app into
+  a panel and opens it in the editor, unsaved. Pages, folders, labels (with their place, size and
+  color) and images come along, and so do hotkeys, hotkey switches, media keys and page buttons.
+  What can't be imported (plugin actions, typing text, opening programs, multi actions, key
+  sequences, Stop) keeps its label and image without an action, marked ✕ with the reason in its
+  note; Mac shortcuts become Ctrl and are marked ? to check. A summary says how many buttons work.
+  The profile stays on your PC.
 - **Export a shard:** "Export…" on the card of any shard you installed (panels included) saves it
   as a `.libreshard` file to share; a double click opens it in LibreShard on another PC. Hidden
   files and links are left out, and a panel with images from a Stream Deck profile asks first.
