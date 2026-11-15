@@ -8,6 +8,12 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Install from a web address:** "Install from URL…" in the Shards tab downloads a `.libreshard` or
+  `.zip` from an `https://` address and shows the usual review, with the server it came from. Only
+  servers on the internet: LibreShard refuses addresses on your own network (checking where it
+  really connects), and stops at 50 MB or 60 seconds. The shard's card remembers where it came from.
+  This is LibreShard's second kind of connection outside your network, and it only happens when you
+  ask.
 - **License and page of a shard:** a shard's manifest can say its license (`"license": "MIT"`, as
   an SPDX identifier) and its page (`"url"`, https only). The install review and the shard's card
   show the license, and a "Shard's page" button opens the page. Nothing of it reaches the tablet.

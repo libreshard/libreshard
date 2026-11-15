@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const os = require('os');
-const { hostAllowed, hostname, isLoopback, isPrivateAddress } = require('../net');
+const { hostAllowed, hostname, isLoopback, isPrivateAddress, isPublicAddress } = require('../net');
 
 test('hostname strips the port, including IPv6 brackets', () => {
   assert.equal(hostname('192.168.0.10:7878'), '192.168.0.10');
@@ -43,4 +43,11 @@ test('isLoopback accepts only this machine', () => {
   for (const a of ['192.168.0.20', '10.0.0.1', '::ffff:192.168.0.20', 'fe80::1', '128.0.0.1', '', null, 42]) {
     assert.ok(!isLoopback(a), String(a));
   }
+});
+
+test('isPublicAddress refuses this machine, private, link-local, reserved and multicast ranges', () => {
+  for (const a of ['8.8.8.8', '1.1.1.1', '172.32.0.1', '2606:4700::1111', '::ffff:8.8.8.8', '::ffff:808:808']) assert.equal(isPublicAddress(a), true, a);
+  for (const a of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '192.168.0.10', '169.254.169.254', '100.64.0.1', '0.0.0.0', '192.0.0.8',
+    '198.18.0.1', '224.0.0.251', '255.255.255.255', '::', '::1', '[::1]', 'fe80::1', 'fd12::1', 'ff02::1',
+    '::ffff:127.0.0.1', '::ffff:7f00:1', '::ffff:0:a00:1', 'example.com', '', null]) assert.equal(isPublicAddress(a), false, String(a));
 });

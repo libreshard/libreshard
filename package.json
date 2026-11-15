@@ -74,6 +74,7 @@
       "linux-session.js",
       "backup.js",
       "zip.js",
+      "download.js",
       "streamdeck.js",
       "streamdeck-keys.js",
       "panel-format.js",

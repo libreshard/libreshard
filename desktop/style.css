@@ -136,3 +136,6 @@ h2:first-child { margin-top: 0; }
 .icon-btn { width: 32px; height: 32px; border: 1px solid var(--line); background: var(--cell2); border-radius: 8px; padding: 0; font-size: 16px; line-height: 1; color: var(--muted); }
 .icon-btn:hover { border-color: var(--accent); color: var(--text); }
 .icon-btn.star.on { color: var(--gold); border-color: var(--gold); }
+
+/* Install from URL */
+.url-input { width: 100%; box-sizing: border-box; margin: 6px 0 4px; }
