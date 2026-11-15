@@ -706,17 +706,11 @@ The maintainer plans the work in local notes (`docs/plans/`, not published). The
 
 - A panel editor in its own window (a grid with pages; buttons that press, hold, repeat, toggle or change page; LibreShard icons, emoji or the user's images; themes and look settings; a preview drawn with the tablet's code), import of Stream Deck profiles into it, export of any installed shard as a `.libreshard` file, and a guide to making a shard with an AI assistant.
 
-**0.5: shard ecosystem and sustainability** (next)
+**0.5: shard ecosystem and sustainability** (released 2026-11-15)
 
-- **Installing shards from a URL**, reusing `installer.prepare` and the review screen, plus a `libreshard://install?url=…` link for one-click installs.
-- **Community gallery**: a GitHub repository with shards and a JSON index the app can list, with a review process for new shards.
-- Notice when an installed shard has a new version, always through the review of changes.
-- **Paid shards:** `license` and `url` in the manifest (shown in the install review and on the PC's shard card, never on the tablet), paid listings in the gallery that link to the author's store, and a "Selling your shard" guide. No DRM in the app: a shard's code reaches the tablet in the clear anyway, and its safety never depended on reading it.
-- **Shard files only for paired devices:** today any device on the private network can download them.
-- **Donations:** a Sponsor button, the website, "About" and release notes in the PC window, and a single dismissible ask after real use. Never on the tablet.
-- **French and Brazilian Portuguese**, machine translated and marked as such, and translations opened to the community (more languages and fixes).
+- A community gallery (the reviewed `libreshard/shards` repository, listed in the app and on libreshard.com), installing from a web address and from `libreshard://` links, notices when an installed shard has a new version, `license` and `url` in the manifest, paid shards listed with a link to their shop (no DRM), shard files served only to paired devices, a guide to selling a shard, and ways to support the project. French and Brazilian Portuguese follow in 0.5.1.
 
-**0.6: tablet experience**
+**0.6: tablet experience** (next)
 
 - **Menu** (`viewer/`): last shard used, search and categories.
 - **Configurable floating button**: position, size and auto-hide.

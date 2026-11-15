@@ -206,10 +206,10 @@ timeline
         0.2 : Full-screen shards : Touch panel on the PC itself
         0.3 : Robustness and trust : Diagnostics, clearer warnings and fixes
         0.4 : Shards without code : Visual editor and Stream Deck import
-    section Next
         0.5 : Shard ecosystem : Community gallery and more languages
-    section Planned
+    section Next
         0.6 : Tablet experience : Smarter menu, auto-switching and HTTPS
+    section Planned
         1.0 : First stable version : Signed builds and automatic updates
     section Tentative
         1.1 : More capable shards : Actions, macros, live data and mouse

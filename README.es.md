@@ -211,10 +211,10 @@ timeline
         0.2 : Shards a pantalla completa : Panel táctil en la propia PC
         0.3 : Robustez y confianza : Diagnóstico, avisos más claros y arreglos
         0.4 : Shards sin programar : Editor visual e importación de Stream Deck
-    section Siguiente
         0.5 : Ecosistema de shards : Galería comunitaria y más idiomas
-    section Prevista
+    section Siguiente
         0.6 : Experiencia en la tablet : Menú mejorado, cambio automático y HTTPS
+    section Prevista
         1.0 : Primera versión estable : Firma y actualizaciones automáticas
     section Tentativa
         1.1 : Shards más potentes : Acciones, macros, datos en vivo y ratón

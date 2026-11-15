@@ -6,50 +6,51 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
-### Project
-
-- **Selling your shard:** a new guide, [docs/selling-shards.md](docs/selling-shards.md), on what
-  LibreShard does and doesn't do for paid shards (no copy protection, and why), a personal-use
-  license to start from, packaging, shops, and listing a paid shard in the gallery.
+## [0.5.0] - 2026-11-15
 
 ### App
 
-- **Support LibreShard:** a section in About links to the ways to support the project (Ko-fi and
-  GitHub Sponsors). After two weeks of real use, the PC window asks once, never on the tablet; either
-  answer turns it off for good. The count stays on your PC.
-- **New versions of your shards:** the daily check for new versions also reads the gallery's list
-  when you have shards installed (the same setting turns it off). A shard from the gallery, or the
-  same shard by the same author installed from its file, shows "Version x available" on its card:
-  **Update** downloads the reviewed file and shows what changed first, and a paid one links to its
-  author's shop. A shard taken out of the gallery says so. Nothing updates by itself.
 - **Gallery:** "Explore the gallery" in the Shards tab lists shards reviewed for LibreShard, with
   search and categories, their keys, apps and license, and whether they're free or paid, installed,
   or have a newer version. Installing downloads the file its author published and only goes ahead if
   it's exactly the file that was reviewed, then shows the usual review. Paid shards open their
   author's shop. A web page can also link to an entry (`libreshard://install?gallery=<id>`). Shards
   are published through the [libreshard/shards](https://github.com/libreshard/shards) repository.
+- **New versions of your shards:** the daily check for new versions also reads the gallery's list
+  when you have shards installed (the same setting turns it off). A shard from the gallery, or the
+  same shard by the same author installed from its file, shows "Version x available" on its card:
+  **Update** downloads the reviewed file and shows what changed first, and a paid one links to its
+  author's shop. A shard taken out of the gallery says so. Nothing updates by itself.
+- **Install from a web address:** "Install from URL…" in the Shards tab downloads a `.libreshard` or
+  `.zip` from an `https://` address and shows the usual review, with the server it came from. Only
+  servers on the internet: LibreShard refuses addresses on your own network (checking where it
+  really connects), and stops at 50 MB or 60 seconds. The shard's card remembers where it came from.
+  It only connects when you ask.
+- **Install links:** a web page can offer a shard with a `libreshard://install?url=…` link. LibreShard
+  asks before downloading ("A web page wants to install a shard from …"), then shows the usual
+  review; nothing is installed without both. Works where LibreShard was installed with its
+  installer or `.deb` (not the AppImage).
+- **License and page of a shard:** a shard's manifest can say its license (`"license": "MIT"`, as
+  an SPDX identifier) and its page (`"url"`, https only). The install review and the shard's card
+  show the license, and a "Shard's page" button opens the page. Nothing of it reaches the tablet.
+- **Support LibreShard:** a section in About links to the ways to support the project (Ko-fi and
+  GitHub Sponsors). After two weeks of real use, the PC window asks once, never on the tablet; either
+  answer turns it off for good. The count stays on your PC.
 - **A tidier Shards tab:** the gallery and "New shard" lead as two large buttons, and the rest is
   grouped, with icons, into "Install a shard" and "For shard authors".
 - **Shards are only shown to paired devices:** the list of your shards and their files were
   served to any device on your network; now only to paired ones. Each tablet gets a session token
   when it signs in, kept while it's connected and for 10 minutes after (a short disconnection
   doesn't interrupt the open shard), and gone at once when you unpair it.
-- **Install links:** a web page can offer a shard with a `libreshard://install?url=…` link. LibreShard
-  asks before downloading ("A web page wants to install a shard from …"), then shows the usual
-  review; nothing is installed without both. Works where LibreShard was installed with its
-  installer or `.deb` (not the AppImage).
-- **Install from a web address:** "Install from URL…" in the Shards tab downloads a `.libreshard` or
-  `.zip` from an `https://` address and shows the usual review, with the server it came from. Only
-  servers on the internet: LibreShard refuses addresses on your own network (checking where it
-  really connects), and stops at 50 MB or 60 seconds. The shard's card remembers where it came from.
-  This is LibreShard's second kind of connection outside your network, and it only happens when you
-  ask.
-- **License and page of a shard:** a shard's manifest can say its license (`"license": "MIT"`, as
-  an SPDX identifier) and its page (`"url"`, https only). The install review and the shard's card
-  show the license, and a "Shard's page" button opens the page. Nothing of it reaches the tablet.
 
 ### Project
 
+- **The gallery's repository,** [libreshard/shards](https://github.com/libreshard/shards): one reviewed
+  entry per shard, checks that compare each entry with its file, and a review policy. libreshard.com
+  shows the gallery at [/gallery/](https://libreshard.com/gallery/).
+- **Selling your shard:** a new guide, [docs/selling-shards.md](docs/selling-shards.md), on what
+  LibreShard does and doesn't do for paid shards (no copy protection, and why), a personal-use
+  license to start from, packaging, shops, and listing a paid shard in the gallery.
 - The repository has a "Sponsor" button, and the README a "Support LibreShard" section.
 
 ## [0.4.1] - 2026-11-15
@@ -241,7 +242,8 @@ First public release.
 - Linux `.deb` (with an AppArmor profile for Ubuntu 24.04 and newer) and AppImage.
 - Electron Fuses: no `ELECTRON_RUN_AS_NODE`, no inspector flags, and `app.asar` integrity checks.
 
-[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/libreshard/libreshard/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/libreshard/libreshard/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/libreshard/libreshard/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/libreshard/libreshard/compare/v0.2.0...v0.3.0
