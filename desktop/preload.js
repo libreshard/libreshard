@@ -56,5 +56,6 @@ contextBridge.exposeInMainWorld('libreshard', {
   openEditor: invoke('editor:open'),
   exportShard: invoke('shard:export'),
   openShardPage: invoke('shard:open-page'),
+  supportDone: invoke('support:done'),
   importStreamDeck: invoke('streamdeck:import'),
 });

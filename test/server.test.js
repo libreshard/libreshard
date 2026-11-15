@@ -930,3 +930,16 @@ test('the log records pairings and blocks without device names, addresses or key
     }
   });
 });
+
+test('opening a known shard is reported to the app (for the local support notice), nothing else', () => {
+  const opened = [];
+  return withServer({ onShardOpened: (id) => opened.push(id) }, async (s) => {
+    const c = await authed(s);
+    c.send({ type: 'open', shard: 'demo' });
+    c.send({ type: 'open', shard: 'no-such-shard' });
+    c.send({ type: 'open', shard: null });
+    await waitFor(() => opened.length >= 1);
+    await new Promise((r) => setTimeout(r, 50));
+    assert.deepEqual(opened, ['demo']);
+  });
+});

@@ -562,5 +562,11 @@
   "gallery.unavailable": "No se pudo cargar la galería: {reason}",
   "gallery.toShop": "Ir a la tienda",
   "shards.galleryGone": "Ya no está en la galería",
-  "shards.updatesIntro": "Shards con una versión nueva en la galería: {count}. Al actualizar, primero ves qué cambia."
+  "shards.updatesIntro": "Shards con una versión nueva en la galería: {count}. Al actualizar, primero ves qué cambia.",
+  "support.ask": "LibreShard es gratis y de código abierto. Si te ha sido útil estas semanas, puedes apoyar su desarrollo. No volveremos a preguntar.",
+  "support.yes": "Apoyar",
+  "support.no": "No, gracias",
+  "about.supportTitle": "Apoyar a LibreShard",
+  "about.supportHint": "LibreShard es gratis y lo seguirá siendo, sin nada bloqueado tras un pago. Las donaciones (Ko-fi o GitHub Sponsors) ayudan a mantenerlo.",
+  "about.supportButton": "Apoyar…"
 }

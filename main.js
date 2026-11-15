@@ -52,9 +52,10 @@ const LINKS = {
   license: 'https://github.com/libreshard/libreshard/blob/main/LICENSE',
   download: 'https://libreshard.com/download/',
   aiGuide: 'https://libreshard.com/docs/ai-assistant/',
+  donate: 'https://libreshard.com/support/',
 };
 // Links whose page the website also has in Spanish (under /es/)
-const LOCALIZED_LINKS = new Set(['aiGuide']);
+const LOCALIZED_LINKS = new Set(['aiGuide', 'donate']);
 const ISSUE_URL = 'https://github.com/libreshard/libreshard/issues/new';
 
 const dataFile = (name) => path.join(app.getPath('userData'), name);
@@ -73,6 +74,12 @@ const SETTINGS = {
   checkUpdates: { default: true, valid: (v) => typeof v === 'boolean' },
   // A new version the user chose to ignore; its notice doesn't come back, a later version's does
   updateDismissed: { default: null, internal: true, valid: (v) => v === null || !!updates.parseVersion(v) },
+  // The one-time "support LibreShard" notice: on how many days shards were used (counted on this PC,
+  // never sent anywhere), and whether the user answered it (then it never comes back)
+  support: {
+    default: { days: 0, lastDay: null, done: false }, internal: true,
+    valid: (v) => !!v && typeof v === 'object' && Number.isInteger(v.days) && v.days >= 0 && (v.lastDay === null || typeof v.lastDay === 'string') && typeof v.done === 'boolean',
+  },
   // Where the local panel window was last left; saved by the app, never set from the page
   panelBounds: {
     default: null, internal: true,
@@ -278,6 +285,7 @@ async function start() {
       limiter: new RateLimiter(),
       allowPublic: cfg.allowPublicNetworks,
       onAlert: () => { alertAt = Date.now(); push(); },
+      onShardOpened: countShardDay,
       confirmPairing: (info) => (cfg.confirmDevices ? askDevice(info) : true),
       allowAppsFromTablet: () => cfg.allowAppsFromTablet,
       language: () => cfg.language,
@@ -354,6 +362,7 @@ async function start() {
       detection: focus.providerName(),
       thirdPartyLicenses: hasLicenses,
       update: { ...update, show: !!update.latest && update.newer && update.latest !== cfg.updateDismissed },
+      supportAsk: supportAskDue(),
       rejected: store.rejected.map((r) => ({ folder: path.basename(r.root), root: r.root, errors: r.errors })),
       settings: {
         port: cfg.port, allowPublicNetworks: cfg.allowPublicNetworks, confirmDevices: cfg.confirmDevices,
@@ -505,6 +514,30 @@ async function start() {
     } else if (kind === 'licenses' && hasLicenses) shell.openPath(licensesFile);
   });
   handle('update:check', () => checkForUpdates({ manual: true }));
+
+  // The one-time support notice (desktop window only, never the tablet): after real use, meaning
+  // two weeks since the first device was paired and shards opened on five different days. Counted
+  // here, locally. Either answer ("Support", "No, thanks") turns it off for good.
+  const SUPPORT_AFTER_MS = 14 * 24 * 60 * 60 * 1000;
+  const SUPPORT_DAYS = 5;
+  function countShardDay() {
+    const day = new Date().toISOString().slice(0, 10);
+    if (cfg.support.done || cfg.support.lastDay === day) return;
+    cfg.support = { ...cfg.support, days: cfg.support.days + 1, lastDay: day };
+    saveConfig(cfg);
+    if (supportAskDue()) push();
+  }
+  function supportAskDue() {
+    if (cfg.support.done || cfg.support.days < SUPPORT_DAYS) return false;
+    const first = Math.min(...devices.all().map((d) => d.createdAt).filter(Number.isFinite));
+    return Number.isFinite(first) && Date.now() - first >= SUPPORT_AFTER_MS;
+  }
+  handle('support:done', (opened) => {
+    cfg.support = { ...cfg.support, done: true };
+    saveConfig(cfg);
+    log.info('support-notice', { answer: opened === true ? 'support' : 'no' });
+    push();
+  });
   handle('update:dismiss', () => {
     if (!update.latest) return;
     cfg.updateDismissed = update.latest;

@@ -12,8 +12,9 @@ const LIMITS = { maxBytes: 50 * 1024 * 1024, maxFiles: 2000 };
 // Extracts a zip into a new temporary folder. Refuses entries that would land outside it (absolute
 // paths, "..", drive letters), skips symlinks, and stops at the size and file count limits, using
 // the real decompressed size rather than what the zip claims. A failed extraction leaves nothing.
-function extractZip(file, limits = LIMITS) {
-  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'libreshard-install-'));
+// `tmp`: where the temporary folder goes (the system's by default; tests give their own)
+function extractZip(file, limits = LIMITS, { tmp = os.tmpdir() } = {}) {
+  const dest = fs.mkdtempSync(path.join(tmp, 'libreshard-install-'));
   return new Promise((resolve, reject) => {
     const fail = (e) => {
       // Retries: on macOS a just-closed file can still be on its way out when the folder goes

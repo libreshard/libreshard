@@ -162,6 +162,9 @@ h2:first-child { margin-top: 0; }
 .with-ico { display: inline-flex; align-items: center; gap: 7px; }
 .btn.small .ico-svg { width: 14px; height: 14px; }
 
+/* The one-time support notice */
+.banner.support { background: rgba(34, 211, 238, .08); border-color: rgba(34, 211, 238, .45); }
+
 /* Gallery */
 .gal-title { margin: 0; }
 .gal-title .ico-svg { width: 18px; height: 18px; }

@@ -224,6 +224,12 @@ timeline
 Las versiones y su contenido todavía pueden cambiar. La 1.1 y la 1.2 son tentativas y se evaluarán
 después de la 1.0. La lista completa (en inglés) está en [CONTEXT.md](CONTEXT.md#9-roadmap).
 
+## Apoya a LibreShard
+
+LibreShard es gratis y lo seguirá siendo, sin nada bloqueado tras un pago. Si te resulta útil,
+puedes apoyar su desarrollo en [Ko-fi](https://ko-fi.com/gabrieltech) o en
+[GitHub Sponsors](https://github.com/sponsors/gabriel-eh).
+
 ## Contribuir
 
 Se agradecen reportes de errores, shards, traducciones y código. Lee

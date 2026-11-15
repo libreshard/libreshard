@@ -107,7 +107,7 @@ function startServer({
   keyboard, focus, devices, pairing, limiter, allowPublic = false, onAlert, confirmPairing,
   allowAppsFromTablet = false, unavailableKeys = unavailable, language = 'auto',
   platform = shardPlatform(process.platform), isSelf = isSelfApp, isElevated, httpRate = HTTP_RATE, sessionGraceMs = SESSION_GRACE_MS, log = nullLog,
-  confirmTimeoutMs = CONFIRM_TIMEOUT_MS,
+  confirmTimeoutMs = CONFIRM_TIMEOUT_MS, onShardOpened,
 }) {
   const warnOnce = once(log);
   const canAllow = () => (typeof allowAppsFromTablet === 'function' ? allowAppsFromTablet() : allowAppsFromTablet) === true;
@@ -413,6 +413,7 @@ function startServer({
       // The tablet opened a shard (or went back to the menu): drives the live indicator
       if (msg.type === 'open') {
         c.open = validField(msg.shard) ? msg.shard : null;
+        if (c.open && store.get(c.open)) onShardOpened?.(c.open);
         c.focusState = null;
         updateFocusPolling();
         if (restricted(c)) pollFocus();
