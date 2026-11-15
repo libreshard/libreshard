@@ -67,13 +67,17 @@ test('symlinks inside a zip are skipped', async () => {
 });
 
 test('the size and file count limits are enforced while extracting, and leave nothing behind', async () => {
-  const temps = () => fs.readdirSync(os.tmpdir()).filter((d) => d.startsWith('libreshard-install-')).sort();
-  const before = temps();
-  const big = writeZip([{ name: 'manifest.json', data: manifest() }, { name: 'big.bin', data: 'x'.repeat(5000) }]);
-  await assert.rejects(extractZip(big, { maxBytes: 1000, maxFiles: 100 }), /larger than/);
-  const many = writeZip(Array.from({ length: 12 }, (_, i) => ({ name: `f${i}.txt`, data: 'x' })));
-  await assert.rejects(extractZip(many, { maxBytes: 1e6, maxFiles: 10 }), /more than 10 files/);
-  assert.deepEqual(temps(), before, 'failed extractions remove their temporary folder');
+  // Its own temporary folder: other test files extract zips at the same time
+  const own = fs.mkdtempSync(path.join(os.tmpdir(), 'libreshard-limits-'));
+  try {
+    const big = writeZip([{ name: 'manifest.json', data: manifest() }, { name: 'big.bin', data: 'x'.repeat(5000) }]);
+    await assert.rejects(extractZip(big, { maxBytes: 1000, maxFiles: 100 }, { tmp: own }), /larger than/);
+    const many = writeZip(Array.from({ length: 12 }, (_, i) => ({ name: `f${i}.txt`, data: 'x' })));
+    await assert.rejects(extractZip(many, { maxBytes: 1e6, maxFiles: 10 }, { tmp: own }), /more than 10 files/);
+    assert.deepEqual(fs.readdirSync(own), [], 'failed extractions remove their temporary folder');
+  } finally {
+    fs.rmSync(own, { recursive: true, force: true });
+  }
 });
 
 test('invalid shards explain why', async () => {
