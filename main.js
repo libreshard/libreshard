@@ -47,7 +47,10 @@ const LINKS = {
   security: 'https://libreshard.com/security/',
   license: 'https://github.com/libreshard/libreshard/blob/main/LICENSE',
   download: 'https://libreshard.com/download/',
+  aiGuide: 'https://libreshard.com/docs/ai-assistant/',
 };
+// Links whose page the website also has in Spanish (under /es/)
+const LOCALIZED_LINKS = new Set(['aiGuide']);
 const ISSUE_URL = 'https://github.com/libreshard/libreshard/issues/new';
 
 const dataFile = (name) => path.join(app.getPath('userData'), name);
@@ -495,7 +498,8 @@ async function start() {
   });
   handle('app:open-link', async (kind) => {
     if (!Object.hasOwn(LINKS, kind)) throw new Error('Unknown link');
-    await shell.openExternal(LINKS[kind]);
+    const url = LOCALIZED_LINKS.has(kind) && locale === 'es' ? LINKS[kind].replace('libreshard.com/', 'libreshard.com/es/') : LINKS[kind];
+    await shell.openExternal(url);
   });
   handle('app:copy-diagnostics', () => {
     clipboard.writeText(diagnostics());

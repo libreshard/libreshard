@@ -8,6 +8,11 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Make a shard with an AI assistant:** a new guide, [docs/ai-assistant.md](docs/ai-assistant.md),
+  explains when the panel editor is enough, what to give an assistant (the shard guide and the
+  template), a prompt to start with, how to try the result with "Load in development…" and which
+  keys to check before approving them. The Shards tab links to it ("Something more than a grid of
+  buttons?").
 - **Import a Stream Deck profile:** "Import Stream Deck profile…" in the Shards tab (or dropping a
   `.streamDeckProfile` file on the window) turns a profile exported from the Stream Deck app into
   a panel and opens it in the editor, unsaved. Pages, folders, labels (with their place, size and

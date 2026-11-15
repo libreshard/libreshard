@@ -489,5 +489,7 @@
   "import.reason.plugin": "Stream Deck: una acción del plugin \"{detail}\". Los plugins no se importan.",
   "import.reason.other": "Stream Deck: \"{detail}\", que LibreShard no puede hacer.",
   "import.reason.missingPage": "Stream Deck: falta en el archivo la carpeta que abría este botón.",
-  "import.reason.tooManyPages": "Stream Deck: esta carpeta pasaría del límite de 50 páginas."
+  "import.reason.tooManyPages": "Stream Deck: esta carpeta pasaría del límite de 50 páginas.",
+  "shards.aiHint": "¿Algo más que una cuadrícula de botones?",
+  "shards.aiGuide": "Crea un shard con un asistente de IA"
 }
