@@ -233,7 +233,7 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - koffi is loaded lazily and only on Windows; if it's missing or a call fails, everything is `null` and the log gets one line. `createElevation({ platform, api })` takes a fake API in the tests.
 
 **zip.js**
-- `createZip([{ name, data }])`: a plain zip (deflate, UTF-8 names, no dependencies). `filesUnder(root, { hidden })`: the plain files under a folder, links skipped, and with `hidden: false` names starting with a dot too. `shardZip(root)`: a shard folder as a `.libreshard`, files at the root, no hidden files or links.
+- `createZip([{ name, data }], { date })`: a plain zip (deflate, UTF-8 names, no dependencies), every entry dated `date` (now by default) in the MS-DOS format; zero, written before 0.4.1, is an invalid date. `filesUnder(root, { hidden })`: the plain files under a folder, links skipped, and with `hidden: false` names starting with a dot too. `shardZip(root)`: a shard folder as a `.libreshard`, files at the root, no hidden files or links.
 - **Export** (`shard:export`, "Export…" on the cards of shards the user installed, not bundled or linked): refuses shards over the installer's limits (they couldn't be installed elsewhere), asks first when a panel has images imported from a Stream Deck profile (`importedImages()`), then a save dialog with `<id>-<version>.libreshard` in Documents. Logged as `shard-exported` (id, version, files, bytes).
 
 **backup.js**
@@ -566,7 +566,7 @@ Tests (`test/`):
 - `bundled-shards.test.js` loads every bundled shard and checks manifests, keys, base copies and the panel template (`tools/build-shard-base.js --check` does the same from the command line) and translations.
 - `themes.test.js`: every theme's values are valid panel style, settings combine with the theme's, contrast follows WCAG and every theme keeps 4.5:1 between text and buttons.
 - `streamdeck.test.js`: synthetic 3.0 and 2.0 profiles (base32 folders): pages, nested folders and a cycle, missing pages, Default, title styles, images (hostile paths too), Mac shortcuts, Key Logic, dials, the errors, a hostile zip, the key tables and that every reason has its strings. Real profiles never enter the repository.
-- `zip.test.js`: the installer reads back what `createZip` wrote, and an exported shard or panel installs with the same manifest and files, without hidden files or links.
+- `zip.test.js`: the installer reads back what `createZip` wrote (with real dates), and an exported shard or panel installs with the same manifest and files, without hidden files or links.
 - `keycodes.test.js`: every key the editor offers parses, and captured keydowns become the right names on Windows (virtual-key codes, a Spanish layout included), Linux and macOS.
 - `panel-format.test.js`: panel.json validation with hostile values, the 300-key limit, ids, `layout.js` escaping, and that a generated folder passes the install review. How a panel looks and behaves is checked with Edge in headless mode (`--screenshot`, and `--dump-dom` with a probe script that fakes `Shard`).
 - `shard-store.test.js` and `installer.test.js` cover approvals, enable/disable, install/replace/refuse, uninstall through links, hot reload, and hostile zips (built by the tiny writer in `test/zip.js`, which real zip libraries won't do). `i18n.test.js` keeps the languages in sync.

@@ -11,6 +11,8 @@ All notable changes to LibreShard are listed here. The format follows
 - The editor makes shards, so it says so: **New shard** (was "New panel"), the **Shard editor**, and
   an **Editor** badge on the cards of shards made with it. "Panel" now only names This PC's touch
   panel. Shards made in 0.4.0 keep working as they are.
+- Backups and exported shards carry the date they were made. Before, zip tools showed every file
+  in them as dated 1980-00-00.
 
 ## [0.4.0] - 2026-11-14
 
