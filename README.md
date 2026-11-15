@@ -34,6 +34,9 @@ share.
 - 🧩 **Shards.** Each panel is a folder with a web page and a manifest. Install one by dropping a zip
   on the window, build your own from the [template](docs/shard-template/), and watch the tablet
   reload as you save.
+- 🎛️ **Panels without code.** Place buttons, pick their keys, icons, images and a theme in the
+  visual editor, or import a Stream Deck profile. Share any panel or shard as one `.libreshard`
+  file.
 - 🛡️ **Safe by design.** The tablet only shows pages. The PC presses only the keys a shard declared
   **and** you approved, after a review that flags dangerous shortcuts. Shards can't reach the
   internet, your files or each other.
@@ -125,7 +128,18 @@ through the usual key review again. Paired tablets aren't included: pair them ag
 
 ## Make your own shard
 
-A shard is a folder with a `manifest.json`:
+**Without code.** **New panel** in the Shards tab opens the panel editor: a grid of buttons with
+pages, where each button presses, holds or repeats a key, switches between two keys or opens
+another page, with its own text, icon, image and color, and a theme for the whole panel. Saving
+installs it, and the tablet shows it right away. **Import Stream Deck profile…** turns a profile
+exported from the Stream Deck app into such a panel. For anything a grid can't do, an AI assistant
+can write the shard for you: see **[docs/ai-assistant.md](docs/ai-assistant.md)**.
+
+<p align="center">
+  <img src="docs/images/editor.png" alt="The panel editor: pages on the left, the panel in the middle, the selected button's key and look on the right" width="840">
+</p>
+
+**With code.** A shard is a folder with a `manifest.json`:
 
 ```json
 {
@@ -147,8 +161,9 @@ and an `index.html`:
 ```
 
 In the PC window, **Shards → Load in development…** links your folder: the tablet reloads it every
-time you save. To share it, zip the folder (or rename the zip to `.libreshard`). People install it by
-dropping it on their window, after reviewing the keys it asks for.
+time you save. To share any shard you installed, panels included, use **Export…** on its card: it
+saves a `.libreshard` file. People install it by dropping it on their window, after reviewing the
+keys it asks for.
 
 The full guide (keys, settings, languages, limiting to apps, design rules) is in
 **[docs/shards.md](docs/shards.md)**.

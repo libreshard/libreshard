@@ -34,6 +34,9 @@ y compartir.
 - 🧩 **Shards.** Cada panel es una carpeta con una página web y un manifest. Instala uno soltando un
   zip en la ventana, crea el tuyo a partir de la [plantilla](docs/shard-template/) y mira cómo la
   tablet se recarga cada vez que guardas.
+- 🎛️ **Paneles sin programar.** Coloca botones y elige sus teclas, iconos, imágenes y un tema en el
+  editor visual, o importa un perfil de Stream Deck. Comparte cualquier panel o shard en un solo
+  archivo `.libreshard`.
 - 🛡️ **Seguro desde el diseño.** La tablet solo muestra páginas. La PC pulsa únicamente las teclas
   que un shard declaró **y** que tú aprobaste, tras una revisión que marca los atajos peligrosos. Los
   shards no pueden llegar a internet, a tus archivos ni a otros shards.
@@ -126,7 +129,19 @@ vuelve a vincularlas.
 
 ## Crea tu propio shard
 
-Un shard es una carpeta con un `manifest.json`:
+**Sin programar.** **Nuevo panel**, en la pestaña Shards, abre el editor de paneles: una cuadrícula
+de botones con páginas, donde cada botón pulsa, mantiene o repite una tecla, alterna entre dos teclas
+o abre otra página, con su propio texto, icono, imagen y color, y un tema para todo el panel. Al
+guardar se instala y la tablet lo muestra al momento. **Importar perfil de Stream Deck…** convierte
+un perfil exportado desde la app de Stream Deck en un panel así. Para lo que una cuadrícula no hace,
+un asistente de IA puede escribir el shard por ti: mira
+**[docs/ai-assistant.md](docs/ai-assistant.md)** (en inglés).
+
+<p align="center">
+  <img src="docs/images/editor.png" alt="El editor de paneles: las páginas a la izquierda, el panel en el centro, la tecla y el aspecto del botón elegido a la derecha" width="840">
+</p>
+
+**Programando.** Un shard es una carpeta con un `manifest.json`:
 
 ```json
 {
@@ -148,8 +163,9 @@ y un `index.html`:
 ```
 
 En la ventana de la PC, **Shards → Cargar en desarrollo…** enlaza tu carpeta: la tablet la recarga
-cada vez que guardas. Para compartirlo, comprime la carpeta en un zip (o cambia la extensión a
-`.libreshard`). Quien lo instale lo suelta en su ventana, después de revisar las teclas que pide.
+cada vez que guardas. Para compartir cualquier shard que instalaste, paneles incluidos, usa
+**Exportar…** en su tarjeta: guarda un archivo `.libreshard`. Quien lo instale lo suelta en su
+ventana, después de revisar las teclas que pide.
 
 La guía completa (teclas, ajustes, idiomas, limitar a apps, reglas de diseño) está en
 **[docs/shards.md](docs/shards.md)** (en inglés).
