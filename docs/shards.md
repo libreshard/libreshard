@@ -5,7 +5,8 @@ A **shard** is a panel for the tablet: a folder with HTML, CSS and JavaScript pl
 shard. Nothing is compiled and LibreShard's code doesn't change.
 
 This guide covers everything a shard author needs. The quickest start is the
-[template](shard-template/): copy it and follow its README.
+[template](shard-template/): copy it and follow its README. Don't write code? An AI assistant can
+write a shard from this guide and the template: see [Make a shard with an AI assistant](ai-assistant.md).
 
 - [The smallest shard](#the-smallest-shard)
 - [Trying it while you edit](#trying-it-while-you-edit)
@@ -272,7 +273,8 @@ installs the panel as a normal shard, ready on the tablet.
 A panel's folder has one extra file, `panel.json`, which is what the editor reads back; the
 rest (`index.html`, `layout.js`, the styles and scripts) is generated from it, so editing those
 files by hand is lost on the next save. `panel.json` may still change before LibreShard 1.0.
-For anything beyond a grid, write a shard as described in this guide.
+For anything beyond a grid, write a shard as described in this guide, or let an AI assistant write
+it ([how](ai-assistant.md)).
 
 **From a Stream Deck profile:** "Import Stream Deck profile…" in the Shards tab (or dropping a
 `.streamDeckProfile` file on the window) opens a profile exported from the Stream Deck app as a

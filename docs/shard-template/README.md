@@ -60,7 +60,8 @@ fills them in the tablet's language (or the one chosen on the PC), with English 
 
 The full guide for shard authors is
 [docs/shards.md](https://github.com/libreshard/libreshard/blob/main/docs/shards.md) in the LibreShard
-repository.
+repository. To have an AI assistant write the shard for you, give it that guide and this template:
+see [Make a shard with an AI assistant](https://github.com/libreshard/libreshard/blob/main/docs/ai-assistant.md).
 
 ## License
 

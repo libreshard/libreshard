@@ -165,6 +165,8 @@ function renderShards() {
       h('button', { class: 'btn', onclick: () => install('dev') }, t('shards.loadDev')),
       h('button', { class: 'btn', onclick: () => api.openPath('shards') }, t('shards.openShardsFolder'))),
     h('p', { class: 'hint small' }, t('shards.dropHint')),
+    h('p', { class: 'hint small' }, t('shards.aiHint'), ' ',
+      h('button', { class: 'btn small', onclick: () => call(api.openLink, 'aiGuide') }, t('shards.aiGuide'))),
     pending.length ? h('div', { class: 'warnbox warn' }, t('shards.pendingIntro', { count: pending.length })) : null,
     h('h2', null, t('shards.installed')),
     h('p', { class: 'hint small' }, t('shards.orderHint')),

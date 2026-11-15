@@ -489,5 +489,7 @@
   "import.reason.plugin": "Stream Deck: an action of the plugin \"{detail}\". Plugins can't be imported.",
   "import.reason.other": "Stream Deck: \"{detail}\", which LibreShard can't do.",
   "import.reason.missingPage": "Stream Deck: the folder this button opened is missing from the file.",
-  "import.reason.tooManyPages": "Stream Deck: this folder would go over the limit of 50 pages."
+  "import.reason.tooManyPages": "Stream Deck: this folder would go over the limit of 50 pages.",
+  "shards.aiHint": "Something more than a grid of buttons?",
+  "shards.aiGuide": "Make a shard with an AI assistant"
 }
