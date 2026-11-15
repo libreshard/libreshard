@@ -18,11 +18,11 @@ what to check before you use it.
 
 ## Do you need an assistant?
 
-Often you don't. **New panel** in the Shards tab opens the panel editor: a grid of buttons with
+Often you don't. **New shard** in the Shards tab opens the shard editor: a grid of buttons with
 pages, icons, images, colors and themes, where each button presses, holds or repeats a key,
 switches between two keys or opens another page. If that's what you want, use the editor: it's
 quicker and there's nothing to check. **Import Stream Deck profile…** turns an existing Stream
-Deck profile into such a panel.
+Deck profile into such a shard.
 
 An assistant is worth it when you want something a grid can't do, for example:
 

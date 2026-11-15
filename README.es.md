@@ -34,9 +34,9 @@ y compartir.
 - 🧩 **Shards.** Cada panel es una carpeta con una página web y un manifest. Instala uno soltando un
   zip en la ventana, crea el tuyo a partir de la [plantilla](docs/shard-template/) y mira cómo la
   tablet se recarga cada vez que guardas.
-- 🎛️ **Paneles sin programar.** Coloca botones y elige sus teclas, iconos, imágenes y un tema en el
-  editor visual, o importa un perfil de Stream Deck. Comparte cualquier panel o shard en un solo
-  archivo `.libreshard`.
+- 🎛️ **Shards sin programar.** Coloca botones y elige sus teclas, iconos, imágenes y un tema en el
+  editor visual, o importa un perfil de Stream Deck. Comparte cualquier shard en un solo archivo
+  `.libreshard`.
 - 🛡️ **Seguro desde el diseño.** La tablet solo muestra páginas. La PC pulsa únicamente las teclas
   que un shard declaró **y** que tú aprobaste, tras una revisión que marca los atajos peligrosos. Los
   shards no pueden llegar a internet, a tus archivos ni a otros shards.
@@ -129,16 +129,16 @@ vuelve a vincularlas.
 
 ## Crea tu propio shard
 
-**Sin programar.** **Nuevo panel**, en la pestaña Shards, abre el editor de paneles: una cuadrícula
+**Sin programar.** **Nuevo shard**, en la pestaña Shards, abre el editor de shards: una cuadrícula
 de botones con páginas, donde cada botón pulsa, mantiene o repite una tecla, alterna entre dos teclas
 o abre otra página, con su propio texto, icono, imagen y color, y un tema para todo el panel. Al
 guardar se instala y la tablet lo muestra al momento. **Importar perfil de Stream Deck…** convierte
-un perfil exportado desde la app de Stream Deck en un panel así. Para lo que una cuadrícula no hace,
+un perfil exportado desde la app de Stream Deck en un shard así. Para lo que una cuadrícula no hace,
 un asistente de IA puede escribir el shard por ti: mira
 **[docs/ai-assistant.md](docs/ai-assistant.md)** (en inglés).
 
 <p align="center">
-  <img src="docs/images/editor.png" alt="El editor de paneles: las páginas a la izquierda, el panel en el centro, la tecla y el aspecto del botón elegido a la derecha" width="840">
+  <img src="docs/images/editor.png" alt="El editor de shards: las páginas a la izquierda, el shard en el centro, la tecla y el aspecto del botón elegido a la derecha" width="840">
 </p>
 
 **Programando.** Un shard es una carpeta con un `manifest.json`:
@@ -209,7 +209,7 @@ timeline
         0.1 : Primera versión pública
         0.2 : Shards a pantalla completa : Panel táctil en la propia PC
         0.3 : Robustez y confianza : Diagnóstico, avisos más claros y arreglos
-        0.4 : Paneles sin programar : Editor visual e importación de Stream Deck
+        0.4 : Shards sin programar : Editor visual e importación de Stream Deck
     section Siguiente
         0.5 : Ecosistema de shards : Galería comunitaria y más idiomas
     section Prevista
