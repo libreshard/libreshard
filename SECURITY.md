@@ -82,7 +82,9 @@ downloads that file from the server you gave, with the same generic User-Agent a
 and then shows the usual review before installing. It only uses `https://`, follows at most five
 redirects, stops at 50 MB or 60 seconds, and refuses any server on a private network (your router,
 a NAS, this PC), checking the address it actually connects to, so a web address can't be used to
-reach devices on your network. The log keeps only the server's name, never the full address (download
+reach devices on your network. A `libreshard://install?url=…` link on a web page starts the same
+download, but only after LibreShard asks you (showing the server) and never installs without the
+review. The log keeps only the server's name, never the full address (download
 links often carry tokens).
 
 To help with bug reports, the app keeps a log on your PC (`logs/libreshard.log` in its data folder).

@@ -75,6 +75,7 @@
       "backup.js",
       "zip.js",
       "download.js",
+      "links.js",
       "streamdeck.js",
       "streamdeck-keys.js",
       "panel-format.js",
@@ -102,6 +103,14 @@
       "enableEmbeddedAsarIntegrityValidation": true,
       "onlyLoadAppFromAsar": true
     },
+    "protocols": [
+      {
+        "name": "LibreShard link",
+        "schemes": [
+          "libreshard"
+        ]
+      }
+    ],
     "fileAssociations": [
       {
         "ext": "libreshard",

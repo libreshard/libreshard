@@ -61,6 +61,7 @@ libreshard/
 ├── backup.js             backups: one zip with settings, app rules, shard states and installed shards
 ├── zip.js                writing zips (backups, exported shards) and listing a folder's files
 ├── download.js           downloading a shard from an https address (public servers only)
+├── links.js              libreshard:// links: parsing "install?url=…"
 ├── panel-format.js       panels made with the editor: panel.json validation and the shard folder built from it
 ├── streamdeck.js         Stream Deck profiles (.streamDeckProfile) read into a panel
 ├── streamdeck-keys.js    a Stream Deck hotkey (Qt, Windows and macOS key codes) as a LibreShard combo
@@ -237,6 +238,11 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 **download.js**
 - `downloadShard(url, { get, lookup, limits, tmp })` → `{ file, bytes, host, finalHost, cleanup }`, or a `DownloadError` with `code` (`badUrl`, `notHttps`, `privateAddress`, `tooManyRedirects`, `httpStatus` + `status`, `tooBig`, `timeout`, `network` + `reason`). Node's `https.get` with `safeLookup()`, which refuses a name if **any** address it resolves to isn't public (`net.isPublicAddress`: not loopback, private, link-local, CGNAT, "this network", multicast or reserved, IPv4-mapped IPv6 included), at connect time, so DNS can't switch after the check. Literal IPs are checked by `checkUrl()`. Redirects are followed by hand (5 at most, each checked again). 50 MB (the installer's limit, also checked while streaming) and 60 s. The file is `download.libreshard` in `<tmp>/libreshard-download-*`. No system proxy (Node's https, not Chromium's network stack).
 - In `main.js`, `install:url` ("Install from URL…" in the Shards tab, a small form) downloads, then `prepareInstall(file, { origin: { kind: 'url', host } })` and removes the download. `host` is the one the user typed (the review says "Downloaded from github.com"); the log adds `from` when redirects ended elsewhere (a CDN). `store.install(dir, manifest, { source })` saves it in `shards-state.json` (`source`, read back through `sourceOf()`, which trusts only `{ kind: 'url', host }`); a reinstall without a source keeps the old one. The card shows "from github.com". Logged as `shard-downloaded` (host, from, bytes, ms) or `shard-download-failed` (host, error, status); never the path or query.
+
+**links.js**
+- `parseLink(value)` → `{ action: 'install', url }` for `libreshard://install?url=<https://…>` (or `libreshard:install?…`, any case), else null (4096 characters at most). `linkInArgs(argv)` finds the link in a command line.
+- In `main.js`: the link arrives in `second-instance` and `process.argv` (Windows, Linux) or `open-url` (macOS), queued in `pendingLink` until the window loads. `openLink` asks first in a native dialog ("A web page wants to install a shard from <host>"), then `installFromUrl()` (the same as `install:url`) and sends `install:review` to the page. While that question is open, other links are ignored (a page can't stack dialogs). Logged as `link-opened` (host, accepted) or `link-ignored`.
+- Registration: `protocols` in `package.json` (Info.plist on macOS, `MimeType=x-scheme-handler/libreshard` in the .deb's desktop file); on Windows the installed app calls `app.setAsDefaultProtocolClient('libreshard')` on start when it isn't the handler (per user, `HKCU\Software\Classes\libreshard`), and the uninstaller removes that key if it still points to its executable. The AppImage registers nothing, like `.libreshard` files.
 
 **zip.js**
 - `createZip([{ name, data }], { date })`: a plain zip (deflate, UTF-8 names, no dependencies), every entry dated `date` (now by default) in the MS-DOS format; zero, written before 0.4.1, is an invalid date. `filesUnder(root, { hidden })`: the plain files under a folder, links skipped, and with `hidden: false` names starting with a dot too. `shardZip(root)`: a shard folder as a `.libreshard`, files at the root, no hidden files or links.
@@ -576,6 +582,7 @@ Tests (`test/`):
 - `bundled-shards.test.js` loads every bundled shard and checks manifests, keys, base copies and the panel template (`tools/build-shard-base.js --check` does the same from the command line) and translations.
 - `themes.test.js`: every theme's values are valid panel style, settings combine with the theme's, contrast follows WCAG and every theme keeps 4.5:1 between text and buttons.
 - `streamdeck.test.js`: synthetic 3.0 and 2.0 profiles (base32 folders): pages, nested folders and a cycle, missing pages, Default, title styles, images (hostile paths too), Mac shortcuts, Key Logic, dials, the errors, a hostile zip, the key tables and that every reason has its strings. Real profiles never enter the repository.
+- `links.test.js`: only `install` with an url is understood; the link is found in a command line.
 - `download.test.js`: https only, literal and resolved private addresses refused (a real request to `localhost` included), redirects (to http, to private servers, loops), HTTP errors, size limits (announced and streamed), time limit, and no temporary files left behind. `net.test.js` covers `isPublicAddress`.
 - `zip.test.js`: the installer reads back what `createZip` wrote (with real dates), and an exported shard or panel installs with the same manifest and files, without hidden files or links.
 - `keycodes.test.js`: every key the editor offers parses, and captured keydowns become the right names on Windows (virtual-key codes, a Spanish layout included), Linux and macOS.
