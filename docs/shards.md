@@ -19,7 +19,7 @@ write a shard from this guide and the template: see [Make a shard with an AI ass
 - [Design rules](#design-rules)
 - [What a shard can't do](#what-a-shard-cant-do)
 - [Sharing your shard](#sharing-your-shard)
-- [Panels made in the editor](#panels-made-in-the-editor)
+- [Shards made in the editor](#shards-made-in-the-editor)
 
 ## The smallest shard
 
@@ -264,13 +264,13 @@ Two side effects: `mask-image` with a file from the shard may fail (embed masks 
 - **Name it clearly.** "Photo tools for LibreShard" is fine; see [TRADEMARKS.md](../TRADEMARKS.md).
 - Then tell people about it: open a discussion in the LibreShard repository.
 
-## Panels made in the editor
+## Shards made in the editor
 
-You don't need any of the above for a grid of buttons: **New panel** in the Shards tab opens an
-editor where you place buttons, choose their keys, texts, icons and colors, and add pages. Saving
-installs the panel as a normal shard, ready on the tablet.
+You don't need any of the above for a grid of buttons: **New shard** in the Shards tab opens the
+shard editor, where you place buttons, choose their keys, texts, icons and colors, and add pages.
+Saving installs it like any other shard, ready on the tablet; its card shows an "Editor" badge.
 
-A panel's folder has one extra file, `panel.json`, which is what the editor reads back; the
+Its folder has one extra file, `panel.json`, which is what the editor reads back; the
 rest (`index.html`, `layout.js`, the styles and scripts) is generated from it, so editing those
 files by hand is lost on the next save. `panel.json` may still change before LibreShard 1.0.
 For anything beyond a grid, write a shard as described in this guide, or let an AI assistant write
@@ -278,5 +278,5 @@ it ([how](ai-assistant.md)).
 
 **From a Stream Deck profile:** "Import Stream Deck profile…" in the Shards tab (or dropping a
 `.streamDeckProfile` file on the window) opens a profile exported from the Stream Deck app as a
-new, unsaved panel: pages, folders, labels, images, hotkeys, hotkey switches and media keys. Buttons
+new, unsaved shard: pages, folders, labels, images, hotkeys, hotkey switches and media keys. Buttons
 it can't import keep their label and image, marked in the editor with the reason in their note.
