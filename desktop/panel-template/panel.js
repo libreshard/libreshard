@@ -25,17 +25,24 @@
     const [r, g, b] = rgb(hex).map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
     return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#0d1b2a' : '#ffffff';
   };
-  const fill = (kind, hex) => (kind === 'none' ? 'transparent' : kind === 'flat' ? hex : `linear-gradient(180deg, ${hex}, ${darker(hex)})`);
+  // A gradient darkens towards the bottom; light colors only a little, or they turn grey
+  const fill = (kind, hex) => (kind === 'none' ? 'transparent' : kind === 'flat' ? hex
+    : `linear-gradient(180deg, ${hex}, ${darker(hex, readableOn(hex) === '#ffffff' ? 0.72 : 0.92)})`);
 
   function keyLabel(combo) {
     return window.LS && LS.keyLabel ? LS.keyLabel(combo) : combo;
   }
 
-  // The panel's look (panel.json "style") as --lsp-* variables on <html>, and the background on <body>
+  // The panel's look as variables on <html>: its theme's base colors (--ls-*, from themes.js) and
+  // its settings (panel.json "style" over the theme's, as --lsp-*); the background goes on <body>.
+  // Without themes.js the panel's own settings still apply.
   function applyStyle(doc, style, imageUrl) {
     const root = doc.documentElement.style;
     const set = (name, value) => (value == null ? root.removeProperty(name) : root.setProperty(name, value));
-    const s = style || {};
+    const theme = window.LS_THEMES ? LS_THEMES.resolve(style) : null;
+    for (const [name, value] of Object.entries(theme ? theme.vars : {})) set(name, value);
+    root.colorScheme = theme ? theme.scheme : '';
+    const s = theme ? theme.style : style || {};
     const b = s.button || {};
     const bg = s.background;
     let background = null;
@@ -49,8 +56,8 @@
     set('--lsp-fill', b.color || b.fill ? fill(b.fill || 'gradient', b.color || '#1a3150') : null);
     set('--lsp-border', b.border != null ? b.border + 'px' : null);
     set('--lsp-border-color', b.borderColor || null);
-    // The radius is for an 800 px tall tablet and shrinks with smaller screens, like --ls-radius
-    set('--lsp-radius', b.radius != null ? `min(${b.radius}px, ${b.radius * 0.125}vmin)` : null);
+    // The radius shrinks with smaller screens like --ls-radius: 18 gives the base styles' 1.8vmin
+    set('--lsp-radius', b.radius != null ? `min(${b.radius}px, ${b.radius * 0.1}vmin)` : null);
     set('--lsp-shadow', b.shadow ? '0 3px 10px rgba(0, 0, 0, .45)' : null);
     set('--lsp-active', b.activeColor || null);
     set('--lsp-active-text', b.activeColor ? readableOn(b.activeColor) : null);
@@ -58,7 +65,15 @@
     set('--lsp-scale', SCALE[s.text?.size] || null);
     set('--lsp-font', FONTS[s.text?.font] || null);
     set('--ls-gap', GAPS[s.spacing] || null);
-    return b.imageFit === 'bleed';
+    const tabs = s.tabs || {};
+    set('--lsp-tab-radius', tabs.radius != null ? tabs.radius + 'px' : null);
+    set('--lsp-tab-bg', tabs.fill ? (tabs.fill === 'none' ? 'transparent' : tabs.color || null) : null);
+    set('--lsp-tab-text', tabs.textColor || null);
+    set('--lsp-tab-border', tabs.borderColor || null);
+    set('--lsp-tab-active-bg', tabs.activeColor || null);
+    set('--lsp-tab-active-text', tabs.activeTextColor || null);
+    set('--lsp-tab-active-border', tabs.activeBorderColor || null);
+    return { bleed: b.imageFit === 'bleed', style: s };
   }
 
   function content(btn, look, imageUrl) {
@@ -104,7 +119,7 @@
     const images = opts.images || {};
     const imageUrl = (file) => images[file] || file;
     const pages = panel.pages;
-    panelStyle = panel.style || {};
+    panelStyle = {};
     const saved = { toggles: {}, page: null };
     const history = [];
     let current = 0;
@@ -112,7 +127,9 @@
     root.replaceChildren();
     root.classList.add('ls-app', 'lsp');
     doc.body.classList.add('lsp-body');
-    root.classList.toggle('lsp-bleed', applyStyle(doc, panel.style, imageUrl));
+    const look = applyStyle(doc, panel.style, imageUrl);
+    panelStyle = look.style;
+    root.classList.toggle('lsp-bleed', look.bleed);
 
     const head = make('header', 'ls-head');
     const title = make('h1', 'ls-title', opts.name || '');

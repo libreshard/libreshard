@@ -812,15 +812,16 @@ async function start() {
     return { ok: true, risk: classifyKeys(valid), unavailable: valid.filter((c) => keys.unavailable(c).length) };
   });
   // An image for a button. The editor already decoded the user's file (PNG, JPEG, WebP or GIF) in its
-  // sandboxed page and sends a PNG of at most 288 px (640 px for a button background); here it's checked, shrunk if needed and encoded
+  // sandboxed page and sends a PNG of at most 288 px (640 px for a button background, 1920 px for the
+  // panel background); here it's checked, shrunk if needed and encoded
   // again (dropping anything but the pixels), then kept in the draft under its hash.
   editorHandle('editor:add-image', (bytes, use) => {
-    if (!(bytes instanceof Uint8Array) || !bytes.length || bytes.length > 4 * 1024 * 1024) throw new Error(t('editor.imageInvalid'));
+    if (!(bytes instanceof Uint8Array) || !bytes.length || bytes.length > 16 * 1024 * 1024) throw new Error(t('editor.imageInvalid'));
     // An icon is small; a button's background can cover several cells
     let img = nativeImage.createFromBuffer(Buffer.from(bytes));
     if (img.isEmpty()) throw new Error(t('editor.imageInvalid'));
     const { width, height } = img.getSize();
-    const max = use === 'button' ? PANEL_LIMITS.buttonImage : PANEL_LIMITS.image;
+    const max = { button: PANEL_LIMITS.buttonImage, background: PANEL_LIMITS.background }[use] || PANEL_LIMITS.image;
     if (width > max || height > max) img = img.resize(width >= height ? { width: max, quality: 'best' } : { height: max, quality: 'best' });
     const png = img.toPNG();
     const file = imageFile(png);

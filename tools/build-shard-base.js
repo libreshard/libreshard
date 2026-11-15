@@ -43,6 +43,7 @@ function panelOutputs() {
   return {
     ...out,
     'libreshard.css': out['libreshard.css'] + '\n/* Panels */\n' + read('panel.css'),
+    'themes.js': read('themes.js'),
     'panel.js': read('panel.js'),
     'index.html': read('panel.html'),
   };

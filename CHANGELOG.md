@@ -8,6 +8,11 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Panel looks:** the panel editor's new **Look** tab has five themes (LibreShard, Light, High
+  contrast, OLED black and Key pad) and settings over them: the background (a color, a gradient or
+  an image you can darken), the buttons' corners, border, fill, shadow, colors and how images sit
+  in them, the page tabs (with their own colors for the selected page), the spacing, and the text's color, size and font. **Back to the theme** drops your
+  changes, and the editor warns when text and buttons are hard to tell apart.
 - **Images on panel buttons:** in the panel editor, a button's icon can now be your own image (PNG,
   JPEG, WebP or a GIF's first frame). It's shrunk to 288 px and saved again as PNG, so nothing but
   the pixels ends up in the panel, and its text goes over it. A button can also have a
