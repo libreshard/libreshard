@@ -205,10 +205,10 @@ timeline
         0.1 : First public release
         0.2 : Full-screen shards : Touch panel on the PC itself
         0.3 : Robustness and trust : Diagnostics, clearer warnings and fixes
-    section Next
         0.4 : Panels without code : Visual editor and Stream Deck import
-    section Planned
+    section Next
         0.5 : Shard ecosystem : Community gallery and more languages
+    section Planned
         0.6 : Tablet experience : Smarter menu, auto-switching and HTTPS
         1.0 : First stable version : Signed builds and automatic updates
     section Tentative

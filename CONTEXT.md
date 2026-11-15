@@ -673,16 +673,11 @@ The maintainer plans the work in local notes (`docs/plans/`, not published). The
 
 - A log on disk and a "Report a bug" button with diagnostics, an About section, a notice when a new version is out (the app's only outgoing connection, can be turned off), and backups of settings and shards. The tablet warns when the app in front runs as administrator and offers to reload after the PC updates; no device can type into LibreShard itself; Linux quits cleanly when the session ends; the CI no longer needs `--test-force-exit`.
 
-**0.4: panels without code** (next)
+**0.4: panels without code** (released 2026-11-14)
 
-- **Panel editor** in its own window on the PC: a grid of up to 24×24 with pages, and buttons that press, hold, repeat, toggle between two keys, go to another page or just show text, spanning one or more cells. Each button gets a label, a color and an icon (LibreShard's own, an emoji or the user's image). Keys are captured or picked from a list (for Win, Alt+Tab, media keys and F13–F24), with the same warnings as the install review.
-- **Panel look:** built-in themes (LibreShard, light, high contrast, OLED black, a key-pad style) and settings for the background, buttons, spacing and text. No free-form CSS.
-- **Preview:** the editor draws the panel with the same code and styles the tablet uses, and tablets showing the panel reload when it's saved. The result is a normal shard (with a `panel.json` the editor reads back), so panels made on another PC can be edited too.
-- **Export any shard the user installed** as a `.libreshard` file, panels included.
-- **Import Stream Deck profiles** into the editor: pages and folders, labels, images, and hotkey, hotkey switch and media key actions. Hotkeys recorded on a Mac are adapted (Cmd becomes Ctrl) and flagged. Buttons that can't be imported (plugin actions, opening programs, typing text, multi-actions) keep their image and label without an action, and a summary says why. Nothing from the other product is bundled; the importer only reads the user's own exported files.
-- A guide to **making a shard with an AI assistant**, based on `docs/shards.md` and the template, linked from the Shards tab.
+- A panel editor in its own window (a grid with pages; buttons that press, hold, repeat, toggle or change page; LibreShard icons, emoji or the user's images; themes and look settings; a preview drawn with the tablet's code), import of Stream Deck profiles into it, export of any installed shard as a `.libreshard` file, and a guide to making a shard with an AI assistant.
 
-**0.5: shard ecosystem and sustainability**
+**0.5: shard ecosystem and sustainability** (next)
 
 - **Installing shards from a URL**, reusing `installer.prepare` and the review screen, plus a `libreshard://install?url=…` link for one-click installs.
 - **Community gallery**: a GitHub repository with shards and a JSON index the app can list, with a review process for new shards.
