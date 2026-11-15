@@ -433,5 +433,13 @@
   "look.tabBg": "Fondo",
   "look.tabText": "Texto",
   "look.tabBorder": "Borde",
-  "look.layout": "Distribución"
+  "look.layout": "Distribución",
+  "shards.export": "Exportar…",
+  "export.title": "Exportar shard",
+  "export.filter": "Shard de LibreShard",
+  "export.saved": "\"{name}\" se exportó. Comparte el archivo .libreshard: con doble clic se abre en LibreShard.",
+  "export.tooBig": "Este shard es demasiado grande para compartirlo: las demás PCs solo instalan hasta {files} archivos y {size} MB.",
+  "export.importedMessage": "Este panel tiene imágenes de un perfil de Stream Deck",
+  "export.importedDetail": "Compártelo solo si tienes derecho a compartir esas imágenes (pueden ser de quien hizo el perfil o sus iconos).",
+  "export.continue": "Exportar de todos modos"
 }

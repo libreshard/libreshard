@@ -306,6 +306,14 @@ function panelId(name, random = crypto.randomBytes(2).toString('hex')) {
   return `panel-${slug || 'panel'}-${random}`;
 }
 
+// The images that came from someone else's file (a Stream Deck profile): exporting the panel warns
+function importedImages(panel) {
+  const files = new Set();
+  const icon = (i) => { if (i?.kind === 'image' && i.imported) files.add(i.file); };
+  for (const p of panel.pages) for (const b of p.buttons) { icon(b.icon); icon(b.alt?.icon); }
+  return [...files];
+}
+
 // The name an image gets in a panel: 12 hex characters of the sha256 of its PNG bytes, so the same
 // image added twice is stored once
 const imageFile = (png) => 'images/' + crypto.createHash('sha256').update(png).digest('hex').slice(0, 12) + '.png';
@@ -348,4 +356,4 @@ function buildShard({ panel, meta = {}, template = {} }) {
   };
 }
 
-module.exports = { validatePanel, keysOf, imagesOf, imageFile, buildShard, panelId, nextVersion, FORMAT, LIMITS, MIN_APP_VERSION };
+module.exports = { validatePanel, keysOf, imagesOf, importedImages, imageFile, buildShard, panelId, nextVersion, FORMAT, LIMITS, MIN_APP_VERSION };

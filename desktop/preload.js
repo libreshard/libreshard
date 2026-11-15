@@ -50,4 +50,5 @@ contextBridge.exposeInMainWorld('libreshard', {
   setShardFavorite: invoke('shard:favorite'),
   moveShard: invoke('shard:move'),
   openEditor: invoke('editor:open'),
+  exportShard: invoke('shard:export'),
 });
