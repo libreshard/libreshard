@@ -8,6 +8,9 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Support LibreShard:** a section in About links to the ways to support the project (Ko-fi and
+  GitHub Sponsors). After two weeks of real use, the PC window asks once, never on the tablet; either
+  answer turns it off for good. The count stays on your PC.
 - **New versions of your shards:** the daily check for new versions also reads the gallery's list
   when you have shards installed (the same setting turns it off). A shard from the gallery, or the
   same shard by the same author installed from its file, shows "Version x available" on its card:
@@ -38,6 +41,10 @@ All notable changes to LibreShard are listed here. The format follows
 - **License and page of a shard:** a shard's manifest can say its license (`"license": "MIT"`, as
   an SPDX identifier) and its page (`"url"`, https only). The install review and the shard's card
   show the license, and a "Shard's page" button opens the page. Nothing of it reaches the tablet.
+
+### Project
+
+- The repository has a "Sponsor" button, and the README a "Support LibreShard" section.
 
 ## [0.4.1] - 2026-11-15
 

@@ -76,6 +76,8 @@ function renderChrome() {
   $('alert').textContent = t('alert.pairingAttempts');
   $('restart').hidden = !state.restartNeeded;
   $('update').hidden = !state.update.show;
+  // Never at the same time as the new version notice
+  $('support').hidden = !state.supportAsk || state.update.show;
   if (state.update.show) $('updateText').textContent = t('update.available', { version: state.update.latest });
 
   $('devCount').textContent = state.devices.length || '';
@@ -760,6 +762,9 @@ function renderAbout() {
       link('security', t('about.security')),
       link('license', t('about.licenseLink')),
       state.thirdPartyLicenses ? h('button', { class: 'btn small', onclick: () => api.openPath('licenses') }, t('about.thirdParty')) : null),
+    h('h2', null, t('about.supportTitle')),
+    h('p', { class: 'hint small' }, t('about.supportHint')),
+    h('div', { class: 'row' }, h('button', { class: 'btn small primary', onclick: () => call(api.openLink, 'donate') }, t('about.supportButton'))),
     h('h2', null, t('about.updates')),
     toggle('checkUpdates', t('settings.checkUpdates'), t('settings.checkUpdatesHint')),
     h('div', { class: 'row update-status' },
@@ -810,6 +815,8 @@ $('pause').addEventListener('click', () => call(api.setPaused, !state.paused));
 $('restartBtn').addEventListener('click', () => api.restart());
 $('updateDownload').addEventListener('click', () => call(api.openLink, 'download'));
 $('updateDismiss').addEventListener('click', () => call(api.dismissUpdate));
+$('supportYes').addEventListener('click', () => { call(api.openLink, 'donate'); call(api.supportDone, true); });
+$('supportNo').addEventListener('click', () => call(api.supportDone, false));
 
 function apply(s) {
   state = s;
