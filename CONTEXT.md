@@ -106,6 +106,7 @@ libreshard/
 │                             desktop/panel-template/ (npm run shards:base)
 ├── docs/shards.md        the guide for shard authors (public; keep it in step with section 5)
 ├── docs/ai-assistant.md  making a shard with an AI assistant: what to give it, a prompt, the key check (public)
+├── docs/selling-shards.md selling a shard: no DRM and why, a personal-use license, packaging, shops, paid gallery entries (public)
 ├── docs/shard-template/  minimal shard for authors (manifest, index.html, README, base copies)
 ├── docs/images/          README screenshots
 ├── test/                 node:test suite (npm test)

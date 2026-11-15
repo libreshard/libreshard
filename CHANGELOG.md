@@ -6,6 +6,12 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### Project
+
+- **Selling your shard:** a new guide, [docs/selling-shards.md](docs/selling-shards.md), on what
+  LibreShard does and doesn't do for paid shards (no copy protection, and why), a personal-use
+  license to start from, packaging, shops, and listing a paid shard in the gallery.
+
 ### App
 
 - **New versions of your shards:** the daily check for new versions also reads the gallery's list
