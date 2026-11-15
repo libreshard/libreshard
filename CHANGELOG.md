@@ -6,13 +6,30 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-14
+
 ### App
 
-- **Make a shard with an AI assistant:** a new guide, [docs/ai-assistant.md](docs/ai-assistant.md),
-  explains when the panel editor is enough, what to give an assistant (the shard guide and the
-  template), a prompt to start with, how to try the result with "Load in development…" and which
-  keys to check before approving them. The Shards tab links to it ("Something more than a grid of
-  buttons?").
+- **Panel editor:** make your own panel without writing code. **New panel** in the Shards tab
+  opens it in its own window: a grid (up to 24×24) with pages, where each button presses a key,
+  holds it, repeats it while held, toggles between two keys, opens another page or just shows
+  text, and can span several cells. Give it a text, one of LibreShard's icons or an emoji, and
+  colors. Keys are captured from the keyboard or picked from a list (for Win, media keys and F13 to
+  F24), with the same warnings as the install review. A combo can hold several keys, pressed in
+  order: Alt + Num 1 + Num 6 + Num 4 types ñ with a Windows Alt code. The preview draws the panel exactly as the
+  tablet will, in landscape, portrait or phone size, and warns about buttons too small for a
+  finger. Saving installs it like any shard, with its keys approved, and tablets showing it reload.
+  **Edit** on a panel's card opens it again, also for panels made on another PC.
+- **Images on panel buttons:** in the panel editor, a button's icon can now be your own image (PNG,
+  JPEG, WebP or a GIF's first frame). It's shrunk to 288 px and saved again as PNG, so nothing but
+  the pixels ends up in the panel, and its text goes over it. A button can also have a
+  **background image** that covers it (up to 640 px), under its icon and text; pressing it lays the
+  pressed color over the image.
+- **Panel looks:** the panel editor's new **Look** tab has five themes (LibreShard, Light, High
+  contrast, OLED black and Key pad) and settings over them: the background (a color, a gradient or
+  an image you can darken), the buttons' corners, border, fill, shadow, colors and how images sit
+  in them, the page tabs (with their own colors for the selected page), the spacing, and the text's color, size and font.
+  **Back to the theme** drops your changes, and the editor warns when text and buttons are hard to tell apart.
 - **Import a Stream Deck profile:** "Import Stream Deck profile…" in the Shards tab (or dropping a
   `.streamDeckProfile` file on the window) turns a profile exported from the Stream Deck app into
   a panel and opens it in the editor, unsaved. Pages, folders, labels (with their place, size and
@@ -24,26 +41,11 @@ All notable changes to LibreShard are listed here. The format follows
 - **Export a shard:** "Export…" on the card of any shard you installed (panels included) saves it
   as a `.libreshard` file to share; a double click opens it in LibreShard on another PC. Hidden
   files and links are left out, and a panel with images from a Stream Deck profile asks first.
-- **Panel looks:** the panel editor's new **Look** tab has five themes (LibreShard, Light, High
-  contrast, OLED black and Key pad) and settings over them: the background (a color, a gradient or
-  an image you can darken), the buttons' corners, border, fill, shadow, colors and how images sit
-  in them, the page tabs (with their own colors for the selected page), the spacing, and the text's color, size and font. **Back to the theme** drops your
-  changes, and the editor warns when text and buttons are hard to tell apart.
-- **Images on panel buttons:** in the panel editor, a button's icon can now be your own image (PNG,
-  JPEG, WebP or a GIF's first frame). It's shrunk to 288 px and saved again as PNG, so nothing but
-  the pixels ends up in the panel, and its text goes over it. A button can also have a
-  **background image** that covers it (up to 640 px), under its icon and text; pressing it lays the
-  pressed color over the image.
-- **Panel editor:** make your own panel without writing code. **New panel** in the Shards tab
-  opens it in its own window: a grid (up to 24×24) with pages, where each button presses a key,
-  holds it, repeats it while held, toggles between two keys, opens another page or just shows
-  text, and can span several cells. Give it a text, one of LibreShard's icons or an emoji, and
-  colors. Keys are captured from the keyboard or picked from a list (for Win, media keys and F13 to
-  F24), with the same warnings as the install review. A combo can hold several keys, pressed in
-  order: Alt + Num 1 + Num 6 + Num 4 types ñ with a Windows Alt code. The preview draws the panel exactly as the
-  tablet will, in landscape, portrait or phone size, and warns about buttons too small for a
-  finger. Saving installs it like any shard, with its keys approved, and tablets showing it reload.
-  **Edit** on a panel's card opens it again, also for panels made on another PC.
+- **Make a shard with an AI assistant:** a new guide, [docs/ai-assistant.md](docs/ai-assistant.md),
+  explains when the panel editor is enough, what to give an assistant (the shard guide and the
+  template), a prompt to start with, how to try the result with "Load in development…" and which
+  keys to check before approving them. The Shards tab links to it ("Something more than a grid of
+  buttons?").
 - Installing a new version of a shard you already have keeps it where it was: favorite, place in
   the menu, turned off and its settings. Before, they went back to the defaults.
 
@@ -181,7 +183,8 @@ First public release.
 - Linux `.deb` (with an AppArmor profile for Ubuntu 24.04 and newer) and AppImage.
 - Electron Fuses: no `ELECTRON_RUN_AS_NODE`, no inspector flags, and `app.asar` integrity checks.
 
-[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/libreshard/libreshard/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/libreshard/libreshard/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/libreshard/libreshard/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/libreshard/libreshard/releases/tag/v0.1.0
