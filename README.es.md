@@ -183,7 +183,7 @@ La guía completa (teclas, ajustes, idiomas, limitar a apps, reglas de diseño) 
 - El tráfico local va por HTTP sin cifrar: usa LibreShard en redes de confianza.
 
 LibreShard no envía datos sobre ti a ningún sitio. Solo se conecta a internet para buscar versiones
-nuevas y para descargar un shard cuando se lo pides (ver [Privacy](SECURITY.md#privacy), en inglés). En **[SECURITY.md](SECURITY.md)**
+nuevas, para mostrar la galería cuando la abres y para descargar un shard cuando se lo pides (ver [Privacy](SECURITY.md#privacy), en inglés). En **[SECURITY.md](SECURITY.md)**
 están el modelo de amenazas, las limitaciones conocidas y cómo reportar una vulnerabilidad.
 
 ## Compilar desde el código

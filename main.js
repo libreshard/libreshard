@@ -13,6 +13,7 @@ const { validatePanel, imagesOf, importedImages, imageFile, buildShard, LIMITS: 
 const zip = require('./zip');
 const download = require('./download');
 const links = require('./links');
+const gallery = require('./gallery');
 const streamdeck = require('./streamdeck');
 const keys = require('./keys');
 const installer = require('./installer');
@@ -45,6 +46,7 @@ const PANEL_TOP_LEVEL = 'pop-up-menu';
 // The only addresses the desktop window can open in the browser ("About"): it names one, never a URL
 const LINKS = {
   website: 'https://libreshard.com',
+  galleryPublish: 'https://github.com/libreshard/shards#publish-your-shard',
   source: 'https://github.com/libreshard/libreshard',
   security: 'https://libreshard.com/security/',
   license: 'https://github.com/libreshard/libreshard/blob/main/LICENSE',
@@ -571,20 +573,24 @@ async function start() {
   // into a temporary folder, then the usual review. The log keeps only the server's name, since
   // download links often carry tokens.
   const DOWNLOAD_ERRORS = ['badUrl', 'notHttps', 'privateAddress', 'tooManyRedirects', 'httpStatus', 'tooBig', 'timeout', 'network'];
-  async function installFromUrl(url) {
-    if (typeof url !== 'string' || !url.trim() || url.length > download.LIMITS.maxUrl) throw new Error(t('download.error.badUrl'));
+  // A DownloadError as a sentence for the user, logged with the host only
+  function explainDownload(e, url, what = 'shard-download-failed') {
+    let host;
+    try { host = new URL(String(url).trim()).hostname; } catch { /* not a URL */ }
+    log.warn(what, { host, error: e.code || e.message, status: e.status, reason: e.reason });
+    const code = DOWNLOAD_ERRORS.includes(e.code) ? e.code : 'network';
+    return new Error(t('download.error.' + code, { host: e.host || host || '', status: e.status || '' }));
+  }
+  async function fetchShard(url) {
     const started = Date.now();
     let d;
-    try {
-      d = await download.downloadShard(url);
-    } catch (e) {
-      let host;
-      try { host = new URL(url.trim()).hostname; } catch { /* not a URL */ }
-      log.warn('shard-download-failed', { host, error: e.code || e.message, status: e.status, reason: e.reason });
-      const code = DOWNLOAD_ERRORS.includes(e.code) ? e.code : 'network';
-      throw new Error(t('download.error.' + code, { host: e.host || host || '', status: e.status || '' }));
-    }
+    try { d = await download.downloadShard(url); } catch (e) { throw explainDownload(e, url); }
     log.info('shard-downloaded', { host: d.host, from: d.finalHost !== d.host ? d.finalHost : undefined, bytes: d.bytes, ms: Date.now() - started });
+    return d;
+  }
+  async function installFromUrl(url) {
+    if (typeof url !== 'string' || !url.trim() || url.length > download.LIMITS.maxUrl) throw new Error(t('download.error.badUrl'));
+    const d = await fetchShard(url);
     try {
       return await prepareInstall(d.file, { origin: { kind: 'url', host: d.host } });
     } finally {
@@ -592,6 +598,78 @@ async function start() {
     }
   }
   handle('install:url', installFromUrl);
+
+  // The gallery (gallery.js): its index is read when the user opens it, kept 10 minutes. A shard
+  // from it is installed only if the file is the one its entry pins (sha256 and size) and its
+  // manifest has the entry's id and version; then the usual review.
+  const GALLERY_TTL_MS = 10 * 60 * 1000;
+  let galleryCache = null; // { at, entries }
+  async function loadGallery(refresh = false) {
+    if (!refresh && galleryCache && Date.now() - galleryCache.at < GALLERY_TTL_MS) return galleryCache.entries;
+    const started = Date.now();
+    let raw;
+    // Development only: a local index instead of libreshard.com's
+    const localIndex = !app.isPackaged && process.env.LIBRESHARD_GALLERY_FILE;
+    try {
+      raw = localIndex ? fs.readFileSync(localIndex, 'utf8') : await download.downloadText(gallery.INDEX_URL);
+    } catch (e) {
+      throw new Error(t('gallery.unavailable', { reason: explainDownload(e, gallery.INDEX_URL, 'gallery-failed').message }));
+    }
+    let entries;
+    try { entries = gallery.cleanIndex(JSON.parse(raw)); } catch (e) {
+      log.warn('gallery-failed', { error: e.message });
+      throw new Error(t(/newer/.test(e.message) ? 'gallery.newerFormat' : 'gallery.invalid'));
+    }
+    galleryCache = { at: Date.now(), entries };
+    log.info('gallery-fetched', { entries: entries.length, ms: Date.now() - started, local: localIndex ? true : undefined });
+    return entries;
+  }
+  const installedForGallery = () => store.all().map((e) => ({
+    id: e.id, version: e.manifest.version, author: e.manifest.author, source: store.sourceOf(e.id), bundled: e.bundled,
+  }));
+  handle('gallery:list', async (opts) => {
+    const entries = await loadGallery(opts?.refresh === true);
+    return {
+      ok: true,
+      entries: gallery.annotate(entries, installedForGallery(), app.getVersion()).map((e) => ({ ...e, risk: classifyKeys(e.keys) })),
+    };
+  });
+  async function installFromGallery(id) {
+    const entry = (await loadGallery()).find((e) => e.id === id);
+    if (!entry) throw new Error(t('gallery.notFound'));
+    if (entry.paid) throw new Error(t('gallery.paidOnly'));
+    const [annotated] = gallery.annotate([entry], [], app.getVersion());
+    if (annotated.needsApp) throw new Error(t('gallery.needsApp', { version: entry.minAppVersion }));
+    const d = await fetchShard(entry.download.url);
+    try {
+      if (!gallery.matchesEntry(d.file, entry)) {
+        log.warn('gallery-file-changed', { shard: entry.id, host: d.host });
+        throw new Error(t('gallery.changed'));
+      }
+      const r = await prepareInstall(d.file, { origin: { kind: 'gallery', id: entry.id } });
+      if (r.ok && (r.review.manifest.id !== entry.id || r.review.manifest.version !== entry.version)) {
+        const c = candidates.get(r.review.id);
+        candidates.delete(r.review.id);
+        c?.cleanup();
+        throw new Error(t('gallery.changed'));
+      }
+      log.info('gallery-install', { shard: entry.id, version: entry.version });
+      return r;
+    } finally {
+      d.cleanup();
+    }
+  }
+  handle('gallery:install', (id) => {
+    if (typeof id !== 'string') throw new Error(t('gallery.notFound'));
+    return installFromGallery(id);
+  });
+  // An entry's page or shop, from the index this process read (never an address from the page)
+  handle('gallery:open', async (id, what) => {
+    const entry = (galleryCache?.entries || []).find((e) => e.id === id);
+    const url = entry && httpsUrl(what === 'buy' ? entry.buyUrl : entry.url);
+    if (!url) throw new Error('No page');
+    await shell.openExternal(url);
+  });
 
   // A libreshard:// link from a web page. It only names a file: LibreShard asks before downloading
   // anything, then shows the usual review. While one question is open, other links are ignored, so
@@ -602,17 +680,24 @@ async function start() {
     if (!link) { log.warn('link-ignored', { link: String(raw).slice(0, 40) }); return; }
     if (linkOpen) { log.warn('link-ignored', { reason: 'busy' }); return; }
     let host = '';
-    try { host = new URL(link.url).hostname; } catch { /* download.js says why */ }
+    if (link.url) try { host = new URL(link.url).hostname; } catch { /* download.js says why */ }
     linkOpen = true;
     try {
       showWindow();
+      // A gallery link names an entry: say which one (from the index, not from the link)
+      let entry = null;
+      if (link.gallery) {
+        entry = (await loadGallery()).find((e) => e.id === link.gallery);
+        if (!entry) throw new Error(t('gallery.notFound'));
+      }
       const { response } = await dialog.showMessageBox(win, {
         type: 'question', buttons: [t('url.download'), t('action.cancel')], defaultId: 0, cancelId: 1, noLink: true,
-        message: t('link.installMessage', { host: host || '?' }), detail: t('link.installDetail'),
+        message: entry ? t('link.galleryMessage', { name: entry.name, author: entry.author }) : t('link.installMessage', { host: host || '?' }),
+        detail: entry ? t('link.galleryDetail') : t('link.installDetail'),
       });
-      log.info('link-opened', { host, accepted: response === 0 });
+      log.info('link-opened', { host: host || undefined, gallery: link.gallery, accepted: response === 0 });
       if (response !== 0) return;
-      const r = await installFromUrl(link.url);
+      const r = entry ? await installFromGallery(entry.id) : await installFromUrl(link.url);
       if (r.ok) win.webContents.send('install:review', r.review);
       else dialog.showErrorBox('LibreShard', r.errors.join('\n'));
     } catch (e) {

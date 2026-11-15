@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld('libreshard', {
   pickInstall: invoke('install:pick'),
   prepareInstall: invoke('install:path'),
   installFromUrl: invoke('install:url'),
+  galleryList: invoke('gallery:list'),
+  galleryInstall: invoke('gallery:install'),
+  galleryOpen: invoke('gallery:open'),
   confirmInstall: invoke('install:confirm'),
   cancelInstall: invoke('install:cancel'),
   // Dropped files only expose their path through webUtils in a sandboxed page

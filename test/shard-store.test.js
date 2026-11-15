@@ -159,7 +159,9 @@ test('install saves where a shard came from, keeps it on a plain reinstall, and 
     assert.deepEqual(s.sourceOf('web'), { kind: 'url', host: 'autor.itch.io' });
     s.install(path.join(src, 'v1'), { id: 'web', keys: ['f13'] });
     assert.deepEqual(t.make().sourceOf('web'), { kind: 'url', host: 'autor.itch.io' }, 'a reinstall from a file keeps it');
-    for (const bad of [{ kind: 'url', host: 'x y' }, { kind: 'other', host: 'a.com' }, 'a.com', { kind: 'url' }]) {
+    s.install(path.join(src, 'v1'), { id: 'web', keys: ['f13'] }, { source: { kind: 'gallery', id: 'web' } });
+    assert.deepEqual(s.sourceOf('web'), { kind: 'gallery', id: 'web' });
+    for (const bad of [{ kind: 'url', host: 'x y' }, { kind: 'other', host: 'a.com' }, 'a.com', { kind: 'url' }, { kind: 'gallery', id: 'Bad Id' }]) {
       s.state.web.source = bad;
       assert.equal(s.sourceOf('web'), null, JSON.stringify(bad));
     }

@@ -137,5 +137,32 @@ h2:first-child { margin-top: 0; }
 .icon-btn:hover { border-color: var(--accent); color: var(--text); }
 .icon-btn.star.on { color: var(--gold); border-color: var(--gold); }
 
+/* Shards tab: the two ways to get a shard, then grouped buttons */
+.shards-start { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.tile { display: flex; gap: 14px; align-items: center; text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--cell); color: var(--text); cursor: pointer; }
+.tile:hover { border-color: var(--accent); }
+.tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tile-ico { width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center; flex: none; }
+.tile-ico .ico-svg { width: 24px; height: 24px; }
+.tile-text { display: grid; gap: 2px; }
+.tile-title { font-weight: 600; font-size: 15px; }
+.tile-sub { font-size: 12px; color: var(--muted); }
+.tile.gallery { background: linear-gradient(135deg, rgba(34, 211, 238, .18), rgba(34, 211, 238, .04)); border-color: rgba(34, 211, 238, .55); }
+.tile.gallery:hover { border-color: var(--accent); background: linear-gradient(135deg, rgba(34, 211, 238, .26), rgba(34, 211, 238, .06)); }
+.tile.gallery .tile-ico { background: var(--accent); color: var(--bg); }
+.tile.create .tile-ico { background: var(--gold); color: var(--bg); }
+.shards-start + .hint.small { margin: 10px 0 0; }
+.group { margin-top: 18px; }
+.group + .warnbox { margin-top: 18px; }
+.group-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+.group .hint.small { margin: 6px 0 0; }
+.ico-svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.with-ico { display: inline-flex; align-items: center; gap: 7px; }
+.btn.small .ico-svg { width: 14px; height: 14px; }
+
+/* Gallery */
+.gal-title { margin: 0; }
+.gal-title .ico-svg { width: 18px; height: 18px; }
+
 /* Install from URL */
 .url-input { width: 100%; box-sizing: border-box; margin: 6px 0 4px; }

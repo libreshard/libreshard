@@ -76,6 +76,7 @@
       "zip.js",
       "download.js",
       "links.js",
+      "gallery.js",
       "streamdeck.js",
       "streamdeck-keys.js",
       "panel-format.js",
