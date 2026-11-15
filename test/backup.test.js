@@ -5,7 +5,8 @@ const os = require('os');
 const path = require('path');
 const { ShardStore, cleanRule } = require('../shard-store');
 const { validateManifest } = require('../manifest');
-const { createBackup, readBackup, checkBackup, writeZip } = require('../backup');
+const { createBackup, readBackup, checkBackup } = require('../backup');
+const { createZip: writeZip } = require('../zip');
 const { makeShardDir } = require('./helpers');
 const { makeZip } = require('./zip');
 

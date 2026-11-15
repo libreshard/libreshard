@@ -9,7 +9,8 @@ const { startServer } = require('./server');
 const { Pairing, Devices, RateLimiter } = require('./pairing');
 const { ShardStore } = require('./shard-store');
 const { classifyKeys, validateManifest } = require('./manifest');
-const { validatePanel, imagesOf, imageFile, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
+const { validatePanel, imagesOf, importedImages, imageFile, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
+const zip = require('./zip');
 const keys = require('./keys');
 const installer = require('./installer');
 const focus = require('./focus');
@@ -699,6 +700,32 @@ async function start() {
   handle('shard:favorite', (id, on) => { store.setFavorite(entry(id).id, on === true); });
   handle('shard:move', (id, direction) => { store.move(entry(id).id, direction); });
   handle('shard:reset-settings', (id) => { store.resetSettings(entry(id).id); });
+  // Any shard the user installed (not bundled, not a development link) as a .libreshard to share:
+  // its files at the root of the zip, without hidden files or links. A panel with images taken
+  // from a Stream Deck profile asks first: those images may not be the user's to share.
+  handle('shard:export', async (id) => {
+    const e = entry(id);
+    if (e.bundled || e.linked) throw new Error('Only installed shards can be exported');
+    const files = zip.filesUnder(e.root, { hidden: false });
+    const bytes = files.reduce((n, f) => n + fs.statSync(path.join(e.root, f)).size, 0);
+    if (files.length > installer.LIMITS.maxFiles || bytes > installer.LIMITS.maxBytes) {
+      throw new Error(t('export.tooBig', { files: installer.LIMITS.maxFiles, size: Math.round(installer.LIMITS.maxBytes / 1024 / 1024) }));
+    }
+    if (e.panel) {
+      let imported = [];
+      try { imported = importedImages(validatePanel(JSON.parse(fs.readFileSync(path.join(e.root, 'panel.json'), 'utf8'))).panel || { pages: [] }); } catch { /* unreadable: nothing to warn about */ }
+      if (imported.length && !(await confirmBox(t('export.importedMessage'), t('export.importedDetail'), t('export.continue')))) return { ok: true, saved: false };
+    }
+    const r = await dialog.showSaveDialog(win, {
+      title: t('export.title'),
+      defaultPath: path.join(app.getPath('documents'), `${e.id}-${e.manifest.version || '1.0.0'}.libreshard`),
+      filters: [{ name: t('export.filter'), extensions: ['libreshard'] }],
+    });
+    if (r.canceled || !r.filePath) return { ok: true, saved: false };
+    fs.writeFileSync(r.filePath, zip.shardZip(e.root));
+    log.info('shard-exported', { shard: e.id, version: e.manifest.version, files: files.length, bytes });
+    return { ok: true, saved: true };
+  });
   handle('shard:uninstall', async (id) => {
     const e = entry(id);
     if (e.bundled) throw new Error('Bundled shards can be disabled, not uninstalled');

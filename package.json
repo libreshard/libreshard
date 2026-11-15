@@ -73,6 +73,7 @@
       "updates.js",
       "linux-session.js",
       "backup.js",
+      "zip.js",
       "panel-format.js",
       "shard-base/icons.js",
       "focus/**",

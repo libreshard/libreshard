@@ -208,6 +208,7 @@ function shardCard(s) {
       s.settingsSchema.length ? h('button', { class: 'btn small', onclick: () => settingsEditor(s) }, t('shards.settings')) : null,
       h('button', { class: 'btn small', onclick: () => call(api.setShardEnabled, s.id, !s.enabled) }, s.enabled ? t('shards.disable') : t('shards.enable')),
       h('button', { class: 'btn small', onclick: () => api.openShardFolder(s.id) }, t('shards.openFolder')),
+      s.bundled || s.linked ? null : h('button', { class: 'btn small', onclick: () => exportShard(s) }, t('shards.export')),
       s.bundled ? null : h('button', { class: 'btn danger small', onclick: () => call(api.uninstallShard, s.id) }, t('shards.uninstall'))));
 }
 
@@ -217,6 +218,11 @@ const approvalView = (s) => ({
   newKeys: s.pendingKeys,
   linked: s.linked,
 });
+
+async function exportShard(s) {
+  const r = await call(api.exportShard, s.id);
+  if (r && r.ok && r.saved) toast(t('export.saved', { name: s.name || s.id }));
+}
 
 async function install(kind) {
   const r = await call(kind === 'dev' ? api.pickDevInstall : api.pickInstall, kind);

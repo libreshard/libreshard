@@ -8,6 +8,9 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Export a shard:** "Export…" on the card of any shard you installed (panels included) saves it
+  as a `.libreshard` file to share; a double click opens it in LibreShard on another PC. Hidden
+  files and links are left out, and a panel with images from a Stream Deck profile asks first.
 - **Panel looks:** the panel editor's new **Look** tab has five themes (LibreShard, Light, High
   contrast, OLED black and Key pad) and settings over them: the background (a color, a gradient or
   an image you can darken), the buttons' corners, border, fill, shadow, colors and how images sit
