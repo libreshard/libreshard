@@ -6,6 +6,11 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### App
+
+- Backups and exported shards carry the date they were made. Before, zip tools showed every file
+  in them as dated 1980-00-00.
+
 ## [0.4.0] - 2026-11-14
 
 ### App
