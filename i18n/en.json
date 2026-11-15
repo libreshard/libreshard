@@ -554,5 +554,10 @@
   "gallery.invalid": "The gallery's list couldn't be read.",
   "gallery.newerFormat": "The gallery needs a newer version of LibreShard.",
   "link.galleryMessage": "Install \"{name}\" by {author} from the LibreShard gallery?",
-  "link.galleryDetail": "LibreShard will download the reviewed file and show you its keys before installing anything."
+  "link.galleryDetail": "LibreShard will download the reviewed file and show you its keys before installing anything.",
+  "shards.galleryHint": "Shards reviewed for LibreShard, ready to install",
+  "shards.newHint": "Make your own panel, no code needed",
+  "shards.installGroup": "Install a shard",
+  "shards.authorsGroup": "For shard authors",
+  "gallery.unavailable": "The gallery couldn't be loaded: {reason}"
 }

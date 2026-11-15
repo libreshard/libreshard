@@ -554,5 +554,10 @@
   "gallery.invalid": "No se pudo leer la lista de la galería.",
   "gallery.newerFormat": "La galería necesita una versión más nueva de LibreShard.",
   "link.galleryMessage": "¿Instalar \"{name}\" de {author} desde la galería de LibreShard?",
-  "link.galleryDetail": "LibreShard descargará el archivo revisado y te mostrará sus teclas antes de instalar nada."
+  "link.galleryDetail": "LibreShard descargará el archivo revisado y te mostrará sus teclas antes de instalar nada.",
+  "shards.galleryHint": "Shards revisados para LibreShard, listos para instalar",
+  "shards.newHint": "Crea tu propio panel, sin programar",
+  "shards.installGroup": "Instalar un shard",
+  "shards.authorsGroup": "Para autores de shards",
+  "gallery.unavailable": "No se pudo cargar la galería: {reason}"
 }

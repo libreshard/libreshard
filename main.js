@@ -613,7 +613,7 @@ async function start() {
     try {
       raw = localIndex ? fs.readFileSync(localIndex, 'utf8') : await download.downloadText(gallery.INDEX_URL);
     } catch (e) {
-      throw explainDownload(e, gallery.INDEX_URL, 'gallery-failed');
+      throw new Error(t('gallery.unavailable', { reason: explainDownload(e, gallery.INDEX_URL, 'gallery-failed').message }));
     }
     let entries;
     try { entries = gallery.cleanIndex(JSON.parse(raw)); } catch (e) {

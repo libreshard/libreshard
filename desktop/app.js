@@ -157,19 +157,29 @@ function renderShards() {
     h('ul', { class: 'error-list' }, r.errors.map((e) => h('li', null, e))),
     h('div', { class: 'actions' }, h('button', { class: 'btn small', onclick: () => api.openPath('shard', r.root) }, t('shards.openFolder')))));
 
+  const tile = (cls, icon, title, sub, onclick) => h('button', { class: 'tile ' + cls, onclick },
+    h('span', { class: 'tile-ico' }, svgIcon(icon)),
+    h('span', { class: 'tile-text' }, h('span', { class: 'tile-title' }, title), h('span', { class: 'tile-sub' }, sub)));
+  const iconBtn = (icon, label, onclick, small) => h('button', { class: 'btn with-ico' + (small ? ' small' : ''), onclick }, svgIcon(icon), label);
   fill(p,
-    h('div', { class: 'row' },
-      h('button', { class: 'btn primary', onclick: () => call(api.openEditor) }, t('shards.newPanel')),
-      h('button', { class: 'btn', onclick: () => openGallery(false) }, t('shards.explore')),
-      h('button', { class: 'btn', onclick: () => call(api.importStreamDeck) }, t('shards.importStreamDeck')),
-      h('button', { class: 'btn', onclick: () => install('zip') }, t('shards.installZip')),
-      h('button', { class: 'btn', onclick: installFromUrl }, t('shards.installUrl')),
-      h('button', { class: 'btn', onclick: () => install('folder') }, t('shards.installFolder')),
-      h('button', { class: 'btn', onclick: () => install('dev') }, t('shards.loadDev')),
-      h('button', { class: 'btn', onclick: () => api.openPath('shards') }, t('shards.openShardsFolder'))),
-    h('p', { class: 'hint small' }, t('shards.dropHint')),
+    h('div', { class: 'shards-start' },
+      tile('gallery', 'gallery', t('shards.explore'), t('shards.galleryHint'), () => openGallery(false)),
+      tile('create', 'plus', t('shards.newPanel'), t('shards.newHint'), () => call(api.openEditor))),
     h('p', { class: 'hint small' }, t('shards.aiHint'), ' ',
-      h('button', { class: 'btn small', onclick: () => call(api.openLink, 'aiGuide') }, t('shards.aiGuide'))),
+      h('button', { class: 'btn small with-ico', onclick: () => call(api.openLink, 'aiGuide') }, svgIcon('spark'), t('shards.aiGuide'))),
+    h('div', { class: 'group' },
+      h('div', { class: 'group-label' }, t('shards.installGroup')),
+      h('div', { class: 'row' },
+        iconBtn('file', t('shards.installZip'), () => install('zip')),
+        iconBtn('link', t('shards.installUrl'), installFromUrl),
+        iconBtn('folder', t('shards.installFolder'), () => install('folder')),
+        iconBtn('import', t('shards.importStreamDeck'), () => call(api.importStreamDeck))),
+      h('p', { class: 'hint small' }, t('shards.dropHint'))),
+    h('div', { class: 'group' },
+      h('div', { class: 'group-label' }, t('shards.authorsGroup')),
+      h('div', { class: 'row' },
+        iconBtn('code', t('shards.loadDev'), () => install('dev'), true),
+        iconBtn('folderOpen', t('shards.openShardsFolder'), () => api.openPath('shards'), true))),
     pending.length ? h('div', { class: 'warnbox warn' }, t('shards.pendingIntro', { count: pending.length })) : null,
     h('h2', null, t('shards.installed')),
     h('p', { class: 'hint small' }, t('shards.orderHint')),
@@ -232,6 +242,29 @@ const approvalView = (s) => ({
 async function exportShard(s) {
   const r = await call(api.exportShard, s.id);
   if (r && r.ok && r.saved) toast(t('export.saved', { name: s.name || s.id }));
+}
+
+/* ---------- Icons ---------- */
+
+// Small line icons for buttons (24×24, drawn with the text color)
+const ICONS = {
+  gallery: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><path d="M17.25 13.5l1.1 2.4 2.4 1.1-2.4 1.1-1.1 2.4-1.1-2.4-2.4-1.1 2.4-1.1z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14l3 3 3-3"/>',
+  link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  folderOpen: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v1"/><path d="M3 19l2.5-7.5A2 2 0 0 1 7.4 10H21l-2.6 7.7a2 2 0 0 1-1.9 1.3H5a2 2 0 0 1-2-2z"/>',
+  import: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 8h2M14 8h2M8 12h2M14 12h2M12 18v3M9 21h6"/>',
+  code: '<path d="M9 7l-5 5 5 5M15 7l5 5-5 5"/>',
+  spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+};
+function svgIcon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('class', 'ico-svg');
+  svg.innerHTML = ICONS[name]; // our own constant markup, never data
+  return svg;
 }
 
 /* ---------- Gallery ---------- */
@@ -311,7 +344,7 @@ function renderGallery(p) {
   fill(p,
     h('div', { class: 'row' },
       h('button', { class: 'btn', onclick: () => { gal = null; renderShards(); } }, t('gallery.back')),
-      h('h2', { class: 'grow gal-title' }, t('gallery.title')),
+      h('h2', { class: 'grow gal-title with-ico' }, svgIcon('gallery'), t('gallery.title')),
       h('button', { class: 'btn small', disabled: gal.loading, onclick: () => openGallery(true) }, t('gallery.refresh'))),
     h('p', { class: 'hint small' }, t('gallery.intro'), ' ',
       h('button', { class: 'btn small', onclick: () => call(api.openLink, 'galleryPublish') }, t('gallery.publish'))),
