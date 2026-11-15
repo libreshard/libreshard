@@ -47,6 +47,10 @@ All notable changes to LibreShard are listed here. The format follows
 - Installing a new version of a shard you already have keeps it where it was: favorite, place in
   the menu, turned off and its settings. Before, they went back to the defaults.
 
+### Project
+
+- The README shows the panel editor, the Stream Deck import, exporting and the AI assistant guide.
+
 ## [0.3.0] - 2026-11-12
 
 ### App
