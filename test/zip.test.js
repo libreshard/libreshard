@@ -29,6 +29,26 @@ test('the installer reads back every entry of a zip, UTF-8 names and folders inc
   } finally { rm(dir, ...(extracted ? [extracted] : [])); }
 });
 
+test('every entry carries a real date (not the invalid zero date)', async () => {
+  const yauzl = require('yauzl');
+  const when = new Date(2026, 10, 14, 22, 41, 37); // local time, as zips store it
+  const buf = createZip([{ name: 'a.txt', data: Buffer.from('x') }, { name: 'b/c.txt', data: Buffer.from('y') }], { date: when });
+  const dates = await new Promise((resolve, reject) => {
+    yauzl.fromBuffer(buf, { lazyEntries: true }, (err, zip) => {
+      if (err) return reject(err);
+      const out = [];
+      zip.on('entry', (e) => { out.push(e.getLastModDate()); zip.readEntry(); });
+      zip.on('end', () => resolve(out));
+      zip.on('error', reject);
+      zip.readEntry();
+    });
+  });
+  assert.equal(dates.length, 2);
+  for (const d of dates) assert.equal(d.getTime(), new Date(2026, 10, 14, 22, 41, 36).getTime(), 'two-second steps');
+  const now = (await new Promise((r) => yauzl.fromBuffer(createZip([{ name: 'n', data: Buffer.from('') }]), { lazyEntries: true }, (e, z) => { z.on('entry', (x) => r(x.getLastModDate())); z.readEntry(); })));
+  assert.ok(Math.abs(now - Date.now()) < 5000, 'now by default');
+});
+
 test('an exported shard installs with the same manifest and files, without hidden files or links', async () => {
   const src = tmp('shard');
   const outside = tmp('outside');
