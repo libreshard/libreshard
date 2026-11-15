@@ -265,6 +265,8 @@ function setType(b, type) {
     const key = b.key || (b.keys && b.keys[0]) || '';
     b.type = type;
     delete b.key; delete b.keys; delete b.repeat; delete b.page;
+    // The note of an imported button says why it had no action: once it has one, it's out of date
+    if (type !== 'none') delete b.note;
     if (type !== 'toggle') delete b.alt;
     if (KEYED.includes(type)) b.key = key;
     if (type === 'repeat') b.repeat = 100;

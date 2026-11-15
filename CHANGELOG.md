@@ -6,6 +6,11 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### App
+
+- A button imported from a Stream Deck profile without an action no longer keeps saying why
+  once you give it one: the note goes away when you choose what it does.
+
 ## [0.4.0] - 2026-11-14
 
 ### App
