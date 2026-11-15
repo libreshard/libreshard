@@ -65,6 +65,14 @@
     set('--lsp-scale', SCALE[s.text?.size] || null);
     set('--lsp-font', FONTS[s.text?.font] || null);
     set('--ls-gap', GAPS[s.spacing] || null);
+    const tabs = s.tabs || {};
+    set('--lsp-tab-radius', tabs.radius != null ? tabs.radius + 'px' : null);
+    set('--lsp-tab-bg', tabs.fill ? (tabs.fill === 'none' ? 'transparent' : tabs.color || null) : null);
+    set('--lsp-tab-text', tabs.textColor || null);
+    set('--lsp-tab-border', tabs.borderColor || null);
+    set('--lsp-tab-active-bg', tabs.activeColor || null);
+    set('--lsp-tab-active-text', tabs.activeTextColor || null);
+    set('--lsp-tab-active-border', tabs.activeBorderColor || null);
     return { bleed: b.imageFit === 'bleed', style: s };
   }
 

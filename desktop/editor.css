@@ -84,3 +84,4 @@ body.editor { height: 100vh; overflow: hidden; }
 .ed-theme-thumb span { display: grid; place-items: center; font: 700 11px system-ui, sans-serif; }
 .ed-row2 .row { flex-wrap: nowrap; }
 .ed-row2 input[type="range"] { min-width: 0; padding: 0; }
+.ed-props-body > .label { font-size: 12px; color: var(--muted); margin-top: 2px; }

@@ -425,5 +425,13 @@
   "look.font": "Font",
   "look.font.system": "Normal",
   "look.font.mono": "Monospace",
-  "look.font.serif": "Serif"
+  "look.font.serif": "Serif",
+  "look.tabs": "Page tabs",
+  "look.tabsHidden": "Tabs only show with more than one page and \"Show page tabs on the tablet\" on.",
+  "look.tabNormal": "Other pages",
+  "look.tabActive": "Selected page",
+  "look.tabBg": "Background",
+  "look.tabText": "Text",
+  "look.tabBorder": "Border",
+  "look.layout": "Layout"
 }

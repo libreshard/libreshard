@@ -22,6 +22,7 @@ const SPACING = ['compact', 'normal', 'wide'];
 const FONTS = ['system', 'mono', 'serif'];
 const FILLS = ['flat', 'gradient', 'none'];
 const IMAGE_FITS = ['inset', 'bleed'];
+const TAB_FILLS = ['flat', 'none'];
 
 const ID = /^[A-Za-z0-9_-]{1,32}$/;
 const COLOR = /^#[0-9a-f]{6}$/i;
@@ -132,6 +133,25 @@ function cleanStyle(raw, files, warn) {
   }
 
   out.spacing = pick('spacing', raw.spacing, oneOf(SPACING, raw.spacing));
+
+  // The page tabs in the header: the selected one has its own colors
+  if (raw.tabs !== undefined) {
+    const t = raw.tabs;
+    if (!isObject(t)) warn('style: invalid tabs');
+    else {
+      const tabs = compact({
+        radius: pick('tabs radius', t.radius, intIn(t.radius, 0, 20)),
+        fill: pick('tabs fill', t.fill, oneOf(TAB_FILLS, t.fill)),
+        color: pick('tabs color', t.color, color(t.color)),
+        textColor: pick('tabs textColor', t.textColor, color(t.textColor)),
+        borderColor: pick('tabs borderColor', t.borderColor, color(t.borderColor)),
+        activeColor: pick('tabs activeColor', t.activeColor, color(t.activeColor)),
+        activeTextColor: pick('tabs activeTextColor', t.activeTextColor, color(t.activeTextColor)),
+        activeBorderColor: pick('tabs activeBorderColor', t.activeBorderColor, color(t.activeBorderColor)),
+      });
+      if (Object.keys(tabs).length) out.tabs = tabs;
+    }
+  }
 
   if (raw.text !== undefined) {
     const t = raw.text;

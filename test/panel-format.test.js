@@ -216,6 +216,9 @@ test('style values are checked one by one: bad ones are dropped, good ones stay'
   assert.deepEqual(bg({ kind: 'image', file: 'images/abc.png', dim: 40 }, new Set(['images/abc.png'])), { kind: 'image', file: 'images/abc.png', dim: 40 });
   assert.deepEqual(bg({ kind: 'image', file: 'images/abc.png', dim: 90 }), { kind: 'image', file: 'images/abc.png' });
   assert.equal(bg({ kind: 'gradient', colors: ['#000000'] }), undefined);
+  const tabs = validatePanel(panelWith([], { style: { tabs: { radius: 25, fill: 'gradient', activeColor: '#FF0000', textColor: 'red', activeTextColor: '#ffffff' } } }));
+  assert.deepEqual(tabs.panel.style.tabs, { activeColor: '#ff0000', activeTextColor: '#ffffff' });
+  assert.equal(tabs.warnings.length, 3);
   assert.equal(bg({ kind: 'image', file: 'images/abc.png' }, new Set()), undefined);
 });
 

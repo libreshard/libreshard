@@ -38,6 +38,7 @@ test("a panel's own settings go over its theme's; an unknown theme is LibreShard
   assert.equal(r.style.button.color, THEMES.oled.style.button.color, 'the rest of the group stays');
   assert.equal(r.style.text.font, 'mono');
   assert.equal(r.style.text.color, THEMES.oled.style.text.color);
+  assert.deepEqual(resolve({ theme: 'oled', tabs: { activeColor: '#ff0000' } }).style.tabs, { ...THEMES.oled.style.tabs, activeColor: '#ff0000' });
   assert.deepEqual(r.style.background, { kind: 'color', color: '#000000' });
 
   const own = resolve({ theme: 'light', background: { kind: 'color', color: '#123456' } });
@@ -57,5 +58,6 @@ test('contrast follows WCAG, and every theme keeps its text readable on its butt
   for (const name of NAMES) {
     const { style } = resolve({ theme: name });
     assert.ok(contrast(style.text.color, style.button.color) >= 4.5, name);
+    assert.ok(contrast(style.tabs.activeTextColor, style.tabs.activeColor) >= 4.5, name + ' selected tab');
   }
 });

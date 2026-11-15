@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT-0
 // The built-in looks for panels made with LibreShard's editor. A theme is a set of base colors (the
 // --ls-* variables every shard style uses) plus default panel settings, in the same shape as
-// panel.json's "style". A panel's own settings go on top of its theme's (resolve()).
+// panel.json's "style". A panel's own settings go on top of its theme's (resolve()), group by group
+// for the buttons, the page tabs and the text.
 // Used by panel.js on the tablet and by the editor (as window.LS_THEMES), and by the tests.
 (() => {
   const DARK = {
@@ -16,6 +17,7 @@
       vars: DARK,
       style: {
         button: { radius: 18, border: 1, borderColor: '#29486a', fill: 'gradient', shadow: false, color: '#1a3150', activeColor: '#22d3ee', imageFit: 'inset' },
+        tabs: { radius: 20, fill: 'none', color: '#1a3150', textColor: '#8ea6bf', borderColor: '#29486a', activeColor: '#1a3150', activeTextColor: '#e6eef7', activeBorderColor: '#22d3ee' },
         spacing: 'normal',
         text: { color: '#e6eef7', size: 'm', font: 'system' },
       },
@@ -29,6 +31,7 @@
       style: {
         background: { kind: 'gradient', colors: ['#f4f7fb', '#dde6f0'] },
         button: { radius: 16, border: 1, borderColor: '#c3cfdd', fill: 'gradient', shadow: true, color: '#ffffff', activeColor: '#0e7490', imageFit: 'inset' },
+        tabs: { radius: 20, fill: 'none', color: '#ffffff', textColor: '#475569', borderColor: '#c3cfdd', activeColor: '#ffffff', activeTextColor: '#0f172a', activeBorderColor: '#0e7490' },
         spacing: 'normal',
         text: { color: '#0f172a', size: 'm', font: 'system' },
       },
@@ -43,6 +46,7 @@
       style: {
         background: { kind: 'color', color: '#000000' },
         button: { radius: 10, border: 3, borderColor: '#ffffff', fill: 'flat', shadow: false, color: '#000000', activeColor: '#ffff00', imageFit: 'inset' },
+        tabs: { radius: 8, fill: 'flat', color: '#000000', textColor: '#ffffff', borderColor: '#ffffff', activeColor: '#ffff00', activeTextColor: '#000000', activeBorderColor: '#ffff00' },
         spacing: 'normal',
         text: { color: '#ffffff', size: 'l', font: 'system' },
       },
@@ -54,6 +58,7 @@
       style: {
         background: { kind: 'color', color: '#000000' },
         button: { radius: 18, border: 1, borderColor: '#262626', fill: 'flat', shadow: false, color: '#0d0d0d', activeColor: '#22d3ee', imageFit: 'inset' },
+        tabs: { radius: 20, fill: 'none', color: '#0d0d0d', textColor: '#8ea6bf', borderColor: '#262626', activeColor: '#0d0d0d', activeTextColor: '#e6eef7', activeBorderColor: '#22d3ee' },
         spacing: 'normal',
         text: { color: '#e6eef7', size: 'm', font: 'system' },
       },
@@ -65,6 +70,7 @@
       style: {
         background: { kind: 'color', color: '#000000' },
         button: { radius: 8, border: 0, borderColor: '#2a2a2a', fill: 'flat', shadow: false, color: '#1c1c1c', activeColor: '#f5f5f5', imageFit: 'bleed' },
+        tabs: { radius: 6, fill: 'flat', color: '#141414', textColor: '#9a9a9a', borderColor: '#141414', activeColor: '#f5f5f5', activeTextColor: '#000000', activeBorderColor: '#f5f5f5' },
         spacing: 'compact',
         text: { color: '#ffffff', size: 'm', font: 'system' },
       },
@@ -81,6 +87,7 @@
       ...theme.style,
       ...s,
       button: { ...theme.style.button, ...(s.button || {}) },
+      tabs: { ...theme.style.tabs, ...(s.tabs || {}) },
       text: { ...theme.style.text, ...(s.text || {}) },
     };
     if (!s.background) { if (theme.style.background) merged.background = theme.style.background; else delete merged.background; }

@@ -510,7 +510,7 @@ function setStyle(fn, opts) {
   change(() => {
     const s = S.panel.style || (S.panel.style = {});
     fn(s);
-    for (const k of ['button', 'text']) if (s[k] && !Object.keys(s[k]).length) delete s[k];
+    for (const k of ['button', 'tabs', 'text']) if (s[k] && !Object.keys(s[k]).length) delete s[k];
     if (!Object.keys(s).length) delete S.panel.style;
   }, opts);
 }
@@ -554,6 +554,7 @@ function renderLook(box) {
   const own = S.panel.style || {};
   const st = look().style;
   const b = st.button;
+  const tb = st.tabs;
   const pick = (label, value, options, onchange) => h('div', { class: 'ed-prop ed-row2' }, h('label', null, t(label)),
     h('select', { onchange: (e) => onchange(e.target.value) }, options.map(([v, l]) => h('option', { value: v, selected: v === value }, t(l)))));
   const colorInput = (value, set) => h('input', { type: 'color', value, oninput: (e) => set(e.target.value, { coalesce: 'look-color', props: false }), onchange: (e) => { set(e.target.value); renderProps(); } });
@@ -617,6 +618,20 @@ function renderLook(box) {
     h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.activeColor')), colorInput(b.activeColor, (v, o) => setGroup('button', 'activeColor', v, o))),
     h('label', { class: 'ed-check' }, h('input', { type: 'checkbox', checked: b.shadow, onchange: (e) => setGroup('button', 'shadow', e.target.checked) }), ' ', t('look.shadow')),
     pick('look.imageFit', b.imageFit, [['inset', 'look.imageFit.inset'], ['bleed', 'look.imageFit.bleed']], (v) => setGroup('button', 'imageFit', v)),
+    h('h2', null, t('look.tabs')),
+    S.panel.pages.length < 2 || S.panel.pageBar === false ? h('div', { class: 'hint small' }, t('look.tabsHidden')) : null,
+    range('look.radius', tb.radius, 0, 20, (v, o) => setGroup('tabs', 'radius', v, o)),
+    pick('look.fill', tb.fill, [['flat', 'look.fill.flat'], ['none', 'look.fill.none']], (v) => setGroup('tabs', 'fill', v)),
+    h('div', { class: 'label' }, t('look.tabNormal')),
+    tb.fill !== 'none' ? h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.tabBg')), colorInput(tb.color, (v, o) => setGroup('tabs', 'color', v, o))) : null,
+    h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.tabText')), colorInput(tb.textColor, (v, o) => setGroup('tabs', 'textColor', v, o))),
+    h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.tabBorder')), colorInput(tb.borderColor, (v, o) => setGroup('tabs', 'borderColor', v, o))),
+    h('div', { class: 'label' }, t('look.tabActive')),
+    h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.tabBg')), colorInput(tb.activeColor, (v, o) => setGroup('tabs', 'activeColor', v, o))),
+    h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.tabText')), colorInput(tb.activeTextColor, (v, o) => setGroup('tabs', 'activeTextColor', v, o))),
+    h('div', { class: 'ed-prop ed-row2' }, h('label', null, t('look.tabBorder')), colorInput(tb.activeBorderColor, (v, o) => setGroup('tabs', 'activeBorderColor', v, o))),
+
+    h('h2', null, t('look.layout')),
     pick('look.spacing', st.spacing, [['compact', 'look.spacing.compact'], ['normal', 'look.spacing.normal'], ['wide', 'look.spacing.wide']], (v) => setStyle((s) => { s.spacing = v; })),
 
     h('h2', null, t('look.text')),

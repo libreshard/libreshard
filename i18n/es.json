@@ -425,5 +425,13 @@
   "look.font": "Tipografía",
   "look.font.system": "Normal",
   "look.font.mono": "Monoespaciada",
-  "look.font.serif": "Serif"
+  "look.font.serif": "Serif",
+  "look.tabs": "Pestañas de página",
+  "look.tabsHidden": "Las pestañas solo se ven con más de una página y \"Mostrar las pestañas de página en la tablet\" activado.",
+  "look.tabNormal": "Otras páginas",
+  "look.tabActive": "Página seleccionada",
+  "look.tabBg": "Fondo",
+  "look.tabText": "Texto",
+  "look.tabBorder": "Borde",
+  "look.layout": "Distribución"
 }

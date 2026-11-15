@@ -7,11 +7,14 @@ body.lsp-body { background: var(--lsp-bg, radial-gradient(110% 80% at 100% 0%, #
 .lsp-tabs { min-width: 0; display: flex; gap: calc(var(--ls-gap) / 2); overflow-x: auto; scrollbar-width: none; }
 .lsp-tab {
   appearance: none; margin: 0; font: inherit; cursor: pointer; flex: none;
-  min-height: 40px; padding: 0 1em; border-radius: 999px;
-  border: 1px solid var(--ls-line); background: transparent; color: var(--ls-muted);
-  font-size: clamp(13px, 2vmin, 16px); white-space: nowrap;
+  min-height: 40px; padding: 0 1em; border-radius: var(--lsp-tab-radius, 999px);
+  border: 1px solid var(--lsp-tab-border, var(--ls-line)); background: var(--lsp-tab-bg, transparent);
+  color: var(--lsp-tab-text, var(--ls-muted)); font-size: clamp(13px, 2vmin, 16px); white-space: nowrap;
 }
-.lsp-tab[aria-pressed="true"] { background: var(--ls-raised); border-color: var(--ls-cyan); color: var(--ls-text); }
+.lsp-tab[aria-pressed="true"] {
+  background: var(--lsp-tab-active-bg, var(--ls-raised)); border-color: var(--lsp-tab-active-border, var(--ls-cyan));
+  color: var(--lsp-tab-active-text, var(--ls-text));
+}
 
 .lsp-grid { display: grid; gap: var(--ls-gap); height: 100%; }
 
