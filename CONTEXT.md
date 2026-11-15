@@ -23,7 +23,7 @@ Tablet (browser)                           PC (Electron app)
 ┌──────────────────────┐   HTTP (shards)   ┌─────────────────────────────┐
 │ viewer/index.html    │◀─────────────────▶│ server.js (Express)         │
 │  ├ shard menu        │                   │  ├ serves /viewer           │
-│  ├ iframe of the     │   WebSocket /ws   │  ├ serves /shards/:id/*     │
+│  ├ iframe of the     │   WebSocket /ws   │  ├ serves /s/<session>/:id/*│
 │  │  open shard       │──────────────────▶│  └ WebSocket: auth + keys   │
 │  ├ floating button   │                   │        │ checks permissions │
 │  └ postMessage bridge│                   │        ▼                    │
@@ -193,8 +193,9 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - Every HTTP request must carry an allowed `Host` (`net.hostAllowed`: `localhost`, `127.0.0.1`, `[::1]`, `libreshard.local` or one of the PC's own addresses) and come from a private address (`net.isPrivateAddress`), unless `allowPublic`. Otherwise it gets a 403. All responses carry `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and the viewer's CSP (`default-src 'self'`, `script-src 'self'`, `connect-src 'self' ws://<host>`, `frame-ancestors 'none'`…).
 - `GET /api/strings`: the viewer's strings (see i18n). Option `language` (string or function) is the PC's setting. It also answers `shardLang` (the PC's chosen language, else the tablet's raw `?lang=` if it looks like a language tag, else `locale`: a shard may ship languages the app doesn't) and `platform` (`windows`, `linux`, `mac`; option `platform`, default from `process.platform`), which the viewer passes to shards, and `version` (option `appVersion`), the version that served the page.
 - Before typing, `unavailableKeys(combo)` (default `keys.unavailable`, injectable for tests) is checked; missing keys get `{type:'error', code:'key-unavailable', keys}` instead of being pressed, for `up` too (they were never pressed).
-- `GET /api/shards`: `store.publicList()`: enabled shards with `id`, `name`, `author`, `icon`, `description`, `apps` (the effective apps; empty means no restriction) and `pending` (keys awaiting approval).
-- `GET /shards/:id/*`: serves the shard's files with the shard CSP (which adds `frame-ancestors 'self'`). Paths with a segment starting with `.` (`..`, dotfiles) are refused, the path must stay inside the folder, and its **real path** must stay inside `realRoot`, so a link inside a shard can't expose other files while a shard folder that is itself a link (a development junction) still works. When serving `index.html` it appends `<script src="/shard-api.js">`.
+- **Sessions:** the shard list and files are only for paired devices. Signing in on the WebSocket (`authOk`) gives the device a session token (128 random bits, hex, in `ok`/`paired`), the same for all its connections; it lives while one is open and `sessionGraceMs` (10 minutes) after the last closes, so a reconnecting tablet keeps it, and dies at once when the device is unpaired. Kept in memory: a PC restart means new tokens. Cookies can't do this (the shard iframe's origin is opaque).
+- `GET /api/shards` (header `X-LibreShard-Session`, else 401): `store.publicList()`: enabled shards with `id`, `name`, `author`, `icon`, `description`, `apps` (the effective apps; empty means no restriction) and `pending` (keys awaiting approval).
+- `GET /s/:session/:id/*` (an unknown or expired session is 404): serves the shard's files with the shard CSP (which adds `frame-ancestors 'self'`). Paths with a segment starting with `.` (`..`, dotfiles) are refused, the path must stay inside the folder, and its **real path** must stay inside `realRoot`, so a link inside a shard can't expose other files while a shard folder that is itself a link (a development junction) still works. When serving `index.html` it appends `<script src="/shard-api.js">`.
 - `GET /shard-api.js` and the static files in `viewer/` (dotfiles ignored).
 - WebSocket on `/ws`: `verifyClient` requires an allowed `Host`, `Origin` equal to `http://<host>`, a private remote address and fewer than 32 connections. Messages are limited to 4 KB (`maxPayload`); an unauthenticated socket is closed after 10 s.
 - Authentication: `{type:'auth', token}` is checked against `devices`; `{type:'pair', code|token, name}` consumes the current pairing code and creates a device. Only pairing attempts go through the `RateLimiter`; a wrong device token just closes the socket (tokens are 256 random bits, and limiting them would let an attacker lock real devices out). When the limiter's global threshold is crossed, `onAlert` is called. Removing a device (`devices.remove`) closes its sockets at once. A `local` device (the panel inside the app) is only accepted from a loopback address (`net.isLoopback`); from anywhere else its token closes the socket like an unknown one.
@@ -303,11 +304,12 @@ Behavior:
 - **Live indicator:** the viewer sends `open` when a shard opens or the menu shows (and again after reconnecting); `focus` with `ok: false` shows a gold strip at the bottom (`#focusbar`) naming the shard's apps and the app in front.
 - **Settings relay:** answers the shard's `{t:'settings', id}` with the shard's values from `/api/shards`, and forwards `settings` messages from the PC to the open shard as `{__libreshard, t:'settings', values}`.
 - **Development reload:** `shard-files-changed` for the open shard reloads its iframe (with a `&v=` to bypass the cache).
-- **Language and system for shards:** every shard is loaded as `/shards/<id>/index.html?lang=<shardLang>&os=<platform>` (both from `/api/strings`); `shard-api.js` reads them.
+- **Language and system for shards:** every shard is loaded as `/s/<session>/<id>/index.html?lang=<shardLang>&os=<platform>` (both from `/api/strings`); `shard-api.js` reads them.
+- **Session:** the viewer keeps the `session` of `ok`/`paired`, sends it with `/api/shards` and puts it in shard URLs; the menu loads only after signing in. If a later `ok` brings a different one (the PC restarted), the open shard reloads.
 - **Reconnection:** after the first sign-in, a new `ok` refetches `/api/shards` (`resync()`): shards or settings may have changed while the tablet was away (PC restarted, tab frozen in the background). The open shard gets its current settings, or the menu shows if it's gone.
 - **Allow here too:** a `blocked` notice with `canAllow` gets a button "Permitir también en <app>" that sends `allow-app`; `allowed` confirms it.
 - **Hash navigation:** `location.hash` is the open shard's id; empty means the menu. `route()` runs after authenticating and on every `hashchange`. Thanks to this, the tablet's Back button returns to the menu.
-- **`showShard(s)`:** releases held keys, closes the panel, hides the menu and loads `/shards/<id>/index.html` into the iframe. It doesn't reload if it's already the open shard.
+- **`showShard(s)`:** releases held keys, closes the panel, hides the menu and loads `/s/<session>/<id>/index.html` into the iframe. It doesn't reload if it's already the open shard.
 - **`showMenu()`:** releases keys, sets the iframe to `about:blank` (unloads the shard) and shows the menu.
 - **Floating button:** 44×44 px, top left respecting `safe-area-inset`, semi-transparent at rest. Opens a panel with "Menú principal", "Pantalla completa" and, under "Cambiar a", the other shards (excluding the current one).
 - **Zoom:** a "Zoom − 100% +" row in the floating button's panel (50%–200%, 10% steps; tapping the percentage resets to 100%). The iframe shrinks and is scaled with `transform`, so the shard reflows like with browser zoom. Saved per shard in `localStorage` (`zoom:<id>`).
@@ -352,8 +354,8 @@ Server to client:
 
 | Message | Meaning |
 |---|---|
-| `{ "type": "ok", "device": { "id", "name" }, "paused", "version" }` | Token accepted. `version` is the app's (option `appVersion`) |
-| `{ "type": "paired", "token", "device": { "id", "name" }, "paused", "version" }` | Paired: the viewer must keep `token`, the server never sends it again |
+| `{ "type": "ok", "device": { "id", "name" }, "paused", "version", "session" }` | Token accepted. `version` is the app's (option `appVersion`); `session` unlocks the shard list and files (see the HTTP routes) |
+| `{ "type": "paired", "token", "device": { "id", "name" }, "paused", "version", "session" }` | Paired: the viewer must keep `token`, the server never sends it again |
 | `{ "type": "pending" }` | Valid code, but the user must accept the device on the PC first |
 | `{ "type": "error", "code": "pair-rejected" }` | The user rejected the device (then 4003) |
 | `{ "type": "paused", "value": true }` | The PC was paused or resumed |
@@ -574,6 +576,7 @@ What needs a restart:
 Tests (`test/`):
 
 - `keys.test.js`, `focus.test.js`, `net.test.js`, `pairing.test.js` and `manifest.test.js`: unit tests.
+- `server.test.js` also covers sessions: no list or files without one, the old `/shards/` path gone, one token per device across connections, expiry after the grace period, and unpairing ending it.
 - `server.test.js`: starts the real server on a random port with a fake keyboard, a fake `focus` and an in-memory paired device (from `test/helpers.js`), and talks to it over WebSocket and HTTP: tokens, pairing, rate limiting, revocation, `Origin` and `Host` checks, headers, denied keys, blocked apps, `up` never blocked, release on disconnect and on quit, every protocol limit, manifest validation, repeated ids, path traversal through links and dotfiles, user rules and `EADDRINUSE`.
 - When a test needs symlinks it creates junctions (`fs.symlinkSync(target, path, 'junction')`), which Windows allows without administrator rights.
 - `bundled-shards.test.js` loads every bundled shard and checks manifests, keys, base copies and the panel template (`tools/build-shard-base.js --check` does the same from the command line) and translations.

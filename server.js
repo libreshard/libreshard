@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const express = require('express');
 const http = require('http');
 const fs = require('fs');
@@ -15,6 +16,7 @@ const { nullLog, once, shortId } = require('./log');
 // How long a 'press' is held down. Without it, press and release arrive at the same instant
 // and games that read the keyboard once per frame (Star Citizen, for example) miss it.
 const TAP_MS = 60;
+const SESSION_GRACE_MS = 10 * 60 * 1000; // a tablet that reconnects within this keeps its session token
 const KEY_GAP_MS = 15; // between the keys of a combo, so the modifier lands first
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -104,7 +106,7 @@ function startServer({
   port, host = '0.0.0.0', store, shardDirs, rulesFile, appVersion,
   keyboard, focus, devices, pairing, limiter, allowPublic = false, onAlert, confirmPairing,
   allowAppsFromTablet = false, unavailableKeys = unavailable, language = 'auto',
-  platform = shardPlatform(process.platform), isSelf = isSelfApp, isElevated, httpRate = HTTP_RATE, log = nullLog,
+  platform = shardPlatform(process.platform), isSelf = isSelfApp, isElevated, httpRate = HTTP_RATE, sessionGraceMs = SESSION_GRACE_MS, log = nullLog,
   confirmTimeoutMs = CONFIRM_TIMEOUT_MS,
 }) {
   const warnOnce = once(log);
@@ -138,7 +140,35 @@ function startServer({
   // answers private networks, where grouping IPv6 addresses by subnet would merge all the tablets.
   app.use(rateLimit({ windowMs: 60000, limit: httpRate, ipv6Subnet: false, standardHeaders: 'draft-8', legacyHeaders: false }));
 
-  app.get('/api/shards', (_req, res) => res.json(store.publicList()));
+  // The shard list and the shards' files are only for paired devices. Each device gets a session
+  // token when it signs in on the WebSocket ("ok"/"paired"): the list asks for it in a header, the
+  // files carry it in their path (/s/<token>/<id>/…), so a shard's relative links keep working.
+  // Cookies can't do it: the shard's sandboxed iframe has an opaque origin. A token lives while the
+  // device has a connection open and sessionGraceMs (10 minutes) after the last one closes (a reconnecting
+  // tablet keeps it), and dies at once when the device is unpaired.
+  const sessions = new Map(); // token → { deviceId, conns, until }
+  const sessionAlive = (s) => s.conns > 0 || s.until > Date.now();
+  function sessionFor(deviceId) {
+    for (const [token, s] of sessions) {
+      if (!sessionAlive(s)) sessions.delete(token);
+      else if (s.deviceId === deviceId) return token;
+    }
+    const token = crypto.randomBytes(16).toString('hex');
+    sessions.set(token, { deviceId, conns: 0, until: 0 });
+    return token;
+  }
+  function validSession(token) {
+    if (typeof token !== 'string' || !/^[0-9a-f]{32}$/.test(token)) return false;
+    const s = sessions.get(token);
+    if (!s) return false;
+    if (!sessionAlive(s)) { sessions.delete(token); return false; }
+    return true;
+  }
+
+  app.get('/api/shards', (req, res) => {
+    if (!validSession(req.get('x-libreshard-session'))) return res.sendStatus(401);
+    res.json(store.publicList());
+  });
 
   // The viewer's strings: the language chosen on the PC, or else the tablet's (?lang=), or English
   app.get('/api/strings', (req, res) => {
@@ -152,7 +182,8 @@ function startServer({
   });
 
   // Shard files: strict CSP (no network, no external resources), never outside the shard's folder
-  app.get('/shards/:id/*', (req, res) => {
+  app.get('/s/:session/:id/*', (req, res) => {
+    if (!validSession(req.params.session)) return res.sendStatus(404);
     const shard = store.get(req.params.id);
     if (!shard) return res.sendStatus(404);
     const rel = req.params[0] || 'index.html';
@@ -203,6 +234,7 @@ function startServer({
 
   // A revoked device is disconnected at once; tablets refresh their menu when shards change
   const onRemoved = (id) => {
+    for (const [token, s] of sessions) if (s.deviceId === id) sessions.delete(token);
     for (const c of conns) if (c.device?.id === id) c.ws.close(CLOSE.unknownDevice, 'Device removed');
   };
   const onShards = () => { broadcast({ type: 'shards-changed' }); updateFocusPolling(); };
@@ -294,6 +326,8 @@ function startServer({
     // Held combos ('down' without its 'up') are released if the connection drops
     ws.on('close', () => {
       clearTimeout(authTimer);
+      const session = c.session && sessions.get(c.session);
+      if (session && --session.conns <= 0) { session.conns = 0; session.until = Date.now() + sessionGraceMs; }
       queue = queue.then(async () => {
         for (const combo of c.held) await typer.up(parse(combo)).catch((e) => log.error('release-failed', { error: e }));
         c.held.clear();
@@ -305,8 +339,10 @@ function startServer({
     function authOk(device, extra = {}) {
       c.authed = true;
       c.device = device;
+      c.session = sessionFor(device.id);
+      sessions.get(c.session).conns++;
       clearTimeout(authTimer);
-      send({ type: extra.token ? 'paired' : 'ok', device: { id: device.id, name: device.name }, paused, version: appVersion, ...extra });
+      send({ type: extra.token ? 'paired' : 'ok', device: { id: device.id, name: device.name }, paused, version: appVersion, session: c.session, ...extra });
     }
 
     async function pair(msg) {

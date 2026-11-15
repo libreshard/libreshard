@@ -78,6 +78,10 @@ function connect(mode) {
     if (m.type === 'paired') localStorage.setItem(TOKEN_KEY, m.token);
     if (m.type === 'ok' || m.type === 'paired') {
       authed = true;
+      // The shard list and files need this session token; a new one (the PC restarted) reloads the open shard
+      const renewed = session !== null && session !== m.session;
+      session = m.session;
+      if (renewed && current) reloadShard();
       pendingPair = null;
       $('msg').textContent = '';
       $('lock').classList.remove('on');
@@ -85,7 +89,7 @@ function connect(mode) {
       setPaused(m.paused);
       checkVersion(m.version);
       if (current) send({ type: 'open', shard: current });
-      if (wasAuthed) resync(); else listReady.then(route);
+      if (wasAuthed) resync(); else stringsReady.then(loadShards).then(route);
       wasAuthed = true;
     }
     if (m.type === 'pending') $('msg').textContent = t('viewer.pending');
@@ -395,14 +399,15 @@ function renderMenu() {
   }
 }
 
-const loadShards = () => fetch('/api/shards')
+let session = null; // from the PC on sign-in: the shard list and files are only for paired devices
+const loadShards = () => fetch('/api/shards', { headers: { 'X-LibreShard-Session': session || '' } })
+  .then((r) => { if (!r.ok) throw new Error(r.status); return r; })
   .then((r) => r.json())
   .then((list) => { shards = list; renderMenu(); })
   .catch(() => {
     $('empty').hidden = false;
     $('empty').textContent = t('viewer.listFailed');
   });
-const listReady = stringsReady.then(loadShards);
 
 // The PC installed, removed, approved or disabled a shard: refresh the menu, and leave the open
 // shard if it's gone
@@ -470,7 +475,7 @@ function onSettings(id, values) {
   if (id === current) $('frame').contentWindow.postMessage({ __libreshard: true, t: 'settings', values }, '*');
 }
 
-const shardUrl = (id) => '/shards/' + id + '/index.html?' + shardQuery;
+const shardUrl = (id) => '/s/' + session + '/' + id + '/index.html?' + shardQuery;
 
 // Development mode: a linked shard's files changed on the PC
 function reloadShard() {
