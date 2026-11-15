@@ -77,8 +77,10 @@ latest. The request carries no information about you, your devices or your shard
 downloads or installs anything by itself: it shows a link to the download page. Turn it off in
 Settings → "Check for new versions".
 
-**The gallery**, when you open it (Shards → "Explore the gallery"): LibreShard reads its list from
-`libreshard.com`, with the same generic User-Agent. Installing a shard from it downloads the file
+**The gallery**, when you open it (Shards → "Explore the gallery") and, if you installed shards,
+with the daily check for new versions (the same setting turns both off): LibreShard reads its list
+from `libreshard.com`, with the same generic User-Agent, to tell you when an installed shard has a
+new version. Installing a shard from it downloads the file
 its author published, and LibreShard only installs it if it's exactly the file that was reviewed
 (same sha256 and size), after the usual review.
 

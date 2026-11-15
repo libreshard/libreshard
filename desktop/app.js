@@ -151,6 +151,7 @@ function renderShards() {
   const p = $('tab-shards');
   if (gal) { renderGallery(p); return; }
   const pending = state.shards.filter((s) => s.pendingKeys.length);
+  const updatable = state.shards.filter((s) => s.gallery && s.gallery.update);
   const cards = state.shards.map(shardCard);
   const rejected = state.rejected.map((r) => h('div', { class: 'item attention' },
     h('div', { class: 'name' }, r.folder),
@@ -181,6 +182,7 @@ function renderShards() {
         iconBtn('code', t('shards.loadDev'), () => install('dev'), true),
         iconBtn('folderOpen', t('shards.openShardsFolder'), () => api.openPath('shards'), true))),
     pending.length ? h('div', { class: 'warnbox warn' }, t('shards.pendingIntro', { count: pending.length })) : null,
+    updatable.length ? h('div', { class: 'warnbox info' }, t('shards.updatesIntro', { count: updatable.length })) : null,
     h('h2', null, t('shards.installed')),
     h('p', { class: 'hint small' }, t('shards.orderHint')),
     h('div', { class: 'list' }, cards),
@@ -202,6 +204,8 @@ function shardCard(s) {
           h('span', { class: 'badge' }, origin),
           s.enabled ? null : h('span', { class: 'badge off' }, t('shards.disabled')),
           s.pendingKeys.length ? h('span', { class: 'badge warn' }, t('shards.pendingBadge')) : null,
+          s.gallery && s.gallery.update ? h('span', { class: 'badge warn' }, t('gallery.updateBadge', { version: s.gallery.update })) : null,
+          s.gallery && s.gallery.gone ? h('span', { class: 'badge off' }, t('shards.galleryGone')) : null,
           risky),
         h('div', { class: 'meta' }, [
           s.version ? 'v' + s.version : null,
@@ -221,6 +225,7 @@ function shardCard(s) {
     s.description ? h('div', { class: 'desc' }, s.description) : null,
     h('div', { class: 'actions' },
       s.pendingKeys.length ? h('button', { class: 'btn primary small', onclick: () => review(approvalView(s), 'approve') }, t('shards.review')) : null,
+      galleryUpdateButton(s),
       s.panel ? h('button', { class: 'btn small', onclick: () => call(api.openEditor, s.id) }, t('shards.edit')) : null,
       h('button', { class: 'btn small', onclick: () => review(approvalView(s), 'view') }, t('shards.permissions')),
       h('button', { class: 'btn small', onclick: () => appsEditor(s) }, t('shards.apps')),
@@ -238,6 +243,24 @@ const approvalView = (s) => ({
   newKeys: s.pendingKeys,
   linked: s.linked,
 });
+
+// "Version x available" on a card: update from the gallery (the usual review of changes), or go to
+// the author's shop for a paid shard
+function galleryUpdateButton(s) {
+  const g = s.gallery;
+  if (!g || !g.update || g.needsApp) return null;
+  if (g.paid) return h('button', { class: 'btn primary small', onclick: () => call(api.galleryOpen, s.id, 'buy') }, t('gallery.toShop'));
+  return h('button', {
+    class: 'btn primary small',
+    onclick: async (ev) => {
+      ev.target.disabled = true;
+      ev.target.textContent = t('gallery.downloading');
+      const r = await call(api.galleryInstall, s.id);
+      if (r && r.ok && r.review) review(r.review, 'install');
+      else renderShards();
+    },
+  }, t('gallery.update'));
+}
 
 async function exportShard(s) {
   const r = await call(api.exportShard, s.id);

@@ -123,8 +123,8 @@
   "update.available": "LibreShard {version} is available.",
   "update.download": "Download",
   "update.dismiss": "Ignore this version",
-  "settings.checkUpdates": "Check for new versions",
-  "settings.checkUpdatesHint": "Once a day LibreShard asks GitHub which version is the latest. It sends nothing about you or your devices, and never installs anything by itself.",
+  "settings.checkUpdates": "Check for new versions of LibreShard and of gallery shards",
+  "settings.checkUpdatesHint": "Once a day LibreShard asks GitHub which version is the latest and, if you installed shards, reads the gallery's list on libreshard.com. It sends nothing about you, your devices or your shards, and never installs anything by itself.",
   "about.version": "LibreShard {version}",
   "about.license": "Free and open source software under the Apache 2.0 license.",
   "about.website": "Website",
@@ -559,5 +559,8 @@
   "shards.newHint": "Make your own panel, no code needed",
   "shards.installGroup": "Install a shard",
   "shards.authorsGroup": "For shard authors",
-  "gallery.unavailable": "The gallery couldn't be loaded: {reason}"
+  "gallery.unavailable": "The gallery couldn't be loaded: {reason}",
+  "gallery.toShop": "Go to the shop",
+  "shards.galleryGone": "No longer in the gallery",
+  "shards.updatesIntro": "Shards with a new version in the gallery: {count}. Updating shows what changed first."
 }
