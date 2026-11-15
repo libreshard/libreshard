@@ -34,6 +34,9 @@ body.editor { height: 100vh; overflow: hidden; }
 .ed-warnings { display: grid; gap: 6px; padding: 10px 14px; max-height: 32%; overflow-y: auto; }
 .ed-warnings:empty { display: none; }
 .ed-warnings .warnbox { font-size: 13px; padding: 7px 10px; }
+.ed-warnings .warnbox p { margin: 0 0 4px; }
+.ed-warnings .warnbox.import { background: rgba(34, 211, 238, .08); border: 1px solid rgba(34, 211, 238, .45); }
+.ed-warnings .warnbox p:last-child { margin-bottom: 0; }
 
 /* Properties */
 .ed-props { border-left: 1px solid var(--line); padding: 14px; overflow-y: auto; display: grid; align-content: start; gap: 10px; }

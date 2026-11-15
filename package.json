@@ -74,6 +74,8 @@
       "linux-session.js",
       "backup.js",
       "zip.js",
+      "streamdeck.js",
+      "streamdeck-keys.js",
       "panel-format.js",
       "shard-base/icons.js",
       "focus/**",

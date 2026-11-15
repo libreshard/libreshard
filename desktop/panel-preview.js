@@ -53,6 +53,7 @@
     for (const el of g.querySelectorAll('[data-id]')) {
       const b = p.buttons.find((x) => x.id === el.dataset.id);
       if (b && incomplete(b)) el.classList.add('ed-incomplete');
+      else if (last.marks && last.marks[el.dataset.id]) el.classList.add('ed-mark-' + last.marks[el.dataset.id]);
       if (el.dataset.id === last.selected) {
         el.classList.add('ed-sel');
         const handle = document.createElement('div');

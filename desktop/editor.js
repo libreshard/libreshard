@@ -15,6 +15,7 @@ const S = {
   page: 0, sel: null, size: 'landscape', tab: 'button',
   undo: [], redo: [], saved: '', coalesce: null,
   small: [], check: null, loadWarnings: [],
+  imported: null, // { report, marks } after importing a Stream Deck profile, until the first save
   capture: null, // { done(combo) } while capturing a key
 };
 
@@ -145,7 +146,7 @@ function sendPreview() {
   const frame = $('preview');
   if (!frame.contentWindow || !S.previewReady || !S.panel) return;
   frame.contentWindow.postMessage({
-    t: 'render', panel: S.panel, name: S.meta.name, images: S.images, page: page().id, selected: S.sel,
+    t: 'render', panel: S.panel, name: S.meta.name, images: S.images, page: page().id, selected: S.sel, marks: importMarks(),
   }, '*');
 }
 
@@ -737,6 +738,7 @@ function keysSummary() {
 
 function renderWarnings() {
   const out = [];
+  if (S.imported) out.push(importSummary());
   const missing = allButtons().filter(incomplete).length;
   if (missing) out.push(h('div', { class: 'warnbox warn' }, t('editor.incomplete', { count: missing })));
   const risk = S.check && S.check.risk;
@@ -755,6 +757,37 @@ function renderWarnings() {
   if (S.small.length) out.push(h('div', { class: 'warnbox warn' }, t('editor.small', { count: S.small.length })));
   if (S.loadWarnings.length) out.push(h('div', { class: 'warnbox warn' }, t('editor.loadWarnings', { details: S.loadWarnings.slice(0, 3).join('; ') })));
   fill($('warnings'), out);
+}
+
+/* ---------- Imported from a Stream Deck profile ---------- */
+
+// Marks on the canvas: ✕ on buttons left without an action (while they still have none), ? on the
+// ones to check (a Mac shortcut adapted, a key the profile wasn't sure about, a Key Logic button)
+function importMarks() {
+  if (!S.imported) return {};
+  const out = {};
+  for (const b of allButtons()) {
+    const m = S.imported.marks[b.id];
+    if (!m) continue;
+    if (m.kind === 'none' && b.type === 'none') out[b.id] = 'none';
+    else if (m.kind === 'check') out[b.id] = 'check';
+  }
+  return out;
+}
+
+// "4 × a key LibreShard can't press, 1 × Stop"
+const reasonList = (counts) => Object.entries(counts).map(([r, n]) => `${n} × ${t('import.short.' + r)}`).join(', ');
+
+function importSummary() {
+  const r = S.imported.report;
+  const lines = [t('import.summary', { imported: r.imported, total: r.buttons })];
+  if (Object.keys(r.notImported).length) lines.push(t('import.notImported', { list: reasonList(r.notImported) }));
+  const check = { ...r.adapted };
+  if (r.review) check.review = r.review;
+  if (Object.keys(check).length) lines.push(t('import.toCheck', { list: reasonList(check) }));
+  if (r.dials) lines.push(t('import.dials', { count: r.dials }));
+  if (r.missingPages) lines.push(t('import.missingPages', { count: r.missingPages }));
+  return h('div', { class: 'warnbox import' }, lines.map((l) => h('p', null, l)));
 }
 
 /* ---------- Saving and closing ---------- */
@@ -777,6 +810,7 @@ async function save() {
   S.id = r.id;
   S.saved = snapshot();
   S.loadWarnings = [];
+  S.imported = null;
   render({ props: false });
   toast(first ? t('editor.savedNew') : t('editor.saved'));
 }
@@ -846,9 +880,11 @@ async function start() {
   S.panel = init.panel;
   S.images = init.images || {};
   S.loadWarnings = init.warnings || [];
+  S.imported = init.imported || null;
   // Every toggle has an object for its second state (an empty one isn't saved by the format)
   for (const b of allButtons()) if (b.type === 'toggle' && !b.alt) b.alt = {};
-  S.saved = snapshot();
+  // An imported panel isn't saved anywhere yet
+  S.saved = S.imported ? null : snapshot();
 
   $('name').addEventListener('input', (e) => change(() => { S.meta.name = e.target.value; }, { coalesce: 'name', props: false }));
   $('icon').addEventListener('input', (e) => change(() => { S.meta.icon = graphemes(e.target.value.trim(), 2); }, { coalesce: 'icon', props: false }));
