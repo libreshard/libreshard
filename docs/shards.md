@@ -252,7 +252,9 @@ Two side effects: `mask-image` with a file from the shard may fail (embed masks 
   opens it in LibreShard. "Export…" on the shard's card in the Shards tab does this for you (hidden
   files such as `.git` are left out). `manifest.json` may be at the root or inside a single top-level folder.
   Limits: 50 MB uncompressed and 2,000 files.
-- **Installing:** users drag the file onto the LibreShard window (or use "Install from .zip…").
+- **Installing:** users drag the file onto the LibreShard window (or use "Install from .zip…"). If
+  you host the file on the web (a GitHub release, your site), "Install from URL…" downloads it from
+  its `https://` address.
   LibreShard shows a review with every key, the apps and the size before installing. Updates show
   what changed.
 - **Set `minAppVersion`** to the LibreShard version you tested with.

@@ -150,6 +150,26 @@ test('installing over an installed shard keeps its favorite, position, disabled 
   }
 });
 
+test('install saves where a shard came from, keeps it on a plain reinstall, and trusts only its shape', () => {
+  const t = setup();
+  const src = makeShardDir({ v1: { manifest: { id: 'web', ...keys('f13') } } });
+  try {
+    const s = t.make();
+    s.install(path.join(src, 'v1'), { id: 'web', keys: ['f13'] }, { source: { kind: 'url', host: 'autor.itch.io' } });
+    assert.deepEqual(s.sourceOf('web'), { kind: 'url', host: 'autor.itch.io' });
+    s.install(path.join(src, 'v1'), { id: 'web', keys: ['f13'] });
+    assert.deepEqual(t.make().sourceOf('web'), { kind: 'url', host: 'autor.itch.io' }, 'a reinstall from a file keeps it');
+    for (const bad of [{ kind: 'url', host: 'x y' }, { kind: 'other', host: 'a.com' }, 'a.com', { kind: 'url' }]) {
+      s.state.web.source = bad;
+      assert.equal(s.sourceOf('web'), null, JSON.stringify(bad));
+    }
+    assert.equal(s.sourceOf('media'), null);
+  } finally {
+    t.cleanup();
+    fs.rmSync(src, { recursive: true, force: true });
+  }
+});
+
 test('a user shard with panel.json is a panel; bundled and linked ones never are', () => {
   const t = setup();
   const dev = makeShardDir({ devpanel: { manifest: { id: 'devpanel', ...keys('f13') }, files: { 'panel.json': '{}' } } });

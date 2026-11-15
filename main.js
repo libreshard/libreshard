@@ -11,6 +11,7 @@ const { ShardStore } = require('./shard-store');
 const { classifyKeys, validateManifest, httpsUrl } = require('./manifest');
 const { validatePanel, imagesOf, importedImages, imageFile, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
 const zip = require('./zip');
+const download = require('./download');
 const streamdeck = require('./streamdeck');
 const keys = require('./keys');
 const installer = require('./installer');
@@ -330,7 +331,7 @@ async function start() {
       devices: devices.all(),
       shards: await Promise.all(store.all().map(async (e) => ({
         id: e.id, name: e.manifest.name, author: e.manifest.author, version: e.manifest.version,
-        license: e.manifest.license, url: e.manifest.url,
+        license: e.manifest.license, url: e.manifest.url, source: store.sourceOf(e.id),
         icon: e.manifest.icon, description: e.manifest.description, keys: e.manifest.keys,
         bundled: e.bundled, linked: e.linked, enabled: e.enabled, apps: e.apps.map(appLabel),
         appEntries: await withIcons(e.apps), customApps: e.customApps, suggestedApps: e.suggestedApps,
@@ -430,7 +431,8 @@ async function start() {
   const candidates = new Map();
   // link: development mode, where the folder is linked instead of copied
   // fromBackup: the shard comes from an imported backup; `after` runs once the user confirms it
-  async function prepareInstall(source, { link = false, fromBackup = false, after = null } = {}) {
+  // `origin`: where a downloaded shard came from ({ kind: 'url', host }), shown in the review and saved
+  async function prepareInstall(source, { link = false, fromBackup = false, after = null, origin = null } = {}) {
     if (link && !fs.statSync(source).isDirectory()) throw new Error('Development mode needs a folder');
     const r = await installer.prepare(source, {
       appVersion: app.getVersion(),
@@ -438,8 +440,8 @@ async function start() {
     });
     if (!r.ok) return { ok: false, errors: r.errors };
     const id = crypto.randomUUID();
-    candidates.set(id, { ...r, link, fromBackup, after });
-    return { ok: true, review: { id, link, manifest: r.manifest, risk: r.risk, size: r.size, update: r.update } };
+    candidates.set(id, { ...r, link, fromBackup, after, origin });
+    return { ok: true, review: { id, link, manifest: r.manifest, risk: r.risk, size: r.size, update: r.update, source: origin } };
   }
 
   openShardFile = async (file) => {
@@ -559,6 +561,30 @@ async function start() {
     if (typeof p !== 'string' || !p || !fs.existsSync(p)) throw new Error('File not found');
     return prepareInstall(p, { link: opts?.link === true });
   });
+  // A shard from a web address: downloaded by download.js (public https servers only, 50 MB, 60 s)
+  // into a temporary folder, then the usual review. The log keeps only the server's name, since
+  // download links often carry tokens.
+  const DOWNLOAD_ERRORS = ['badUrl', 'notHttps', 'privateAddress', 'tooManyRedirects', 'httpStatus', 'tooBig', 'timeout', 'network'];
+  handle('install:url', async (url) => {
+    if (typeof url !== 'string' || !url.trim() || url.length > download.LIMITS.maxUrl) throw new Error(t('download.error.badUrl'));
+    const started = Date.now();
+    let d;
+    try {
+      d = await download.downloadShard(url);
+    } catch (e) {
+      let host;
+      try { host = new URL(url.trim()).hostname; } catch { /* not a URL */ }
+      log.warn('shard-download-failed', { host, error: e.code || e.message, status: e.status, reason: e.reason });
+      const code = DOWNLOAD_ERRORS.includes(e.code) ? e.code : 'network';
+      throw new Error(t('download.error.' + code, { host: e.host || host || '', status: e.status || '' }));
+    }
+    log.info('shard-downloaded', { host: d.host, from: d.finalHost !== d.host ? d.finalHost : undefined, bytes: d.bytes, ms: Date.now() - started });
+    try {
+      return await prepareInstall(d.file, { origin: { kind: 'url', host: d.host } });
+    } finally {
+      d.cleanup();
+    }
+  });
   handle('install:pick-dev', async () => {
     const r = await dialog.showOpenDialog(win, { title: t('dialog.pickDevFolder'), properties: ['openDirectory'] });
     if (r.canceled || !r.filePaths[0]) return { ok: true };
@@ -569,7 +595,7 @@ async function start() {
     if (!c) throw new Error('This install is no longer available; pick the shard again');
     candidates.delete(id);
     try {
-      if (c.link) store.link(c.root, c.manifest); else store.install(c.root, c.manifest);
+      if (c.link) store.link(c.root, c.manifest); else store.install(c.root, c.manifest, { source: c.origin || undefined });
       log.info(c.link ? 'shard-linked' : 'shard-installed', { shard: c.manifest.id, version: c.manifest.version, update: !!c.update, backup: c.fromBackup || undefined });
       if (c.after) {
         try { c.after(); } catch (e) { log.warn('backup-shard-state-failed', { shard: c.manifest.id, error: e }); }

@@ -242,7 +242,16 @@ class ShardStore extends EventEmitter {
 
   // Copies a validated shard folder into installDir/<id> and approves its keys. Replaces an
   // installed copy of the same shard; refuses to touch bundled or linked (development) shards.
-  install(sourceDir, manifest) {
+  // Where a user shard came from, as saved at install time: { kind: 'url', host } or null.
+  // The state file can be edited by hand, so only that shape is trusted.
+  sourceOf(id) {
+    const s = this.state[id]?.source;
+    if (!s || typeof s !== 'object' || s.kind !== 'url' || typeof s.host !== 'string' || !/^[a-z0-9.:[\]-]{1,253}$/i.test(s.host)) return null;
+    return { kind: 'url', host: s.host };
+  }
+
+  // `source`: where the files came from ({ kind: 'url', host }); without it, the previous one stays
+  install(sourceDir, manifest, { source } = {}) {
     const existing = this.entries.get(manifest.id);
     if (existing?.bundled) throw new Error(`The id "${manifest.id}" belongs to a bundled shard`);
     if (existing?.linked) throw new Error(`"${manifest.id}" is linked to a development folder; remove the link first`);
@@ -256,7 +265,7 @@ class ShardStore extends EventEmitter {
     fs.cpSync(sourceDir, target, { recursive: true, filter: (src) => !fs.lstatSync(src).isSymbolicLink() });
     // Only the approval changes: favorite, menu position, disabled and settings stay (saving a panel
     // or updating a shard shouldn't reset them)
-    this.state[manifest.id] = { ...this.state[manifest.id], approved: [...manifest.keys] };
+    this.state[manifest.id] = { ...this.state[manifest.id], approved: [...manifest.keys], ...(source ? { source } : {}) };
     this.saveState();
     this.load();
     return this.entries.get(manifest.id);

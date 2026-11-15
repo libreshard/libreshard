@@ -495,5 +495,20 @@
   "shards.license": "License: {license}",
   "shards.noLicense": "No license given",
   "shards.page": "Shard's page",
-  "review.license": "License"
+  "review.license": "License",
+  "shards.installUrl": "Install from URL…",
+  "shards.from": "from {host}",
+  "review.source": "Downloaded from {host}.",
+  "url.title": "Install a shard from a web address",
+  "url.hint": "Paste the address of a .libreshard or .zip file (https only). LibreShard downloads it and shows you its keys before installing anything.",
+  "url.download": "Download and review",
+  "url.downloading": "Downloading…",
+  "download.error.badUrl": "That isn't a valid web address.",
+  "download.error.notHttps": "Only https:// addresses can be used, so nobody can change the file on its way.",
+  "download.error.privateAddress": "{host} is on a private network. LibreShard only downloads shards from servers on the internet.",
+  "download.error.tooManyRedirects": "The address redirects too many times.",
+  "download.error.httpStatus": "The server answered with an error ({status}).",
+  "download.error.tooBig": "The file is bigger than 50 MB, the limit for a shard.",
+  "download.error.timeout": "The download took too long and was stopped.",
+  "download.error.network": "The file couldn't be downloaded. Check the address and your connection."
 }

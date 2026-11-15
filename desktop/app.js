@@ -161,6 +161,7 @@ function renderShards() {
       h('button', { class: 'btn primary', onclick: () => call(api.openEditor) }, t('shards.newPanel')),
       h('button', { class: 'btn', onclick: () => call(api.importStreamDeck) }, t('shards.importStreamDeck')),
       h('button', { class: 'btn', onclick: () => install('zip') }, t('shards.installZip')),
+      h('button', { class: 'btn', onclick: installFromUrl }, t('shards.installUrl')),
       h('button', { class: 'btn', onclick: () => install('folder') }, t('shards.installFolder')),
       h('button', { class: 'btn', onclick: () => install('dev') }, t('shards.loadDev')),
       h('button', { class: 'btn', onclick: () => api.openPath('shards') }, t('shards.openShardsFolder'))),
@@ -196,6 +197,7 @@ function shardCard(s) {
           t('shards.keyCount', { count: s.keys.length }),
           s.apps.length ? t('shards.onlyIn', { apps: s.apps.join(', ') }) : t('shards.anyApp'),
           s.license ? t('shards.license', { license: s.license }) : null,
+          s.source && s.source.kind === 'url' ? t('shards.from', { host: s.source.host }) : null,
         ].filter(Boolean).join(' · '))),
       h('div', { class: 'order' },
         h('button', { class: 'icon-btn star' + (s.favorite ? ' on' : ''), title: s.favorite ? t('shards.unfavorite') : t('shards.favorite'),
@@ -227,6 +229,35 @@ const approvalView = (s) => ({
 async function exportShard(s) {
   const r = await call(api.exportShard, s.id);
   if (r && r.ok && r.saved) toast(t('export.saved', { name: s.name || s.id }));
+}
+
+// "Install from URL…": an address, then the download and the usual review
+function installFromUrl() {
+  const input = h('input', { type: 'url', class: 'url-input', placeholder: 'https://…', spellcheck: 'false', autocomplete: 'off' });
+  const go = h('button', { class: 'btn primary', type: 'submit' }, t('url.download'));
+  const cancel = h('button', { class: 'btn', type: 'button', onclick: closeModal }, t('action.cancel'));
+  const form = h('form', {
+    onsubmit: async (e) => {
+      e.preventDefault();
+      if (!input.value.trim()) { input.focus(); return; }
+      go.disabled = true;
+      input.disabled = true;
+      go.textContent = t('url.downloading');
+      const r = await call(api.installFromUrl, input.value.trim());
+      go.disabled = false;
+      input.disabled = false;
+      go.textContent = t('url.download');
+      if (r && r.ok && r.review) review(r.review, 'install');
+    },
+  },
+  h('div', { class: 'label' }, t('url.title')),
+  h('p', { class: 'hint small' }, t('url.hint')),
+  input,
+  h('div', { class: 'buttons' }, cancel, go));
+  fill($('dialog'), form);
+  $('modal').hidden = false;
+  $('modal').onclick = (e) => { if (e.target === $('modal') && !go.disabled) closeModal(); };
+  input.focus();
 }
 
 async function install(kind) {
@@ -271,6 +302,7 @@ function review(data, mode) {
         h('div', { class: 'meta' }, [m.version ? 'v' + m.version : null, m.author ? t('shards.by', { author: m.author }) : null, m.id].filter(Boolean).join(' · ')))),
     m.description ? h('div', { class: 'desc' }, m.description) : null,
     data.link ? h('div', { class: 'hint small' }, t('review.linkNote')) : null,
+    data.source && data.source.kind === 'url' ? h('div', { class: 'hint small' }, t('review.source', { host: data.source.host })) : null,
     data.update ? h('div', { class: 'warnbox warn' },
       t('review.updateFrom', { from: data.update.fromVersion || '?', to: m.version || '?' }),
       data.update.addedKeys.length ? h('div', null, t('review.addedKeys', { keys: data.update.addedKeys.join(', ') })) : null,

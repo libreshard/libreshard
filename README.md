@@ -41,8 +41,9 @@ share.
   internet, your files or each other.
 - 🎯 **Only where it belongs.** Limit a shard to the apps it's meant for, so a tap never fires a
   shortcut into the wrong program.
-- ⚡ **Local and private.** No account, no telemetry. The only connection outside your network is a
-  daily check for new versions, which sends nothing about you and can be turned off.
+- ⚡ **Local and private.** No account, no telemetry. On its own, LibreShard only checks once a day
+  for new versions (it sends nothing about you and can be turned off); anything else it downloads,
+  you asked for.
 - 🌍 **English and Spanish**, following your system language.
 
 Bundled shards: **Media**, **Numpad**, **Image editing** (Photoshop, Affinity Photo, Krita, GIMP),
@@ -176,8 +177,8 @@ The full guide (keys, settings, languages, limiting to apps, design rules) is in
 - Shards run in an isolated frame with no network access, and can only press keys you approved.
 - Local traffic is plain HTTP, so use LibreShard on networks you trust.
 
-LibreShard sends no data about you anywhere; its only outside connection is the check for new
-versions (see [Privacy](SECURITY.md#privacy)). Read **[SECURITY.md](SECURITY.md)** for the threat
+LibreShard sends no data about you anywhere. It only goes online to check for new versions and to
+download a shard when you ask it to (see [Privacy](SECURITY.md#privacy)). Read **[SECURITY.md](SECURITY.md)** for the threat
 model, the known limitations and how to report a vulnerability.
 
 ## Build from source
