@@ -68,7 +68,7 @@ These are documented on purpose. Keep them in mind:
 LibreShard sends no data about you anywhere. There's no telemetry, no account and no cloud service:
 the app talks to the devices you pair on your own network, and shards can't reach the network.
 
-It connects outside your network in two cases.
+It connects outside your network in three cases.
 
 The **check for new versions**: once a day, and when
 you press "Check now", it asks GitHub's API (`api.github.com`) which LibreShard release is the
@@ -76,6 +76,11 @@ latest. The request carries no information about you, your devices or your shard
 `LibreShard` User-Agent), and GitHub sees it like any visit from your address. LibreShard never
 downloads or installs anything by itself: it shows a link to the download page. Turn it off in
 Settings → "Check for new versions".
+
+**The gallery**, when you open it (Shards → "Explore the gallery"): LibreShard reads its list from
+`libreshard.com`, with the same generic User-Agent. Installing a shard from it downloads the file
+its author published, and LibreShard only installs it if it's exactly the file that was reviewed
+(same sha256 and size), after the usual review.
 
 **Installing a shard from a web address** ("Install from URL…"), only when you ask: LibreShard
 downloads that file from the server you gave, with the same generic User-Agent and nothing else,

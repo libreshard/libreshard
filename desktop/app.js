@@ -149,6 +149,7 @@ function renderDevices() {
 
 function renderShards() {
   const p = $('tab-shards');
+  if (gal) { renderGallery(p); return; }
   const pending = state.shards.filter((s) => s.pendingKeys.length);
   const cards = state.shards.map(shardCard);
   const rejected = state.rejected.map((r) => h('div', { class: 'item attention' },
@@ -159,6 +160,7 @@ function renderShards() {
   fill(p,
     h('div', { class: 'row' },
       h('button', { class: 'btn primary', onclick: () => call(api.openEditor) }, t('shards.newPanel')),
+      h('button', { class: 'btn', onclick: () => openGallery(false) }, t('shards.explore')),
       h('button', { class: 'btn', onclick: () => call(api.importStreamDeck) }, t('shards.importStreamDeck')),
       h('button', { class: 'btn', onclick: () => install('zip') }, t('shards.installZip')),
       h('button', { class: 'btn', onclick: installFromUrl }, t('shards.installUrl')),
@@ -198,6 +200,7 @@ function shardCard(s) {
           s.apps.length ? t('shards.onlyIn', { apps: s.apps.join(', ') }) : t('shards.anyApp'),
           s.license ? t('shards.license', { license: s.license }) : null,
           s.source && s.source.kind === 'url' ? t('shards.from', { host: s.source.host }) : null,
+          s.source && s.source.kind === 'gallery' ? t('shards.fromGallery') : null,
         ].filter(Boolean).join(' · '))),
       h('div', { class: 'order' },
         h('button', { class: 'icon-btn star' + (s.favorite ? ' on' : ''), title: s.favorite ? t('shards.unfavorite') : t('shards.favorite'),
@@ -229,6 +232,98 @@ const approvalView = (s) => ({
 async function exportShard(s) {
   const r = await call(api.exportShard, s.id);
   if (r && r.ok && r.saved) toast(t('export.saved', { name: s.name || s.id }));
+}
+
+/* ---------- Gallery ---------- */
+
+// The shards reviewed for LibreShard's gallery, listed in the Shards tab. Its list comes from
+// libreshard.com when it opens (the main process keeps it 10 minutes); installing downloads the
+// reviewed file and shows the usual review.
+let gal = null; // { q, tag, loading, error, entries, busy } while the gallery is open
+const GAL_TAGS = ['games', 'streaming', 'creative', 'video', 'audio', 'office', 'development', 'desktop', 'accessibility', 'other'];
+
+async function openGallery(refresh) {
+  gal = gal || { q: '', tag: '', entries: null, busy: null };
+  gal.loading = true;
+  gal.error = null;
+  if (tab === 'shards') renderShards();
+  const r = await api.galleryList({ refresh });
+  if (!gal) return;
+  gal.loading = false;
+  if (r && r.ok) gal.entries = r.entries;
+  else gal.error = ((r && r.errors) || [t('error.generic')]).join(' ');
+  if (tab === 'shards') renderShards();
+}
+
+async function galleryInstall(e) {
+  gal.busy = e.id;
+  renderShards();
+  const r = await call(api.galleryInstall, e.id);
+  if (gal) gal.busy = null;
+  if (tab === 'shards') renderShards();
+  if (r && r.ok && r.review) review(r.review, 'install');
+}
+
+function galleryCard(e) {
+  const busy = gal.busy === e.id;
+  const taken = e.installed && !e.installed.same;
+  const status = e.paid ? h('span', { class: 'badge' }, t('gallery.paid', { price: e.price })) : h('span', { class: 'badge' }, t('gallery.free'));
+  const risky = e.risk.warning ? h('span', { class: 'badge danger' }, t('risk.badgeWarning'))
+    : e.risk.dangerous.length ? h('span', { class: 'badge warn' }, t('risk.badgeSystem')) : null;
+  let action = null;
+  if (e.paid) action = h('button', { class: 'btn small primary', onclick: () => call(api.galleryOpen, e.id, 'buy') }, t('gallery.buy'));
+  else if (e.needsApp || taken) action = null;
+  else if (e.update) action = h('button', { class: 'btn small primary', disabled: busy, onclick: () => galleryInstall(e) }, busy ? t('gallery.downloading') : t('gallery.update'));
+  else if (!e.installed) action = h('button', { class: 'btn small primary', disabled: busy, onclick: () => galleryInstall(e) }, busy ? t('gallery.downloading') : t('gallery.install'));
+  return h('div', { class: 'item' },
+    h('div', { class: 'item-head' },
+      h('div', { class: 'ico' }, iconText(e)),
+      h('div', { class: 'grow' },
+        h('div', null,
+          h('span', { class: 'name' }, e.name),
+          status,
+          e.update ? h('span', { class: 'badge warn' }, t('gallery.updateBadge', { version: e.version }))
+            : e.installed && e.installed.same ? h('span', { class: 'badge' }, t('gallery.installed')) : null,
+          e.needsApp ? h('span', { class: 'badge off' }, t('gallery.needsAppBadge', { version: e.minAppVersion })) : null,
+          risky),
+        h('div', { class: 'meta' }, [
+          'v' + e.version,
+          t('shards.by', { author: e.author }),
+          t('shards.keyCount', { count: e.keys.length }),
+          e.apps.length ? t('shards.onlyIn', { apps: e.apps.join(', ') }) : t('shards.anyApp'),
+          t('shards.license', { license: e.license }),
+        ].join(' · ')))),
+    h('div', { class: 'desc' }, e.description),
+    taken ? h('div', { class: 'hint small' }, t('gallery.idTaken')) : null,
+    h('div', { class: 'actions' },
+      action,
+      h('button', { class: 'btn small', onclick: () => review({ manifest: { ...e, url: undefined }, risk: e.risk }, 'view') }, t('shards.permissions')),
+      e.url ? h('button', { class: 'btn small', title: e.url, onclick: () => call(api.galleryOpen, e.id, 'page') }, t('gallery.page')) : null));
+}
+
+function renderGallery(p) {
+  const q = gal.q.trim().toLowerCase();
+  const list = (gal.entries || []).filter((e) => (!gal.tag || e.tags.includes(gal.tag)) &&
+    (!q || [e.name, e.author, e.description, ...e.apps, ...e.tags.map((x) => t('gallery.tag.' + x))].join(' ').toLowerCase().includes(q)));
+  const search = h('input', { type: 'search', class: 'grow-input', placeholder: t('gallery.search'), value: gal.q,
+    oninput: (ev) => { gal.q = ev.target.value; renderShards(); const s = $('galSearch'); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } } });
+  search.id = 'galSearch';
+  fill(p,
+    h('div', { class: 'row' },
+      h('button', { class: 'btn', onclick: () => { gal = null; renderShards(); } }, t('gallery.back')),
+      h('h2', { class: 'grow gal-title' }, t('gallery.title')),
+      h('button', { class: 'btn small', disabled: gal.loading, onclick: () => openGallery(true) }, t('gallery.refresh'))),
+    h('p', { class: 'hint small' }, t('gallery.intro'), ' ',
+      h('button', { class: 'btn small', onclick: () => call(api.openLink, 'galleryPublish') }, t('gallery.publish'))),
+    h('div', { class: 'row' },
+      search,
+      h('select', { onchange: (ev) => { gal.tag = ev.target.value; renderShards(); } },
+        h('option', { value: '', selected: !gal.tag }, t('gallery.allTags')),
+        GAL_TAGS.map((x) => h('option', { value: x, selected: gal.tag === x }, t('gallery.tag.' + x))))),
+    gal.loading && !gal.entries ? h('p', { class: 'hint' }, t('gallery.loading')) : null,
+    gal.error ? h('div', { class: 'warnbox warn' }, gal.error, ' ', h('button', { class: 'btn small', onclick: () => openGallery(true) }, t('gallery.retry'))) : null,
+    gal.entries && !list.length ? h('p', { class: 'hint' }, t('gallery.empty')) : null,
+    h('div', { class: 'list' }, list.map(galleryCard)));
 }
 
 // "Install from URL…": an address, then the download and the usual review
@@ -288,6 +383,7 @@ function review(data, mode) {
       closeModal();
       toast(mode === 'install' ? t('shards.installed.toast', { name: m.name || m.id }) : t('shards.approved.toast', { name: m.name || m.id }));
       tab = 'shards';
+      if (gal) openGallery(false); // its "installed" marks change
     }
   };
 
@@ -303,6 +399,7 @@ function review(data, mode) {
     m.description ? h('div', { class: 'desc' }, m.description) : null,
     data.link ? h('div', { class: 'hint small' }, t('review.linkNote')) : null,
     data.source && data.source.kind === 'url' ? h('div', { class: 'hint small' }, t('review.source', { host: data.source.host })) : null,
+    data.source && data.source.kind === 'gallery' ? h('div', { class: 'hint small' }, t('review.fromGallery')) : null,
     data.update ? h('div', { class: 'warnbox warn' },
       t('review.updateFrom', { from: data.update.fromVersion || '?', to: m.version || '?' }),
       data.update.addedKeys.length ? h('div', null, t('review.addedKeys', { keys: data.update.addedKeys.join(', ') })) : null,

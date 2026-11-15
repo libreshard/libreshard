@@ -137,5 +137,8 @@ h2:first-child { margin-top: 0; }
 .icon-btn:hover { border-color: var(--accent); color: var(--text); }
 .icon-btn.star.on { color: var(--gold); border-color: var(--gold); }
 
+/* Gallery */
+.gal-title { margin: 0; }
+
 /* Install from URL */
 .url-input { width: 100%; box-sizing: border-box; margin: 6px 0 4px; }

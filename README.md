@@ -177,8 +177,8 @@ The full guide (keys, settings, languages, limiting to apps, design rules) is in
 - Shards run in an isolated frame with no network access, and can only press keys you approved.
 - Local traffic is plain HTTP, so use LibreShard on networks you trust.
 
-LibreShard sends no data about you anywhere. It only goes online to check for new versions and to
-download a shard when you ask it to (see [Privacy](SECURITY.md#privacy)). Read **[SECURITY.md](SECURITY.md)** for the threat
+LibreShard sends no data about you anywhere. It only goes online to check for new versions, to show
+the gallery when you open it, and to download a shard when you ask it to (see [Privacy](SECURITY.md#privacy)). Read **[SECURITY.md](SECURITY.md)** for the threat
 model, the known limitations and how to report a vulnerability.
 
 ## Build from source

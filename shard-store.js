@@ -240,17 +240,20 @@ class ShardStore extends EventEmitter {
     this.load();
   }
 
-  // Copies a validated shard folder into installDir/<id> and approves its keys. Replaces an
-  // installed copy of the same shard; refuses to touch bundled or linked (development) shards.
-  // Where a user shard came from, as saved at install time: { kind: 'url', host } or null.
-  // The state file can be edited by hand, so only that shape is trusted.
+  // Where a user shard came from, as saved at install time: { kind: 'url', host }, { kind: 'gallery',
+  // id } or null. The state file can be edited by hand, so only those shapes are trusted.
   sourceOf(id) {
     const s = this.state[id]?.source;
-    if (!s || typeof s !== 'object' || s.kind !== 'url' || typeof s.host !== 'string' || !/^[a-z0-9.:[\]-]{1,253}$/i.test(s.host)) return null;
-    return { kind: 'url', host: s.host };
+    if (!s || typeof s !== 'object') return null;
+    if (s.kind === 'url' && typeof s.host === 'string' && /^[a-z0-9.:[\]-]{1,253}$/i.test(s.host)) return { kind: 'url', host: s.host };
+    if (s.kind === 'gallery' && typeof s.id === 'string' && /^[a-z0-9-]{1,64}$/.test(s.id)) return { kind: 'gallery', id: s.id };
+    return null;
   }
 
-  // `source`: where the files came from ({ kind: 'url', host }); without it, the previous one stays
+  // Copies a validated shard folder into installDir/<id> and approves its keys. Replaces an
+  // installed copy of the same shard; refuses to touch bundled or linked (development) shards.
+  // `source`: where the files came from ({ kind: 'url', host } or { kind: 'gallery', id }); without
+  // it, the previous one stays.
   install(sourceDir, manifest, { source } = {}) {
     const existing = this.entries.get(manifest.id);
     if (existing?.bundled) throw new Error(`The id "${manifest.id}" belongs to a bundled shard`);

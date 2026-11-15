@@ -64,6 +64,54 @@ function httpsGet(url, { lookup, headers, signal }) {
   });
 }
 
+// Requests `u` (a checked URL), following redirects by hand: { res, u } with the final 200 response
+async function respond(u, { get, lookup, limits, signal, onHop }) {
+  for (let hops = 0; ; hops++) {
+    const res = await get(u, { lookup: safeLookup(lookup), headers: { 'User-Agent': 'LibreShard', Accept: '*/*' }, signal });
+    const status = res.statusCode;
+    if (status >= 300 && status < 400 && res.headers.location) {
+      res.resume();
+      if (hops >= limits.maxRedirects) throw new DownloadError('tooManyRedirects');
+      const next = checkUrl(res.headers.location, u);
+      if (next instanceof DownloadError) throw next;
+      u = next;
+      onHop?.(u);
+      continue;
+    }
+    if (status !== 200) { res.resume(); throw new DownloadError('httpStatus', { status }); }
+    return { res, u };
+  }
+}
+
+// A small text document (the gallery's index), kept in memory: the same checks as downloadShard,
+// with its own limits (2 MB, 20 s by default). Resolves with the text.
+async function downloadText(url, { get = httpsGet, lookup, limits = { ...LIMITS, maxBytes: 2 * 1024 * 1024, timeoutMs: 20000 } } = {}) {
+  let u = checkUrl(url);
+  if (u instanceof DownloadError) throw u;
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, limits.timeoutMs);
+  try {
+    const { res } = await respond(u, { get, lookup, limits, signal: controller.signal, onHop: (next) => { u = next; } });
+    if (Number(res.headers['content-length']) > limits.maxBytes) { res.destroy(); throw new DownloadError('tooBig'); }
+    const chunks = [];
+    let bytes = 0;
+    for await (const chunk of res) {
+      bytes += chunk.length;
+      if (bytes > limits.maxBytes) { res.destroy(); throw new DownloadError('tooBig'); }
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks).toString('utf8');
+  } catch (e) {
+    if (e instanceof DownloadError) throw e;
+    if (timedOut) throw new DownloadError('timeout');
+    if (e && e.code === 'EPRIVATE') throw new DownloadError('privateAddress', { host: u.hostname });
+    throw new DownloadError('network', { reason: e && (e.code || e.message) });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Downloads `url` into a new temporary folder. Returns { file, bytes, host, finalHost, cleanup }
 // (host: the one in the address the user gave; finalHost: the server the file came from after
 // redirects, often a CDN), or throws a DownloadError with a code: badUrl, notHttps,
@@ -87,20 +135,7 @@ async function downloadShard(url, { get = httpsGet, lookup, limits = LIMITS, tmp
   };
   try {
     let res;
-    for (let hops = 0; ; hops++) {
-      res = await get(u, { lookup: safeLookup(lookup), headers: { 'User-Agent': 'LibreShard', Accept: '*/*' }, signal: controller.signal });
-      const status = res.statusCode;
-      if (status >= 300 && status < 400 && res.headers.location) {
-        res.resume();
-        if (hops >= limits.maxRedirects) throw new DownloadError('tooManyRedirects');
-        const next = checkUrl(res.headers.location, u);
-        if (next instanceof DownloadError) throw next;
-        u = next;
-        continue;
-      }
-      if (status !== 200) { res.resume(); throw new DownloadError('httpStatus', { status }); }
-      break;
-    }
+    ({ res, u } = await respond(u, { get, lookup, limits, signal: controller.signal, onHop: (next) => { u = next; } }));
     const declared = Number(res.headers['content-length']);
     if (declared > limits.maxBytes) { res.destroy(); throw new DownloadError('tooBig'); }
     // installer.prepare() only opens .zip/.libreshard files
@@ -127,4 +162,4 @@ async function downloadShard(url, { get = httpsGet, lookup, limits = LIMITS, tmp
   }
 }
 
-module.exports = { downloadShard, checkUrl, safeLookup, DownloadError, LIMITS };
+module.exports = { downloadShard, downloadText, checkUrl, safeLookup, DownloadError, LIMITS };

@@ -275,6 +275,8 @@ Two side effects: `mask-image` with a file from the shard may fail (embed masks 
   the [SC MFD](https://github.com/libreshard/libreshard-sc-mfd) game shard draws its own
   icons and uses no game artwork for that reason.
 - **Name it clearly.** "Photo tools for LibreShard" is fine; see [TRADEMARKS.md](../TRADEMARKS.md).
+- **List it in the gallery** so people find it in the app: see [how to publish](https://github.com/libreshard/shards#publish-your-shard)
+  (an entry with your file's address and sha256, reviewed before it's listed).
 - Then tell people about it: open a discussion in the LibreShard repository.
 
 ## Shards made in the editor

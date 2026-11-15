@@ -8,6 +8,12 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **Gallery:** "Explore the gallery" in the Shards tab lists shards reviewed for LibreShard, with
+  search and categories, their keys, apps and license, and whether they're free or paid, installed,
+  or have a newer version. Installing downloads the file its author published and only goes ahead if
+  it's exactly the file that was reviewed, then shows the usual review. Paid shards open their
+  author's shop. A web page can also link to an entry (`libreshard://install?gallery=<id>`). Shards
+  are published through the [libreshard/shards](https://github.com/libreshard/shards) repository.
 - **Shards are only shown to paired devices:** the list of your shards and their files were
   served to any device on your network; now only to paired ones. Each tablet gets a session token
   when it signs in, kept while it's connected and for 10 minutes after (a short disconnection
