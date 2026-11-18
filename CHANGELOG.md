@@ -6,15 +6,18 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-18
+
 ### App
 
 - **Editing someone else's shard makes a copy:** a shard you got from the gallery, a web address or
   a file now says **Edit a copy** on its card, and the editor says so as it opens. **Save as copy**
-  creates a new shard of yours, "<name> (copy)", with the original's author and license; from then
-  on it saves in place. The original stays as it was, with its settings, favorite and place in the
-  menu, and keeps getting its updates. Before, saving changed the original itself: the gallery could
-  then call it up to date when it wasn't, or replace your changes when you updated it. Shards you
-  made in the editor save in place as before, and backups now remember where each shard came from.
+  creates a new shard of yours, with "(copy)" after its name and the original's author and license;
+  from then on it saves in place. The original stays as it was, with its settings, favorite and
+  place in the menu, and keeps getting its updates. Before, saving changed the original itself: the
+  gallery could then call it up to date when it wasn't, or replace your changes when you updated it.
+  Shards you made in the editor save in place as before, and backups now remember where each shard
+  came from.
 
 ## [0.5.0] - 2026-11-15
 
@@ -252,7 +255,8 @@ First public release.
 - Linux `.deb` (with an AppArmor profile for Ubuntu 24.04 and newer) and AppImage.
 - Electron Fuses: no `ELECTRON_RUN_AS_NODE`, no inspector flags, and `app.asar` integrity checks.
 
-[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/libreshard/libreshard/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/libreshard/libreshard/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/libreshard/libreshard/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/libreshard/libreshard/compare/v0.3.0...v0.4.0
