@@ -13,7 +13,7 @@ const { stale } = require('../tools/build-shard-base');
 
 const root = path.join(__dirname, '..');
 const shardsDir = path.join(root, 'shards');
-const EXPECTED = ['desarrollo', 'discord-basico', 'edicion-imagen', 'escritorio', 'multimedia', 'obs', 'teclado-numerico', 'videollamadas'];
+const EXPECTED = ['desarrollo', 'discord-basico', 'escritorio', 'multimedia', 'teclado-numerico', 'videollamadas'];
 
 function store() {
   const data = fs.mkdtempSync(path.join(os.tmpdir(), 'libreshard-bundled-'));
@@ -72,8 +72,7 @@ test('each shard has English and Spanish texts with the same keys, covering its 
 
 test('their other languages (translated by AI, see i18n/README.md) are complete and keep every {placeholder}', () => {
   const vars = (s) => (String(s).match(/\{\w+\}/g) || []).sort();
-  // obs and edicion-imagen leave the app for the gallery in 0.5.2 (feat/move-shards-to-gallery)
-  for (const id of EXPECTED.filter((x) => x !== 'obs' && x !== 'edicion-imagen')) {
+  for (const id of EXPECTED) {
     const dict = strings(id);
     for (const lang of ['fr', 'pt']) {
       assert.ok(dict[lang], `${id}: ${lang}`);

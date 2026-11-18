@@ -49,9 +49,10 @@ share.
   [suggest a fix](https://github.com/libreshard/libreshard/issues/new?template=translation.yml) if
   something reads wrong.
 
-Bundled shards: **Media**, **Numpad**, **Image editing** (Photoshop, Affinity Photo, Krita, GIMP),
-**Video calls** (Zoom, Teams, Meet), **Desktop** (windows and virtual desktops), **Discord**,
-**OBS Studio** and **VS Code**.
+Bundled shards: **Media**, **Numpad**, **Video calls** (Zoom, Teams, Meet), **Desktop** (windows
+and virtual desktops), **Discord** and **VS Code**. More in the gallery, such as **Stream Control**
+(OBS Studio) and **Image editing** (Photoshop, Affinity Photo, Krita, GIMP): see
+[libreshard/gallery-shards](https://github.com/libreshard/gallery-shards).
 
 ## Supported systems
 

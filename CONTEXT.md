@@ -63,6 +63,7 @@ libreshard/
 ├── download.js           downloading a shard from an https address (public servers only)
 ├── links.js              libreshard:// links: parsing "install?url=…" and "install?gallery=…"
 ├── gallery.js            the gallery's index (libreshard.com/gallery/index.json): checking entries, matching files and installed shards
+├── moved.js              shards that left the app for the gallery, and whom the one-time notice offers them to
 ├── panel-format.js       panels made with the editor: panel.json validation and the shard folder built from it
 ├── streamdeck.js         Stream Deck profiles (.streamDeckProfile) read into a panel
 ├── streamdeck-keys.js    a Stream Deck hotkey (Qt, Windows and macOS key codes) as a LibreShard combo
@@ -96,8 +97,8 @@ libreshard/
 │   ├── manifest.webmanifest  name and icons when the viewer is added to the home screen
 │   └── brand/            logo-mark.svg (single source of the mark) and generated PNG icons
 ├── shards/               shards bundled with the app (see "Bundled shards" in section 5)
-│   ├── desarrollo/  discord-basico/  edicion-imagen/  escritorio/
-│   └── multimedia/  obs/  teclado-numerico/  videollamadas/
+│   ├── desarrollo/  discord-basico/  escritorio/
+│   └── multimedia/  teclado-numerico/  videollamadas/
 ├── shard-base/           shared look of the bundled shards: base.css, icons.js (own icon set), libreshard.js;
 │                         and of editor panels: panel.js (draws panel.json), panel.css, panel.html,
 │                         themes.js (the built-in panel themes)
@@ -141,7 +142,7 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - **Tray:** a `Tray` with Open / Open this PC's panel / Pause or Resume / Quit (labels follow the language). With `closeToTray` on (default), closing the window hides it and the server keeps running; the first time, a notification says so. Without a tray (some Linux desktops), closing quits as before. `--hidden` starts with only the tray icon.
 - **Open at login** (`openAtLogin`, off by default): `app.setLoginItemSettings` on Windows and macOS (with `--hidden`; in development the entry is named `electron.app.Electron` and points at the project's Electron), and `~/.config/autostart/libreshard.desktop` on Linux (using `$APPIMAGE` when running from an AppImage).
 - Extra IPC: `shard:settings`, `shard:reset-settings`, `shard:favorite`, `shard:move`, `install:pick-dev` (folder dialog for development mode), and `install:path` accepts `{ link: true }`. A candidate with `link` is confirmed with `store.link()` instead of `store.install()`.
-- **Support:** "Support LibreShard" in About opens `LINKS.donate` (libreshard.com/support/, `/es/` in Spanish), a website page with Ko-fi and GitHub Sponsors; `.github/FUNDING.yml` gives the repository's Sponsor button. A one-time notice (the `#support` banner, desktop window only, never with the update banner): the server calls `onShardOpened(id)` when a tablet opens a known shard, `countShardDay()` counts distinct days in the internal setting `support` (`{ days, lastDay, done }`, never sent anywhere), and `supportAskDue()` shows it after 5 such days and 14 days since the first paired device (`createdAt`). Either answer calls `support:done`, and it never comes back. Logged as `support-notice` (answer).
+- **Support:** "Support LibreShard" in About opens `LINKS.donate` (libreshard.com/support/, `/es/` in Spanish), a website page with Ko-fi and GitHub Sponsors; `.github/FUNDING.yml` gives the repository's Sponsor button. A one-time notice (the `#support` banner, desktop window only, never with the update banner or the moved shards one): the server calls `onShardOpened(id)` when a tablet opens a known shard, `countShardDay()` counts distinct days in the internal setting `support` (`{ days, lastDay, done }`, never sent anywhere), and `supportAskDue()` shows it after 5 such days and 14 days since the first paired device (`createdAt`). Either answer calls `support:done`, and it never comes back. Logged as `support-notice` (answer).
 - **About** (end of Ajustes): `app:open-link(kind)` opens one of `LINKS` (website, source, security, license, download, aiGuide, donate, translation) with `shell.openExternal`; the ones in `LOCALIZED_LINKS` (aiGuide) open the website's `/es/` page when the app is in Spanish; the page names a destination and never passes a URL. `app:open-path` also takes `logs` (the log's folder) and `licenses` (Electron's `LICENSES.chromium.html` next to the packaged executable, on Windows and Linux; `state.thirdPartyLicenses` says whether it exists). `app:copy-diagnostics` puts `diagnostics()` on the clipboard. `app:report-bug` does the same and opens the `bug_report.yml` issue form with `version` and `os` (`systemLabel()`) in the address; the diagnostics never go in the address: they would be cut, and the user must see them before sending.
 - `state.settings` carries every setting the Ajustes tab shows, `closeToTray`, `openAtLogin` and `panelAlwaysOnTop` included (without them their switches always looked off).
 
@@ -530,14 +531,14 @@ All of them use `shard-base/` (`libreshard.css`, `libreshard.js`, copied in by `
 |---|---|---|---|
 | `multimedia` | Media | `data-repeat` (volume) | No apps restriction. |
 | `teclado-numerico` | Numpad | `settings` (calculator/phone layout) | Numpad keys type digits only with Num Lock on (Windows and X11 turn them into navigation keys otherwise), so it has a Num Lock key. |
-| `edicion-imagen` | Image editing | `settings` with a key map per program, `apps`, `data-hold` (hand, pick color) | Program: Photoshop, Affinity Photo, Krita, GIMP. GIMP 3.2 and Krita 5 checked; Photoshop and Affinity use their documented defaults, unchecked. Actions a program has no shortcut for are shown disabled (Krita's lasso). |
 | `videollamadas` | Video calls | `settings` per program, two-tap confirm | Zoom (checked in its shortcut settings, not in a meeting), Teams and Meet (checked in meetings). Meet has no leave shortcut, so that button is off for it. |
 | `escritorio` | Desktop | the risk review (`win`, `ctrl+alt`), `data-hold` + `data-key` (Alt + Tab), `Shard.platform` | System: auto/Windows/GNOME/XFCE. Windows ignores an injected Win+L, so "Lock" is off there. |
 | `discord-basico` | Discord | global keybinds the user records with a "Send" button, `data-hold` push to talk | Key sets: Windows `ctrl+shift+F13–F17`, Linux `ctrl+shift+F1–F4, F6`. |
-| `obs` | OBS Studio | same pattern as Discord; scene buttons and names from `settings` | Windows `ctrl+shift+F18–F22`, scenes `shift+alt+F13–F18`; Linux `ctrl+shift+F7–F11`, scenes `shift+alt+F1, F3, F5, F9, F11, F12`. The same combo on Start/Stop (or Mute/Unmute) makes one on/off key. |
 | `desarrollo` | VS Code | plain `data-key`, `apps` | Format is `shift+alt+f` on Windows and `ctrl+shift+i` on Linux (Linux unchecked). |
 
 `test/bundled-shards.test.js` loads them all (none rejected, every key parses), checks complete manifests, up-to-date base copies, matching `en`/`es` keys, and complete `fr`/`pt` texts (same keys and placeholders) and settings labels.
+
+**Moved to the gallery** (`moved.js`): `obs` (now "Stream Control") and `edicion-imagen` came with the app until 0.5.1 and live in [libreshard/gallery-shards](https://github.com/libreshard/gallery-shards) since 0.5.2, with the same ids, so what `shards-state.json` and `app-rules.json` keep under them (settings, favorite, position, rules) comes back when they're installed from the gallery; their keys go through the usual review. On the first start of a version with `MOVED`, the internal setting `moved` (`{ pending: [ids] }`, null before) is decided once by `firstPending()`: every moved shard for someone whose `config.json` existed before this start (loadConfig writes it on the first one), except those they had disabled; nothing for a new install. The state carries `moved` (`offered()`: pending and not installed, with `name` and the old name `was`), shown as the `#moved` banner (and the support banner waits): one **Install <name>** button per shard (`gallery:install`, then the review) and **No, thanks** (`moved:dismiss`, which empties the list). Installing a moved id by any route drops it from `pending` (`install:confirm`). Logged as `shards-moved` (offered) and `moved-notice` (answer). A new id is added to `MOVED` only once its gallery entry is live.
 
 ## 6. Security model
 
@@ -601,6 +602,7 @@ Tests (`test/`):
 - `bundled-shards.test.js` loads every bundled shard and checks manifests, keys, base copies and the panel template (`tools/build-shard-base.js --check` does the same from the command line) and translations.
 - `themes.test.js`: every theme's values are valid panel style, settings combine with the theme's, contrast follows WCAG and every theme keeps 4.5:1 between text and buttons.
 - `streamdeck.test.js`: synthetic 3.0 and 2.0 profiles (base32 folders): pages, nested folders and a cycle, missing pages, Default, title styles, images (hostile paths too), Mac shortcuts, Key Logic, dials, the errors, a hostile zip, the key tables and that every reason has its strings. Real profiles never enter the repository.
+- `moved.test.js`: who is offered the moved shards (everyone who updates, except a disabled shard; nobody on a new install), the saved answer, and that a moved shard installed from the gallery gets back its favorite, settings and rules. `packaging.test.js`: every local module `main.js` loads (following `require`) is in `build.files`, since a missing one only breaks the packaged app.
 - `gallery.test.js`: the index (bad entries left out, formats, paid entries), files matching their entry, installed shards matched by source or by id and author, a shard saved by the editor (a copy) never taken for an entry, gallery links, and `downloadText`.
 - `links.test.js`: only `install` with an url is understood; the link is found in a command line.
 - `download.test.js`: https only, literal and resolved private addresses refused (a real request to `localhost` included), redirects (to http, to private servers, loops), HTTP errors, size limits (announced and streamed), time limit, and no temporary files left behind. `net.test.js` covers `isPublicAddress`.

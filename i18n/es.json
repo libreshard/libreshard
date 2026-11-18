@@ -581,6 +581,12 @@
   "support.ask": "LibreShard es gratis y de código abierto. Si te ha sido útil estas semanas, puedes apoyar su desarrollo. No volveremos a preguntar.",
   "support.yes": "Apoyar",
   "support.no": "No, gracias",
+  "moved.one": "{names} ya no viene con LibreShard: ahora está en la galería. Instálalo de nuevo para seguir usándolo; tus ajustes se conservan.",
+  "moved.many": "{names} ya no vienen con LibreShard: ahora están en la galería. Instálalos de nuevo para seguir usándolos; tus ajustes se conservan.",
+  "moved.renamed": "{was} (ahora {name})",
+  "moved.and": "{first} y {last}",
+  "moved.install": "Instalar {name}",
+  "moved.dismiss": "No, gracias",
   "about.supportTitle": "Apoyar a LibreShard",
   "about.supportHint": "LibreShard es gratis y lo seguirá siendo, sin nada bloqueado tras un pago. Las donaciones (Ko-fi o GitHub Sponsors) ayudan a mantenerlo.",
   "about.supportButton": "Apoyar…"

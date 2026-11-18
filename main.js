@@ -8,6 +8,7 @@ const QRCode = require('qrcode');
 const { startServer } = require('./server');
 const { Pairing, Devices, RateLimiter } = require('./pairing');
 const { ShardStore } = require('./shard-store');
+const moved = require('./moved');
 const { classifyKeys, validateManifest, httpsUrl } = require('./manifest');
 const { validatePanel, imagesOf, importedImages, imageFile, buildShard, isOwnPanel, copyOfPanel, LIMITS: PANEL_LIMITS } = require('./panel-format');
 const zip = require('./zip');
@@ -82,6 +83,9 @@ const SETTINGS = {
     default: { days: 0, lastDay: null, done: false }, internal: true,
     valid: (v) => !!v && typeof v === 'object' && Number.isInteger(v.days) && v.days >= 0 && (v.lastDay === null || typeof v.lastDay === 'string') && typeof v.done === 'boolean',
   },
+  // Shards that left the app for the gallery and are still offered in the one-time notice (moved.js);
+  // null until the first start of a version that took some out
+  moved: { default: null, internal: true, valid: moved.validMoved },
   // Where the local panel window was last left; saved by the app, never set from the page
   panelBounds: {
     default: null, internal: true,
@@ -220,6 +224,8 @@ function applyOpenAtLogin(on) {
 }
 
 async function start() {
+  // Whether LibreShard ran here before (loadConfig writes the file on the first start)
+  const existingUser = fs.existsSync(dataFile('config.json'));
   const cfg = loadConfig();
   const started = { port: cfg.port, allowPublicNetworks: cfg.allowPublicNetworks };
   let locale = i18n.pickLocale(cfg.language, app.getLocale());
@@ -255,6 +261,12 @@ async function start() {
     watch: true,
     log,
   });
+  // Shards that used to come with the app: decided once, on the first start of this version
+  if (cfg.moved === null) {
+    cfg.moved = { pending: moved.firstPending({ existingUser, state: store.state }) };
+    saveConfig(cfg);
+    if (cfg.moved.pending.length) log.info('shards-moved', { offered: cfg.moved.pending.join(',') });
+  }
   let alertAt = 0;
 
   // Optional confirmation of new devices, as a native dialog over the window. The server aborts
@@ -377,6 +389,7 @@ async function start() {
       thirdPartyLicenses: hasLicenses,
       update: { ...update, show: !!update.latest && update.newer && update.latest !== cfg.updateDismissed },
       supportAsk: supportAskDue(),
+      moved: moved.offered(cfg.moved.pending, (id) => store.entries.has(id)).map(({ id, name, was }) => ({ id, name, was })),
       rejected: store.rejected.map((r) => ({ folder: path.basename(r.root), root: r.root, errors: r.errors })),
       settings: {
         port: cfg.port, allowPublicNetworks: cfg.allowPublicNetworks, confirmDevices: cfg.confirmDevices,
@@ -547,6 +560,15 @@ async function start() {
     const first = Math.min(...devices.all().map((d) => d.createdAt).filter(Number.isFinite));
     return Number.isFinite(first) && Date.now() - first >= SUPPORT_AFTER_MS;
   }
+  // The notice about shards that moved to the gallery: "No, thanks" stops offering all of them
+  handle('moved:dismiss', () => {
+    if (!cfg.moved.pending.length) return;
+    log.info('moved-notice', { answer: 'no', offered: cfg.moved.pending.join(',') });
+    cfg.moved = { pending: [] };
+    saveConfig(cfg);
+    push();
+  });
+
   handle('support:done', (opened) => {
     cfg.support = { ...cfg.support, done: true };
     saveConfig(cfg);
@@ -789,6 +811,11 @@ async function start() {
     candidates.delete(id);
     try {
       if (c.link) store.link(c.root, c.manifest); else store.install(c.root, c.manifest, { source: c.origin || undefined });
+      // A moved shard installed again (from the notice or not) isn't offered any more
+      if (cfg.moved.pending.includes(c.manifest.id)) {
+        cfg.moved = { pending: cfg.moved.pending.filter((x) => x !== c.manifest.id) };
+        saveConfig(cfg);
+      }
       log.info(c.link ? 'shard-linked' : 'shard-installed', { shard: c.manifest.id, version: c.manifest.version, update: !!c.update, backup: c.fromBackup || undefined });
       if (c.after) {
         try { c.after(); } catch (e) { log.warn('backup-shard-state-failed', { shard: c.manifest.id, error: e }); }

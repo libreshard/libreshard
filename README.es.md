@@ -50,9 +50,10 @@ y compartir.
   [propón una corrección](https://github.com/libreshard/libreshard/issues/new?template=translation.yml)
   si algo suena mal.
 
-Shards incluidos: **Multimedia**, **Teclado numérico**, **Edición de imagen** (Photoshop, Affinity
-Photo, Krita, GIMP), **Videollamadas** (Zoom, Teams, Meet), **Escritorio** (ventanas y escritorios
-virtuales), **Discord**, **OBS Studio** y **VS Code**.
+Shards incluidos: **Multimedia**, **Teclado numérico**, **Videollamadas** (Zoom, Teams, Meet),
+**Escritorio** (ventanas y escritorios virtuales), **Discord** y **VS Code**. Hay más en la galería,
+como **Stream Control** (OBS Studio) e **Image editing** (Photoshop, Affinity Photo, Krita, GIMP):
+ver [libreshard/gallery-shards](https://github.com/libreshard/gallery-shards).
 
 ## Sistemas compatibles
 

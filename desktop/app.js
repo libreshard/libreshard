@@ -62,6 +62,30 @@ async function call(fn, ...args) {
 
 /* ---------- Header, banners and tabs ---------- */
 
+// Shards that no longer come with LibreShard: one notice with an Install button for each (the
+// gallery's usual download and review), until each is installed again or the user says no
+let movedBusy = null;
+function renderMoved() {
+  const list = state.moved;
+  $('moved').hidden = !list.length;
+  if (!list.length) return;
+  const names = list.map((m) => (m.was ? t('moved.renamed', { was: m.was, name: m.name }) : m.name));
+  const joined = names.length > 1 ? t('moved.and', { first: names.slice(0, -1).join(', '), last: names[names.length - 1] }) : names[0];
+  $('movedText').textContent = t(list.length > 1 ? 'moved.many' : 'moved.one', { names: joined });
+  fill($('movedActions'),
+    ...list.map((m) => h('button', { class: 'btn small primary', disabled: !!movedBusy, onclick: () => movedInstall(m.id) },
+      movedBusy === m.id ? t('gallery.downloading') : t('moved.install', { name: m.name }))),
+    h('button', { class: 'btn small', disabled: !!movedBusy, onclick: () => call(api.movedDismiss) }, t('moved.dismiss')));
+}
+async function movedInstall(id) {
+  movedBusy = id;
+  renderMoved();
+  const r = await call(api.galleryInstall, id);
+  movedBusy = null;
+  renderMoved();
+  if (r && r.ok && r.review) review(r.review, 'install');
+}
+
 function renderChrome() {
   const status = $('status');
   status.textContent = state.paused ? t('status.paused') : t('status.active', { count: state.devices.length });
@@ -76,8 +100,9 @@ function renderChrome() {
   $('alert').textContent = t('alert.pairingAttempts');
   $('restart').hidden = !state.restartNeeded;
   $('update').hidden = !state.update.show;
-  // Never at the same time as the new version notice
-  $('support').hidden = !state.supportAsk || state.update.show;
+  renderMoved();
+  // Never at the same time as the new version notice or the moved shards one
+  $('support').hidden = !state.supportAsk || state.update.show || state.moved.length > 0;
   if (state.update.show) $('updateText').textContent = t('update.available', { version: state.update.latest });
 
   $('devCount').textContent = state.devices.length || '';
