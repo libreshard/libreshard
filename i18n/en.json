@@ -577,6 +577,12 @@
   "support.ask": "LibreShard is free and open source. If it's been useful to you these weeks, you can support its development. We won't ask again.",
   "support.yes": "Support it",
   "support.no": "No, thanks",
+  "moved.one": "{names} no longer comes with LibreShard: it's in the gallery now. Install it again to keep using it; your settings stay.",
+  "moved.many": "{names} no longer come with LibreShard: they're in the gallery now. Install them again to keep using them; your settings stay.",
+  "moved.renamed": "{was} (now {name})",
+  "moved.and": "{first} and {last}",
+  "moved.install": "Install {name}",
+  "moved.dismiss": "No, thanks",
   "about.supportTitle": "Support LibreShard",
   "about.supportHint": "LibreShard is free and always will be, with nothing locked behind a payment. Donations (Ko-fi or GitHub Sponsors) help keep it going.",
   "about.supportButton": "Support…"

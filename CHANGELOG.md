@@ -6,6 +6,15 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### App
+
+- **OBS Studio and Image editing moved to the gallery:** they no longer come with LibreShard, and
+  live with the project's other shards in
+  [libreshard/gallery-shards](https://github.com/libreshard/gallery-shards). The OBS one is now
+  called **Stream Control**. If you used LibreShard before, the PC window tells you once and offers
+  to install each one again with a button, through the gallery's usual review; your settings,
+  favorite, place in the menu and app rules come back with it. "No, thanks" stops the notice.
+
 ## [0.5.1] - 2026-11-18
 
 ### App
