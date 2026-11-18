@@ -70,6 +70,22 @@ test('each shard has English and Spanish texts with the same keys, covering its 
   }
 });
 
+test('their other languages (translated by AI, see i18n/README.md) are complete and keep every {placeholder}', () => {
+  const vars = (s) => (String(s).match(/\{\w+\}/g) || []).sort();
+  // obs and edicion-imagen leave the app for the gallery in 0.5.2 (feat/move-shards-to-gallery)
+  for (const id of EXPECTED.filter((x) => x !== 'obs' && x !== 'edicion-imagen')) {
+    const dict = strings(id);
+    for (const lang of ['fr', 'pt']) {
+      assert.ok(dict[lang], `${id}: ${lang}`);
+      assert.deepEqual(Object.keys(dict[lang]).sort(), Object.keys(dict.en).sort(), `${id} ${lang}: same keys as English`);
+      for (const k of Object.keys(dict.en)) assert.deepEqual(vars(dict[lang][k]), vars(dict.en[k]), `${id} ${lang}: ${k}`);
+    }
+    const manifest = JSON.parse(fs.readFileSync(path.join(shardsDir, id, 'manifest.json'), 'utf8'));
+    const labels = (manifest.settings || []).flatMap((s) => [s.label, ...(s.options || []).map((o) => o.label)]).filter((l) => l && typeof l === 'object');
+    for (const l of labels) assert.deepEqual(Object.keys(l).sort(), ['en', 'es', 'fr', 'pt'], `${id}: ${l.en}`);
+  }
+});
+
 test('the authors\' template is a valid shard', () => {
   const dir = path.join(root, 'docs', 'shard-template');
   const { ok, errors } = validateManifest(JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')), { appVersion: require('../package.json').version });

@@ -44,7 +44,10 @@ share.
 - ⚡ **Local and private.** No account, no telemetry. On its own, LibreShard only checks once a day
   for new versions (it sends nothing about you and can be turned off); anything else it downloads,
   you asked for.
-- 🌍 **English and Spanish**, following your system language.
+- 🌍 **English, Spanish, French and Brazilian Portuguese**, following your system language. French
+  and Portuguese were translated by AI and say so in Settings;
+  [suggest a fix](https://github.com/libreshard/libreshard/issues/new?template=translation.yml) if
+  something reads wrong.
 
 Bundled shards: **Media**, **Numpad**, **Image editing** (Photoshop, Affinity Photo, Krita, GIMP),
 **Video calls** (Zoom, Teams, Meet), **Desktop** (windows and virtual desktops), **Discord**,

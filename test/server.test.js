@@ -835,7 +835,11 @@ test('/api/strings gives the viewer its strings in the right language', () => wi
   assert.equal(es.locale, 'es');
   assert.equal(es.strings['viewer.title'], 'Tus shards');
   assert.ok(Object.keys(es.strings).every((k) => k.startsWith('viewer.')), 'only viewer strings');
-  assert.equal((await (await fetch(base + '/api/strings?lang=fr-FR')).json()).locale, 'en');
+  const fr = await (await fetch(base + '/api/strings?lang=fr-FR')).json();
+  assert.equal(fr.locale, 'fr');
+  assert.equal(fr.strings['viewer.title'], 'Vos shards');
+  assert.equal((await (await fetch(base + '/api/strings?lang=pt-BR')).json()).locale, 'pt');
+  assert.equal((await (await fetch(base + '/api/strings?lang=de-DE')).json()).locale, 'en');
   assert.equal((await (await fetch(base + '/api/strings')).json()).locale, 'en');
 }));
 
@@ -846,10 +850,11 @@ test('/api/strings follows the language chosen on the PC', () => withServer({ la
 }));
 
 test('/api/strings tells shards their language and the PC system', () => withServer({ platform: 'linux' }, async ({ base }) => {
-  const fr = await (await fetch(base + '/api/strings?lang=fr-FR')).json();
-  assert.equal(fr.locale, 'en', 'the viewer has no French');
-  assert.equal(fr.shardLang, 'fr-fr', 'a shard may have it');
-  assert.equal(fr.platform, 'linux');
+  const de = await (await fetch(base + '/api/strings?lang=de-DE')).json();
+  assert.equal(de.locale, 'en', 'the viewer has no German');
+  assert.equal(de.shardLang, 'de-de', 'a shard may have it');
+  assert.equal(de.platform, 'linux');
+  assert.equal((await (await fetch(base + '/api/strings?lang=pt-BR')).json()).shardLang, 'pt-br', 'shards get the full tag (they fall back to pt themselves)');
   const odd = await (await fetch(base + '/api/strings?lang=' + encodeURIComponent('"><x'))).json();
   assert.equal(odd.shardLang, 'en', 'anything that is not a language tag falls back');
 }));

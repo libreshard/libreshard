@@ -10,11 +10,11 @@
   "settings": [
     {
       "id": "keys", "type": "select", "default": "auto",
-      "label": { "en": "Key set", "es": "Juego de teclas" },
+      "label": { "en": "Key set", "es": "Juego de teclas", "fr": "Jeu de touches", "pt": "Conjunto de teclas" },
       "options": [
-        { "value": "auto", "label": { "en": "Automatic (by system)", "es": "Automático (según el sistema)" } },
-        { "value": "windows", "label": { "en": "Windows (Ctrl+Shift+F13…F17)", "es": "Windows (Ctrl+Shift+F13…F17)" } },
-        { "value": "linux", "label": { "en": "Linux (Ctrl+Shift+F1…F6)", "es": "Linux (Ctrl+Shift+F1…F6)" } }
+        { "value": "auto", "label": { "en": "Automatic (by system)", "es": "Automático (según el sistema)", "fr": "Automatique (selon le système)", "pt": "Automático (pelo sistema)" } },
+        { "value": "windows", "label": { "en": "Windows (Ctrl+Shift+F13…F17)", "es": "Windows (Ctrl+Shift+F13…F17)", "fr": "Windows (Ctrl+Maj+F13…F17)", "pt": "Windows (Ctrl+Shift+F13…F17)" } },
+        { "value": "linux", "label": { "en": "Linux (Ctrl+Shift+F1…F6)", "es": "Linux (Ctrl+Shift+F1…F6)", "fr": "Linux (Ctrl+Maj+F1…F6)", "pt": "Linux (Ctrl+Shift+F1…F6)" } }
       ]
     }
   ],

@@ -1,0 +1,45 @@
+name: Translation fix
+description: A text in French, Portuguese or another language is wrong, unclear or doesn't fit.
+labels: [translation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! French and Brazilian Portuguese were translated by AI and haven't been reviewed by a
+        native speaker yet, so every fix helps. You can also edit `i18n/<language>.json` directly in
+        a pull request (see `i18n/README.md`).
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - French
+        - Portuguese (Brazil)
+        - Spanish
+        - English
+        - Another language
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where does it appear?
+      placeholder: "for example: PC window → Settings → Language, or the install review"
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: The text as it is now
+    validations:
+      required: true
+  - type: textarea
+    id: suggested
+    attributes:
+      label: What it should say
+      description: Optional, if you know. A text that's cut off or doesn't fit is worth reporting too.
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: A screenshot helps when a text is cut off.

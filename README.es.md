@@ -45,7 +45,10 @@ y compartir.
 - ⚡ **Local y privado.** Sin cuentas ni telemetría. Por su cuenta, LibreShard solo busca versiones
   nuevas una vez al día (no envía nada sobre ti y se puede desactivar); todo lo demás que descarga,
   lo pediste tú.
-- 🌍 **Español e inglés**, según el idioma del sistema.
+- 🌍 **Español, inglés, francés y portugués de Brasil**, según el idioma del sistema. El francés y el
+  portugués los tradujo una IA y así lo indican los Ajustes;
+  [propón una corrección](https://github.com/libreshard/libreshard/issues/new?template=translation.yml)
+  si algo suena mal.
 
 Shards incluidos: **Multimedia**, **Teclado numérico**, **Edición de imagen** (Photoshop, Affinity
 Photo, Krita, GIMP), **Videollamadas** (Zoom, Teams, Meet), **Escritorio** (ventanas y escritorios

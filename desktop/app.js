@@ -657,9 +657,13 @@ function renderSettings() {
   const portInput = h('input', { class: 'port', type: 'number', min: '1024', max: '65535', value: String(state.settings.port) });
   fill(p,
     h('div', { class: 'setting' },
-      h('div', { class: 'grow' }, h('label', { for: 'set-language' }, t('settings.language'))),
+      h('div', { class: 'grow' },
+        h('label', { for: 'set-language' }, t('settings.language')),
+        // Languages translated by AI say so, with a way to propose a fix
+        state.machineTranslated ? h('div', { class: 'hint small' }, t('settings.languageMachine')) : null,
+        state.machineTranslated ? h('button', { class: 'btn small', onclick: () => call(api.openLink, 'translation') }, t('settings.languageFix')) : null),
       h('select', { id: 'set-language', onchange: (e) => call(api.setSetting, 'language', e.target.value) },
-        ['auto', 'es', 'en'].map((l) => h('option', { value: l, selected: state.settings.language === l }, t('settings.language.' + l))))),
+        ['auto', ...state.languages].map((l) => h('option', { value: l, selected: state.settings.language === l }, t('settings.language.' + l))))),
     h('div', { class: 'setting' },
       h('div', { class: 'grow' }, h('label', null, t('settings.port')), h('div', { class: 'hint small' }, t('settings.portHint'))),
       portInput,
