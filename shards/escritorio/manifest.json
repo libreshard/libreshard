@@ -10,9 +10,9 @@
   "settings": [
     {
       "id": "system", "type": "select", "default": "auto",
-      "label": { "en": "System", "es": "Sistema" },
+      "label": { "en": "System", "es": "Sistema", "fr": "Système", "pt": "Sistema" },
       "options": [
-        { "value": "auto", "label": { "en": "Automatic (Windows, or GNOME on Linux)", "es": "Automático (Windows, o GNOME en Linux)" } },
+        { "value": "auto", "label": { "en": "Automatic (Windows, or GNOME on Linux)", "es": "Automático (Windows, o GNOME en Linux)", "fr": "Automatique (Windows, ou GNOME sous Linux)", "pt": "Automático (Windows, ou GNOME no Linux)" } },
         { "value": "windows", "label": "Windows" },
         { "value": "gnome", "label": "Linux · GNOME (Ubuntu)" },
         { "value": "xfce", "label": "Linux · XFCE" }

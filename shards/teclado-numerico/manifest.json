@@ -10,10 +10,10 @@
   "settings": [
     {
       "id": "layout", "type": "select", "default": "calculator",
-      "label": { "en": "Layout", "es": "Distribución" },
+      "label": { "en": "Layout", "es": "Distribución", "fr": "Disposition", "pt": "Layout" },
       "options": [
-        { "value": "calculator", "label": { "en": "Calculator (7 8 9 on top)", "es": "Calculadora (7 8 9 arriba)" } },
-        { "value": "phone", "label": { "en": "Phone (1 2 3 on top)", "es": "Teléfono (1 2 3 arriba)" } }
+        { "value": "calculator", "label": { "en": "Calculator (7 8 9 on top)", "es": "Calculadora (7 8 9 arriba)", "fr": "Calculatrice (7 8 9 en haut)", "pt": "Calculadora (7 8 9 em cima)" } },
+        { "value": "phone", "label": { "en": "Phone (1 2 3 on top)", "es": "Teléfono (1 2 3 arriba)", "fr": "Téléphone (1 2 3 en haut)", "pt": "Telefone (1 2 3 em cima)" } }
       ]
     }
   ],

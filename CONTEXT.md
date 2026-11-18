@@ -12,7 +12,7 @@ On the tablet, the user pairs the device once (scanning a QR or typing a short c
 
 Each shard can be limited to certain applications. For example, a Photoshop shard only acts while Photoshop (or a similar app the user picks) is in the foreground. If a button is tapped with another app active, the PC does nothing and the tablet shows a notice.
 
-Project language: code, comments and this file are in English. All UI text (PC window and tablet viewer) lives in `i18n/es.json` and `i18n/en.json`, following the system language (the tablet's, for the viewer) with English as the fallback, unless a language is chosen in the PC's settings. `README.md` is in English with `README.es.md` alongside. The maintainer's work plans in `docs/plans/` are in Spanish and stay out of the repository (`.gitignore`).
+Project language: code, comments and this file are in English. All UI text (PC window and tablet viewer) lives in `i18n/*.json` (English and Spanish by the maintainer; French and Brazilian Portuguese translated by AI, see `i18n/README.md`), following the system language (the tablet's, for the viewer) with English as the fallback, unless a language is chosen in the PC's settings. `README.md` is in English with `README.es.md` alongside. The maintainer's work plans in `docs/plans/` are in Spanish and stay out of the repository (`.gitignore`).
 
 Identity: the logo is a cyan "L" with a double outline and a gold button sending out waves. Tagline: "Open-Source Control Deck". Palette: navy background `#0d1b2a`, cyan `#22d3ee`, gold `#fbbf24`. "Shard" is still the name of the panels.
 
@@ -78,7 +78,7 @@ libreshard/
 │                         panel-preload.js and monitor.svg for the local panel; the panel editor
 │                         (editor.html/.js/.css, editor-preload.js, keycodes.js, panel-preview.*);
 │                         panel-template/ (generated): the files every editor panel shares
-├── i18n/                 UI strings: index.js (pickLocale, strings, translator), es.json, en.json
+├── i18n/                 UI strings: index.js (pickLocale, strings, translator), en/es/fr/pt.json, README.md (rules, glossary)
 ├── brand/
 │   ├── render-icons.js   generates the PNGs and logo-full.svg from the mark (npm run icons)
 │   └── logo-full.svg     mark + name, for the README (generated)
@@ -143,7 +143,7 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - **Open at login** (`openAtLogin`, off by default): `app.setLoginItemSettings` on Windows and macOS (with `--hidden`; in development the entry is named `electron.app.Electron` and points at the project's Electron), and `~/.config/autostart/libreshard.desktop` on Linux (using `$APPIMAGE` when running from an AppImage).
 - Extra IPC: `shard:settings`, `shard:reset-settings`, `shard:favorite`, `shard:move`, `install:pick-dev` (folder dialog for development mode), and `install:path` accepts `{ link: true }`. A candidate with `link` is confirmed with `store.link()` instead of `store.install()`.
 - **Support:** "Support LibreShard" in About opens `LINKS.donate` (libreshard.com/support/, `/es/` in Spanish), a website page with Ko-fi and GitHub Sponsors; `.github/FUNDING.yml` gives the repository's Sponsor button. A one-time notice (the `#support` banner, desktop window only, never with the update banner or the moved shards one): the server calls `onShardOpened(id)` when a tablet opens a known shard, `countShardDay()` counts distinct days in the internal setting `support` (`{ days, lastDay, done }`, never sent anywhere), and `supportAskDue()` shows it after 5 such days and 14 days since the first paired device (`createdAt`). Either answer calls `support:done`, and it never comes back. Logged as `support-notice` (answer).
-- **About** (end of Ajustes): `app:open-link(kind)` opens one of `LINKS` (website, source, security, license, download, aiGuide) with `shell.openExternal`; the ones in `LOCALIZED_LINKS` (aiGuide) open the website's `/es/` page when the app is in Spanish; the page names a destination and never passes a URL. `app:open-path` also takes `logs` (the log's folder) and `licenses` (Electron's `LICENSES.chromium.html` next to the packaged executable, on Windows and Linux; `state.thirdPartyLicenses` says whether it exists). `app:copy-diagnostics` puts `diagnostics()` on the clipboard. `app:report-bug` does the same and opens the `bug_report.yml` issue form with `version` and `os` (`systemLabel()`) in the address; the diagnostics never go in the address: they would be cut, and the user must see them before sending.
+- **About** (end of Ajustes): `app:open-link(kind)` opens one of `LINKS` (website, source, security, license, download, aiGuide, donate, translation) with `shell.openExternal`; the ones in `LOCALIZED_LINKS` (aiGuide) open the website's `/es/` page when the app is in Spanish; the page names a destination and never passes a URL. `app:open-path` also takes `logs` (the log's folder) and `licenses` (Electron's `LICENSES.chromium.html` next to the packaged executable, on Windows and Linux; `state.thirdPartyLicenses` says whether it exists). `app:copy-diagnostics` puts `diagnostics()` on the clipboard. `app:report-bug` does the same and opens the `bug_report.yml` issue form with `version` and `os` (`systemLabel()`) in the address; the diagnostics never go in the address: they would be cut, and the user must see them before sending.
 - `state.settings` carries every setting the Ajustes tab shows, `closeToTray`, `openAtLogin` and `panelAlwaysOnTop` included (without them their switches always looked off).
 
 **desktop/** (the PC window; plain JS, no dependencies)
@@ -190,8 +190,9 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - The manifest may be at the root or inside a single top-level folder. `existing` (the installed entry, or a lookup by id) adds the version and key differences, and refuses bundled or linked ids.
 
 **i18n/**
-- `pickLocale(preference, systemLocale)`: the user's choice, else the system language if there's a file for it, else English. `strings(locale)` fills gaps with English; `translator(locale)` returns `t(key, vars)`.
-- `es.json` and `en.json` must have the same keys and placeholders; `test/i18n.test.js` checks that, and that every `t('…')`, `data-i18n` and `data-i18n-aria` in `main.js`, `desktop/` and `viewer/` exists.
+- `pickLocale(preference, systemLocale)`: the user's choice, else the system language (its base: `pt-PT` and `pt-BR` both get `pt`, which is Brazilian Portuguese) if there's a file for it, else English. `strings(locale)` fills gaps with English; `translator(locale)` returns `t(key, vars)`. `languages` lists the files, `machine` the ones translated by AI (`fr`, `pt`).
+- `es.json` and `en.json` must have the same keys and placeholders. The other languages may miss texts (they show in English), but may not have keys English lacks, empty texts or different `{placeholders}`. `test/i18n.test.js` checks all that, warns (`t.diagnostic`, visible with `--test-reporter=spec`) about missing texts and texts over 1.5 times the English length, and checks that every `t('…')`, `data-i18n` and `data-i18n-aria` in `main.js`, `desktop/` and `viewer/` exists. `settings.language.<code>` is each language's name in that language, the same in every file.
+- The language select in Settings lists `auto` plus `state.languages`. When the window's locale is in `machine` (`state.machineTranslated`), it says the language was translated by AI and nobody has reviewed it yet, with **Suggest a fix** (`LINKS.translation`, the `translation.yml` issue form). `i18n/README.md` has the rules (placeholders, length, *vous*/*você*, French non-breaking spaces before `: ; ? !` and « » quotes, “ ” in Portuguese) and the glossary every translation follows.
 - Viewer strings are the `viewer.*` keys. The server serves them at `GET /api/strings?lang=<navigator.language>`: the PC's chosen language wins, else the tablet's, else English.
 
 **server.js**
@@ -524,7 +525,7 @@ Consequences for authors: no `fetch`, WebSocket or internet resources (no CDNs, 
 
 ### Bundled shards
 
-All of them use `shard-base/` (`libreshard.css`, `libreshard.js`, copied in by `npm run shards:base`), English and Spanish texts in `strings.js`, and English `name`/`description`. Their combos were checked in the real apps (2026-11, Windows 11, Ubuntu 24.04 GNOME 46 on Xorg, XFCE 4.18); each `shard.js` says how.
+All of them use `shard-base/` (`libreshard.css`, `libreshard.js`, copied in by `npm run shards:base`), English, Spanish, French and Portuguese texts in `strings.js` (and in their settings labels), and English `name`/`description`. Their help texts name a shard as the Shards tab shows it, which is the manifest's English `name`. Their combos were checked in the real apps (2026-11, Windows 11, Ubuntu 24.04 GNOME 46 on Xorg, XFCE 4.18); each `shard.js` says how.
 
 | id | Name | Teaches | Notes |
 |---|---|---|---|
@@ -535,7 +536,7 @@ All of them use `shard-base/` (`libreshard.css`, `libreshard.js`, copied in by `
 | `discord-basico` | Discord | global keybinds the user records with a "Send" button, `data-hold` push to talk | Key sets: Windows `ctrl+shift+F13–F17`, Linux `ctrl+shift+F1–F4, F6`. |
 | `desarrollo` | VS Code | plain `data-key`, `apps` | Format is `shift+alt+f` on Windows and `ctrl+shift+i` on Linux (Linux unchecked). |
 
-`test/bundled-shards.test.js` loads them all (none rejected, every key parses), checks complete manifests, up-to-date base copies and matching `en`/`es` keys.
+`test/bundled-shards.test.js` loads them all (none rejected, every key parses), checks complete manifests, up-to-date base copies, matching `en`/`es` keys, and complete `fr`/`pt` texts (same keys and placeholders) and settings labels.
 
 **Moved to the gallery** (`moved.js`): `obs` (now "Stream Control") and `edicion-imagen` came with the app until 0.5.1 and live in [libreshard/gallery-shards](https://github.com/libreshard/gallery-shards) since 0.5.2, with the same ids, so what `shards-state.json` and `app-rules.json` keep under them (settings, favorite, position, rules) comes back when they're installed from the gallery; their keys go through the usual review. On the first start of a version with `MOVED`, the internal setting `moved` (`{ pending: [ids] }`, null before) is decided once by `firstPending()`: every moved shard for someone whose `config.json` existed before this start (loadConfig writes it on the first one), except those they had disabled; nothing for a new install. The state carries `moved` (`offered()`: pending and not installed, with `name` and the old name `was`), shown as the `#moved` banner (and the support banner waits): one **Install <name>** button per shard (`gallery:install`, then the review) and **No, thanks** (`moved:dismiss`, which empties the list). Installing a moved id by any route drops it from `pending` (`install:confirm`). Logged as `shards-moved` (offered) and `moved-notice` (answer). A new id is added to `MOVED` only once its gallery entry is live.
 
@@ -788,7 +789,7 @@ Integrations with other programs through their APIs, with live state on the butt
 
 - Plain JavaScript with CommonJS (`require`) in the agent and framework-free JS in the viewer, with no transpiling or bundler. Keep it simple.
 - Minimal dependencies: today only `express`, `ws`, `qrcode`, `yauzl` (zip reading with entry-by-entry control, chosen over `adm-zip`, which loads everything in memory and had zip-slip bugs) and `nut-js`. Justify any addition. Tests use `node:test`, with no test framework.
-- Comments in English. All UI text through `t()` and `i18n/*.json` (both languages, same keys); viewer keys start with `viewer.`.
+- Comments in English. All UI text through `t()` and `i18n/*.json` (English and Spanish always, same keys; French and Portuguese are completed before each release); viewer keys start with `viewer.`.
 - Run `npm run test:linux` after touching keys, focus detection or anything platform-specific.
 - The bundled shards must work with `data-key` / `data-hold` (shard.js may only fill them in from settings), to show off the declarative mode. They take no third-party material (logos, images, licensed fonts): icons come from `shard-base/icons.js`.
 - Any change to the WebSocket protocol, the manifest format or the shard rules must update sections 4 and 5 of this file.

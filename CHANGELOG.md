@@ -8,6 +8,12 @@ All notable changes to LibreShard are listed here. The format follows
 
 ### App
 
+- **French and Brazilian Portuguese:** the PC window, the tablet and the bundled shards are now
+  also in French and in Brazilian Portuguese (Portugal gets it too), following the system language
+  or the one chosen in Settings. Both were translated by AI and haven't been reviewed by a native
+  speaker yet: Settings says so, with a **Suggest a fix** button that opens a short form.
+- The help of the Desktop, Numpad and Video calls shards in Spanish now names them as the Shards
+  tab shows them.
 - **OBS Studio and Image editing moved to the gallery:** they no longer come with LibreShard, and
   live with the project's other shards in
   [libreshard/gallery-shards](https://github.com/libreshard/gallery-shards). The OBS one is now

@@ -54,6 +54,8 @@ const LINKS = {
   download: 'https://libreshard.com/download/',
   aiGuide: 'https://libreshard.com/docs/ai-assistant/',
   donate: 'https://libreshard.com/support/',
+  // A correction to a translation: the issue form for it
+  translation: 'https://github.com/libreshard/libreshard/issues/new?template=translation.yml',
 };
 // Links whose page the website also has in Spanish (under /es/)
 const LOCALIZED_LINKS = new Set(['aiGuide', 'donate']);
@@ -361,6 +363,8 @@ async function start() {
       platform: process.platform,
       locale,
       strings: i18n.strings(locale),
+      languages: i18n.languages,
+      machineTranslated: i18n.machine.includes(locale),
       paused: server.isPaused(),
       alertAt,
       restartNeeded: cfg.port !== started.port || cfg.allowPublicNetworks !== started.allowPublicNetworks,
