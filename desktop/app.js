@@ -217,6 +217,7 @@ function shardCard(s) {
           s.license ? t('shards.license', { license: s.license }) : null,
           s.source && s.source.kind === 'url' ? t('shards.from', { host: s.source.host }) : null,
           s.source && s.source.kind === 'gallery' ? t('shards.fromGallery') : null,
+          s.copyOf ? t('shards.copyOf', { name: s.copyOf.name || s.copyOf.id, version: s.copyOf.version || '?' }) : null,
         ].filter(Boolean).join(' · '))),
       h('div', { class: 'order' },
         h('button', { class: 'icon-btn star' + (s.favorite ? ' on' : ''), title: s.favorite ? t('shards.unfavorite') : t('shards.favorite'),
@@ -228,7 +229,9 @@ function shardCard(s) {
     h('div', { class: 'actions' },
       s.pendingKeys.length ? h('button', { class: 'btn primary small', onclick: () => review(approvalView(s), 'approve') }, t('shards.review')) : null,
       galleryUpdateButton(s),
-      s.panel ? h('button', { class: 'btn small', onclick: () => call(api.openEditor, s.id) }, t('shards.edit')) : null,
+      // Someone else's panel opens in the editor as a copy: the button says so before it's clicked
+      s.panel ? h('button', { class: 'btn small', title: s.ownPanel ? null : t('shards.editCopyHint'), onclick: () => call(api.openEditor, s.id) },
+        s.ownPanel ? t('shards.edit') : t('shards.editCopy')) : null,
       h('button', { class: 'btn small', onclick: () => review(approvalView(s), 'view') }, t('shards.permissions')),
       h('button', { class: 'btn small', onclick: () => appsEditor(s) }, t('shards.apps')),
       s.settingsSchema.length ? h('button', { class: 'btn small', onclick: () => settingsEditor(s) }, t('shards.settings')) : null,

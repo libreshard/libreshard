@@ -331,6 +331,28 @@ const scriptJson = (v) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/\u
 // plus the template files (index.html, libreshard.css, …) given as { name: content }.
 // `meta` is what the manifest says besides keys: { id?, name, icon, description, author, apps,
 // version, license, url } (license and url are kept as they were; the install check validates them). Without an id it's a new panel; the version goes up on every save.
+// Panels made on this PC: saved by the editor here, or installed before 0.5.1, when no source was
+// recorded. Panels from the gallery, a web address or a file belong to someone else, and the editor
+// saves its changes to them as a copy (see copyOfPanel).
+function isOwnPanel(source) { return !source || source.kind === 'editor'; }
+
+// The copy's name: format(name) is the localized "<name> (copy)". The name is shortened so the whole
+// fits the 60-character limit; the suffix never is, so the copy never looks like the original.
+function copyName(name, format = (n) => `${n} (copy)`) {
+  const room = Math.max(1, LIMITS.text - [...format('')].length);
+  const base = text(name) || 'Panel';
+  return format([...base].slice(0, room).join('').trim());
+}
+
+// Opening someone else's panel in the editor: what the copy starts with, and where it comes from.
+// `id` and `meta` are the original's (manifest details, version included; a manifest may have none). The copy has no id yet,
+// so saving it builds a new shard (panelId(), 1.0.0); author, license, url, apps and description
+// stay, so the copy keeps the original's license notice and a link to it.
+function copyOfPanel({ id, meta, format }) {
+  const { version, ...rest } = meta;
+  return { meta: { ...rest, name: copyName(meta.name, format) }, copiedFrom: { id, version: version || null } };
+}
+
 function buildShard({ panel, meta = {}, template = {} }) {
   const manifest = compact({
     id: meta.id || panelId(meta.name),
@@ -358,4 +380,4 @@ function buildShard({ panel, meta = {}, template = {} }) {
   };
 }
 
-module.exports = { validatePanel, keysOf, imagesOf, importedImages, imageFile, buildShard, panelId, nextVersion, FORMAT, LIMITS, MIN_APP_VERSION };
+module.exports = { validatePanel, keysOf, imagesOf, importedImages, imageFile, buildShard, panelId, nextVersion, isOwnPanel, copyName, copyOfPanel, FORMAT, LIMITS, MIN_APP_VERSION };

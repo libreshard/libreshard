@@ -286,6 +286,11 @@ You don't need any of the above for a grid of buttons: **New shard** in the Shar
 shard editor, where you place buttons, choose their keys, texts, icons and colors, and add pages.
 Saving installs it like any other shard, ready on the tablet; its card shows an "Editor" badge.
 
+**Edit** on its card opens it again. A shard made in the editor that you got from someone else (from
+the gallery, a web address or a file) says **Edit a copy** instead: saving it creates a new shard of
+yours, "<name> (copy)", with the original's author and license, and the original stays as it is and
+keeps getting its updates.
+
 Its folder has one extra file, `panel.json`, which is what the editor reads back; the
 rest (`index.html`, `layout.js`, the styles and scripts) is generated from it, so editing those
 files by hand is lost on the next save. `panel.json` may still change before LibreShard 1.0.

@@ -5,6 +5,8 @@ const os = require('os');
 const path = require('path');
 const { ShardStore } = require('../shard-store');
 const { makeShardDir } = require('./helpers');
+const { buildShard, copyOfPanel, isOwnPanel } = require('../panel-format');
+const { validateManifest } = require('../manifest');
 
 const keys = (...k) => ({ permissions: { keys: k } });
 
@@ -166,6 +168,145 @@ test('install saves where a shard came from, keeps it on a plain reinstall, and 
       assert.equal(s.sourceOf('web'), null, JSON.stringify(bad));
     }
     assert.equal(s.sourceOf('media'), null);
+  } finally {
+    t.cleanup();
+    fs.rmSync(src, { recursive: true, force: true });
+  }
+});
+
+test('editor and file sources are saved like the others; extra fields are dropped and bad ones refused', () => {
+  const t = setup();
+  const src = makeShardDir({ v1: { manifest: { id: 'own', ...keys('f13') } } });
+  try {
+    const s = t.make();
+    assert.equal(s.sourceOf('mine'), null, 'copied by hand or installed before 0.5.1: no source');
+    s.install(path.join(src, 'v1'), { id: 'own', keys: ['f13'] }, { source: { kind: 'file' } });
+    assert.deepEqual(s.sourceOf('own'), { kind: 'file' });
+    s.install(path.join(src, 'v1'), { id: 'own', keys: ['f13'] }, { source: { kind: 'editor', host: 'x.com', id: 'y' } });
+    assert.deepEqual(t.make().sourceOf('own'), { kind: 'editor' }, 'saved, and only its kind');
+    assert.throws(() => s.install(path.join(src, 'v1'), { id: 'own', keys: ['f13'] }, { source: { kind: 'Editor' } }), /Invalid source/);
+    for (const bad of [{ kind: 'EDITOR' }, { kind: 'files' }, ['editor'], 'file', { kind: 'editor ' }]) {
+      s.state.own.source = bad;
+      assert.equal(s.sourceOf('own'), null, JSON.stringify(bad));
+    }
+  } finally {
+    t.cleanup();
+    fs.rmSync(src, { recursive: true, force: true });
+  }
+});
+
+test('a copy remembers the shard and version it came from, and keeps the original panel.json outside the shard folders', () => {
+  const t = setup();
+  try {
+    const originals = path.join(t.data, 'panel-originals');
+    const s = t.make({ originalsDir: originals });
+    const original = Buffer.from('{ "format": 1, "pages": [] }\n');
+    s.setCopiedFrom('mine', { id: 'office', version: '1.2.0' }, original);
+    assert.deepEqual(s.copiedFromOf('mine'), { id: 'office', version: '1.2.0' });
+    const file = s.originalFile('mine');
+    assert.equal(path.dirname(file), originals);
+    assert.ok(path.relative(t.user, file).startsWith('..'), 'never inside the folder served to the tablets');
+    assert.deepEqual(fs.readFileSync(file), original, 'kept byte for byte');
+    assert.deepEqual(t.make({ originalsDir: originals }).copiedFromOf('mine'), { id: 'office', version: '1.2.0' }, 'saved in shards-state.json');
+    s.setCopiedFrom('mine', { id: 'office', version: null }, original);
+    assert.deepEqual(s.copiedFromOf('mine'), { id: 'office', version: null }, 'an original without a version');
+    for (const bad of [{ id: 'Office', version: '1' }, { id: 'office' }, { id: 'office', version: 3 }, { id: 'office', version: 'x'.repeat(21) }, 'office']) {
+      assert.throws(() => s.setCopiedFrom('mine', bad, original), /Invalid copiedFrom/, JSON.stringify(bad));
+      s.state.mine.copiedFrom = bad;
+      assert.equal(s.copiedFromOf('mine'), null, JSON.stringify(bad));
+    }
+    assert.throws(() => s.setCopiedFrom('mine', { id: 'office', version: '1' }, ''), /original/);
+    assert.throws(() => t.make().setCopiedFrom('mine', { id: 'office', version: '1' }, original), /No folder/);
+    assert.equal(s.originalFile('../x'), null);
+  } finally { t.cleanup(); }
+});
+
+test('uninstalling a copy removes what it remembered and its original panel.json', () => {
+  const t = setup();
+  try {
+    const s = t.make({ originalsDir: path.join(t.data, 'panel-originals') });
+    s.setCopiedFrom('mine', { id: 'office', version: '1.2.0' }, '{}');
+    const file = s.originalFile('mine');
+    assert.ok(fs.existsSync(file));
+    s.uninstall('mine');
+    assert.ok(!fs.existsSync(file));
+    assert.equal(s.copiedFromOf('mine'), null);
+    assert.equal(s.state.mine, undefined);
+  } finally { t.cleanup(); }
+});
+
+test('a shard restored from a backup gets back its source and, with its original panel.json, what it was copied from', () => {
+  const t = setup();
+  const again = makeShardDir({ mine: { manifest: { id: 'mine', ...keys('f13') } } });
+  try {
+    const s = t.make({ originalsDir: path.join(t.data, 'panel-originals') });
+    s.restoreOrigin('mine', { source: { kind: 'editor' }, copiedFrom: { id: 'office', version: '1.2.0' } }, Buffer.from('{}'));
+    assert.deepEqual(s.sourceOf('mine'), { kind: 'editor' });
+    assert.deepEqual(s.copiedFromOf('mine'), { id: 'office', version: '1.2.0' });
+    s.uninstall('mine');
+    s.install(path.join(again, 'mine'), { id: 'mine', keys: ['f13'] });
+    s.restoreOrigin('mine', { source: { kind: 'nope' }, copiedFrom: { id: 'office', version: '1.2.0' } }, null);
+    assert.equal(s.sourceOf('mine'), null, 'an invalid source is left out');
+    assert.equal(s.copiedFromOf('mine'), null, 'never without its original panel.json');
+    s.restoreOrigin('mine', undefined, null);
+    assert.equal(s.sourceOf('mine'), null);
+  } finally {
+    t.cleanup();
+    fs.rmSync(again, { recursive: true, force: true });
+  }
+});
+
+test("saving someone else's panel creates a copy of the user's own and leaves the original as it was", () => {
+  const t = setup();
+  const src = fs.mkdtempSync(path.join(os.tmpdir(), 'libreshard-copy-'));
+  // What editor:save does in main.js, with the same functions
+  const save = (s, { panel, meta }, opts) => {
+    const built = buildShard({ panel, meta });
+    const dir = path.join(src, built.manifest.id + '-' + built.manifest.version);
+    fs.mkdirSync(dir);
+    for (const [f, content] of Object.entries(built.files)) fs.writeFileSync(path.join(dir, f), content);
+    const checked = validateManifest(built.manifest, { appVersion: '0.5.1' });
+    assert.ok(checked.ok, checked.errors && checked.errors.join());
+    s.install(dir, checked.manifest, opts);
+    return checked.manifest;
+  };
+  try {
+    const s = t.make({ originalsDir: path.join(t.data, 'panel-originals') });
+    const panel = { format: 1, grid: { cols: 2, rows: 1 }, pages: [{ id: 'p1', name: 'Main', layout: 'grid', buttons: [{ id: 'b', col: 0, row: 0, w: 1, h: 1, type: 'press', key: 'f13' }] }] };
+    const meta = { id: 'office', name: 'Office', author: 'Ana', description: 'Shortcuts', license: 'Apache-2.0', url: 'https://ana.example/office', apps: ['winword.exe'] };
+    // The original, from the gallery (saving raises 1.1.0 to 1.1.1), with the user's favorite
+    const original = save(s, { panel, meta: { ...meta, version: '1.1.0' } }, { source: { kind: 'gallery', id: 'office' } });
+    assert.equal(original.version, '1.1.1');
+    s.setFavorite('office', true);
+    const originalPanel = fs.readFileSync(path.join(t.user, 'office', 'panel.json'));
+    assert.equal(isOwnPanel(s.sourceOf('office')), false);
+
+    // Opened in the editor: a copy with a new name and no id; saved: a new shard
+    const c = copyOfPanel({ id: 'office', meta: { ...meta, version: original.version }, format: (n) => `${n} (copia)` });
+    assert.equal(c.meta.version, undefined);
+    const changed = { ...panel, grid: { cols: 3, rows: 1 } };
+    const copy = save(s, { panel: changed, meta: { ...c.meta, id: undefined } }, { source: { kind: 'editor' } });
+    s.setCopiedFrom(copy.id, c.copiedFrom, originalPanel);
+    assert.match(copy.id, /^panel-office-copia-[0-9a-f]{4}$/);
+    assert.deepEqual([copy.name, copy.version, copy.author, copy.license, copy.url, copy.description], ['Office (copia)', '1.0.0', 'Ana', 'Apache-2.0', 'https://ana.example/office', 'Shortcuts']);
+    assert.deepEqual(s.sourceOf(copy.id), { kind: 'editor' });
+    assert.equal(isOwnPanel(s.sourceOf(copy.id)), true);
+    assert.deepEqual(s.copiedFromOf(copy.id), { id: 'office', version: '1.1.1' });
+    assert.deepEqual(fs.readFileSync(s.originalFile(copy.id)), originalPanel);
+    assert.equal(s.get(copy.id).allowed.has('f13'), true, 'its keys are approved: the user saved them here');
+
+    // The original: same files, version, source and favorite
+    assert.deepEqual(fs.readFileSync(path.join(t.user, 'office', 'panel.json')), originalPanel);
+    assert.equal(s.get('office').manifest.version, '1.1.1');
+    assert.deepEqual(s.sourceOf('office'), { kind: 'gallery', id: 'office' });
+    assert.equal(s.isFavorite('office'), true);
+    assert.equal(s.copiedFromOf('office'), null);
+
+    // Saving the copy again: in place, a new patch version, still a copy of the same original
+    const again = save(s, { panel: changed, meta: { ...c.meta, id: copy.id, version: copy.version } }, { source: { kind: 'editor' } });
+    assert.deepEqual([again.id, again.version], [copy.id, '1.0.1']);
+    assert.deepEqual(s.copiedFromOf(copy.id), { id: 'office', version: '1.1.1' });
+    assert.equal(s.all().length, 4, 'media, mine, the original and one copy');
   } finally {
     t.cleanup();
     fs.rmSync(src, { recursive: true, force: true });

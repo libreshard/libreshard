@@ -128,6 +128,51 @@ test('files that are not LibreShard backups, or come from a newer version, are r
   }
 });
 
+test('a backup keeps where each installed shard came from and the original panel.json of copies', async () => {
+  const a = pc();
+  const originals = path.join(a.data, 'panel-originals');
+  const store = new ShardStore({ dirs: a.store.dirs, installDir: a.user, stateFile: a.store.stateFile, originalsDir: originals });
+  store.restoreOrigin('mine', { source: { kind: 'editor' }, copiedFrom: { id: 'office', version: '1.2.0' } }, Buffer.from('{"format":1}\n'));
+  store.state.media = { ...store.state.media, source: { kind: 'gallery', id: 'media' } }; // never for bundled shards
+  const zip = createBackup({ appVersion: '0.5.1', config: {}, rules: {}, state: store.state, shards: store.all(), originalFile: (id) => store.originalFile(id) });
+  const file = path.join(a.data, 'backup.zip');
+  fs.writeFileSync(file, zip);
+  const r = await readBackup(file, { settings: SETTINGS });
+  try {
+    assert.ok(r.ok, r.errors && r.errors.join());
+    assert.deepEqual(r.data.origins, { mine: { source: { kind: 'editor' }, copiedFrom: { id: 'office', version: '1.2.0' } } });
+    assert.deepEqual(r.originalOf('mine'), Buffer.from('{"format":1}\n'));
+    assert.equal(r.originalOf('media'), null);
+    assert.equal(r.originalOf('../mine'), null);
+    assert.deepEqual(r.data.shards, {}, 'where a shard came from is not part of its state (the import summary counts states)');
+    const raw = JSON.parse(fs.readFileSync(path.join(r.dir, 'backup.json'), 'utf8'));
+    assert.equal(raw.origins.media, undefined);
+  } finally {
+    r.cleanup();
+    a.cleanup();
+  }
+});
+
+test('origins read from a backup are checked like the state file', () => {
+  const r = checkBackup({
+    app: 'LibreShard', format: 1,
+    origins: {
+      a: { source: { kind: 'file' } },
+      b: { source: { kind: 'url', host: 'bad host' }, copiedFrom: { id: 'x', version: '1.0.0' } },
+      c: { source: { kind: 'editor', extra: 1 }, copiedFrom: { id: 'Bad', version: '1' } },
+      'Bad Id': { source: { kind: 'file' } },
+      d: 'file',
+      e: { source: { kind: 'nope' } },
+    },
+  }, SETTINGS);
+  assert.deepEqual(r.data.origins, {
+    a: { source: { kind: 'file' } },
+    b: { copiedFrom: { id: 'x', version: '1.0.0' } },
+    c: { source: { kind: 'editor' } },
+  });
+  assert.deepEqual(checkBackup({ app: 'LibreShard', format: 1 }, SETTINGS).data.origins, {}, 'a backup from 0.5.0 has none');
+});
+
 test('restoring a shard state drops settings its manifest does not accept, and never approves keys', () => {
   const a = pc();
   try {

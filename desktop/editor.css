@@ -35,7 +35,7 @@ body.editor { height: 100vh; overflow: hidden; }
 .ed-warnings:empty { display: none; }
 .ed-warnings .warnbox { font-size: 13px; padding: 7px 10px; }
 .ed-warnings .warnbox p { margin: 0 0 4px; }
-.ed-warnings .warnbox.import { background: rgba(34, 211, 238, .08); border: 1px solid rgba(34, 211, 238, .45); }
+.ed-warnings .warnbox.import, .ed-warnings .warnbox.copy { background: rgba(34, 211, 238, .08); border: 1px solid rgba(34, 211, 238, .45); }
 .ed-warnings .warnbox p:last-child { margin-bottom: 0; }
 
 /* Properties */

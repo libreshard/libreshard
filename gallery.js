@@ -83,8 +83,10 @@ function matchesEntry(file, entry) {
 }
 
 // The entry an installed shard corresponds to: the one it was installed from, or one with the same
-// id and author (a shard bought and installed from its file, for example)
+// id and author (a shard bought and installed from its file, for example). A shard saved by the
+// editor on this PC (a copy of a gallery panel included) is the user's own, never a gallery entry.
 function entryFor(entries, shard) {
+  if (shard.source?.kind === 'editor') return null;
   const e = entries.find((x) => x.id === shard.id);
   if (!e) return null;
   if (shard.source?.kind === 'gallery' && shard.source.id === e.id) return e;
