@@ -200,7 +200,8 @@ keys, a numpad).
 - Settings are data, never code. An invalid declaration rejects the shard.
 
 A common pattern: a setting that picks the program, and JavaScript that fills `data-key` from a key
-map per program (see the bundled Image editing and Video calls shards).
+map per program (see the bundled Video calls shard, or [Image editing](https://github.com/libreshard/gallery-shards/tree/main/edicion-imagen) in
+the gallery's repository).
 
 ## Languages
 

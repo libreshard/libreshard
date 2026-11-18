@@ -13,7 +13,7 @@ const { stale } = require('../tools/build-shard-base');
 
 const root = path.join(__dirname, '..');
 const shardsDir = path.join(root, 'shards');
-const EXPECTED = ['desarrollo', 'discord-basico', 'edicion-imagen', 'escritorio', 'multimedia', 'obs', 'teclado-numerico', 'videollamadas'];
+const EXPECTED = ['desarrollo', 'discord-basico', 'escritorio', 'multimedia', 'teclado-numerico', 'videollamadas'];
 
 function store() {
   const data = fs.mkdtempSync(path.join(os.tmpdir(), 'libreshard-bundled-'));
