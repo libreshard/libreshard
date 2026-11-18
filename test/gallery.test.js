@@ -84,6 +84,23 @@ test('installed shards match entries by their source, or by id and author', () =
   assert.equal(gallery.entryFor([e], { id: 'other', author: 'Gabriel Hernandez' }), null);
 });
 
+test('a shard saved by the editor, such as a copy of a gallery panel, is never taken for a gallery entry', () => {
+  const [e] = gallery.cleanIndex({ format: 1, shards: [entry({ version: '1.1.0' })] });
+  // The copy has its own id, the original's author and came from the editor
+  const copy = { id: 'panel-sc-mfd-copy-ab12', version: '1.0.1', author: 'Gabriel Hernandez', source: { kind: 'editor' } };
+  assert.equal(gallery.entryFor([e], copy), null);
+  const original = { id: 'sc-mfd', version: '1.0.1', author: 'Gabriel Hernandez', source: { kind: 'gallery', id: 'sc-mfd' } };
+  const [a] = gallery.annotate([e], [copy, original], '0.5.1');
+  assert.deepEqual([a.installed, a.update], [{ version: '1.0.1', same: true }, true], 'the update is offered to the original only');
+  // Even with the entry's id and author: what the editor saved here is the user's own work
+  const sameId = { id: 'sc-mfd', version: '1.0.1', author: 'Gabriel Hernandez', source: { kind: 'editor' } };
+  assert.equal(gallery.entryFor([e], sameId), null);
+  const [b] = gallery.annotate([e], [sameId], '0.5.1');
+  assert.deepEqual([b.installed, b.update], [{ version: '1.0.1', same: false }, false], 'never "up to date", never an update that would replace it');
+  // A shard installed from a file still matches by id and author (bought and installed by hand)
+  assert.equal(gallery.entryFor([e], { ...sameId, source: { kind: 'file' } }), e);
+});
+
 test('gallery links name an entry; the file and its sha256 come from the index', () => {
   assert.deepEqual(parseLink('libreshard://install?gallery=sc-mfd'), { action: 'install', gallery: 'sc-mfd' });
   assert.equal(parseLink('libreshard://install?gallery=Not%20An%20Id'), null);

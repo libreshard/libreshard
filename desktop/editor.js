@@ -16,6 +16,7 @@ const S = {
   undo: [], redo: [], saved: '', coalesce: null,
   small: [], check: null, loadWarnings: [],
   imported: null, // { report, marks } after importing a Stream Deck profile, until the first save
+  copyOf: null, // { name, version, kind } while editing someone else's panel, until the first save
   capture: null, // { done(combo) } while capturing a key
 };
 
@@ -135,6 +136,7 @@ function render({ props = true, pages = true } = {}) {
   $('pageBar').checked = S.panel.pageBar !== false;
   $('undo').disabled = !S.undo.length;
   $('redo').disabled = !S.redo.length;
+  $('save').textContent = S.copyOf ? t('editor.saveCopy') : t('action.save');
   if (pages) renderPages();
   if (props) renderProps();
   sendPreview();
@@ -740,6 +742,7 @@ function keysSummary() {
 
 function renderWarnings() {
   const out = [];
+  if (S.copyOf) out.push(copyNotice());
   if (S.imported) out.push(importSummary());
   const missing = allButtons().filter(incomplete).length;
   if (missing) out.push(h('div', { class: 'warnbox warn' }, t('editor.incomplete', { count: missing })));
@@ -759,6 +762,18 @@ function renderWarnings() {
   if (S.small.length) out.push(h('div', { class: 'warnbox warn' }, t('editor.small', { count: S.small.length })));
   if (S.loadWarnings.length) out.push(h('div', { class: 'warnbox warn' }, t('editor.loadWarnings', { details: S.loadWarnings.slice(0, 3).join('; ') })));
   fill($('warnings'), out);
+}
+
+/* ---------- Someone else's panel ---------- */
+
+// Shown from the moment the panel opens, above every other warning: the user learns before changing
+// anything that the panel on their tablet stays as it is and that their changes become a new shard
+function copyNotice() {
+  const c = S.copyOf;
+  const from = t('editor.copyFrom.' + (['gallery', 'url', 'file'].includes(c.kind) ? c.kind : 'file'));
+  return h('div', { class: 'warnbox copy' },
+    h('p', null, t('editor.copyNotice', { name: c.name, version: c.version || '?', from })),
+    h('p', null, t('editor.copyNoticeSave')));
 }
 
 /* ---------- Imported from a Stream Deck profile ---------- */
@@ -809,12 +824,15 @@ async function save() {
   const r = await api.save(S.panel, S.meta);
   if (!r || r.ok === false) { toast(((r && r.errors) || [t('error.generic')]).join('\n'), true); return; }
   const first = !S.id;
+  const copied = r.copied === true && S.copyOf;
   S.id = r.id;
+  if (typeof r.name === 'string') S.meta.name = r.name;
   S.saved = snapshot();
   S.loadWarnings = [];
   S.imported = null;
+  S.copyOf = null;
   render({ props: false });
-  toast(first ? t('editor.savedNew') : t('editor.saved'));
+  toast(copied ? t('editor.savedCopy', { name: r.name, original: copied.name }) : first ? t('editor.savedNew') : t('editor.saved'));
 }
 
 /* ---------- Shortcuts ---------- */
@@ -883,6 +901,7 @@ async function start() {
   S.images = init.images || {};
   S.loadWarnings = init.warnings || [];
   S.imported = init.imported || null;
+  S.copyOf = init.copyOf || null;
   // Every toggle has an object for its second state (an empty one isn't saved by the format)
   for (const b of allButtons()) if (b.type === 'toggle' && !b.alt) b.alt = {};
   // An imported panel isn't saved anywhere yet

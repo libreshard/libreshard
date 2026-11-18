@@ -12,6 +12,30 @@ const { normalizeApp, appLabel, exeKey } = require('./focus/apps');
 const { resolveValues, checkValues, cleanValue } = require('./shard-settings');
 const { nullLog } = require('./log');
 
+// Where a user shard came from, as saved in shards-state.json: { kind: 'editor' } (saved by the panel
+// editor on this PC), { kind: 'file' } (installed from a file or folder), { kind: 'url', host } or
+// { kind: 'gallery', id }. The state file (and a backup) can be edited by hand, so only those shapes
+// are trusted: anything else is null.
+function cleanSource(s) {
+  if (!s || typeof s !== 'object') return null;
+  if (s.kind === 'editor' || s.kind === 'file') return { kind: s.kind };
+  if (s.kind === 'url' && typeof s.host === 'string' && /^[a-z0-9.:[\]-]{1,253}$/i.test(s.host)) return { kind: 'url', host: s.host };
+  if (s.kind === 'gallery' && typeof s.id === 'string' && /^[a-z0-9-]{1,64}$/.test(s.id)) return { kind: 'gallery', id: s.id };
+  return null;
+}
+
+// The shard and version a copy of someone else's panel was made from: { id, version }, or null.
+// version is null when the original's manifest had none.
+function cleanCopiedFrom(c) {
+  if (!c || typeof c !== 'object') return null;
+  if (typeof c.id !== 'string' || !/^[a-z0-9-]{1,64}$/.test(c.id)) return null;
+  if (c.version !== null && (typeof c.version !== 'string' || !/^[^\u0000-\u001f\u007f]{1,20}$/.test(c.version))) return null;
+  return { id: c.id, version: c.version };
+}
+
+// The original panel.json a copy was made from is kept as it was, up to this size
+const MAX_ORIGINAL = 2 * 1024 * 1024;
+
 // Clean list of app entries (see focus/apps.js), at most 20
 function cleanApps(v) {
   if (typeof v === 'string') v = [v];
@@ -64,9 +88,11 @@ function removeShardFolder(root) {
 class ShardStore extends EventEmitter {
   // dirs: [{ dir, bundled }] in priority order (with a repeated id, the first one wins).
   // installDir: where install() copies shards (the user's folder).
-  constructor({ dirs, installDir, stateFile, rulesFile, appVersion, watch = false, log = nullLog }) {
+  // originalsDir: where the original panel.json of each copy is kept (<userData>/panel-originals),
+  // outside the shard folders, which are served to the tablets.
+  constructor({ dirs, installDir, stateFile, rulesFile, originalsDir, appVersion, watch = false, log = nullLog }) {
     super();
-    Object.assign(this, { dirs, installDir, stateFile, rulesFile, appVersion, log });
+    Object.assign(this, { dirs, installDir, stateFile, rulesFile, originalsDir, appVersion, log });
     this.loggedRejections = new Set();
     this.state = this.readState();
     this.rules = new Map();
@@ -237,23 +263,60 @@ class ShardStore extends EventEmitter {
     removeShardFolder(e.root);
     delete this.state[id];
     this.saveState();
+    const original = this.originalFile(id);
+    if (original) fs.rmSync(original, { force: true });
     this.load();
   }
 
-  // Where a user shard came from, as saved at install time: { kind: 'url', host }, { kind: 'gallery',
-  // id } or null. The state file can be edited by hand, so only those shapes are trusted.
-  sourceOf(id) {
-    const s = this.state[id]?.source;
-    if (!s || typeof s !== 'object') return null;
-    if (s.kind === 'url' && typeof s.host === 'string' && /^[a-z0-9.:[\]-]{1,253}$/i.test(s.host)) return { kind: 'url', host: s.host };
-    if (s.kind === 'gallery' && typeof s.id === 'string' && /^[a-z0-9-]{1,64}$/.test(s.id)) return { kind: 'gallery', id: s.id };
-    return null;
+  // Where a user shard came from (see cleanSource), or null: bundled shards, development links and
+  // shards installed before 0.5.1 have none
+  sourceOf(id) { return cleanSource(this.state[id]?.source); }
+
+  // The shard and version a copy was made from ({ id, version }), or null if it isn't a copy
+  copiedFromOf(id) { return cleanCopiedFrom(this.state[id]?.copiedFrom); }
+
+  // Where the original panel.json of the copy `id` is (or would be) kept; null without originalsDir
+  originalFile(id) {
+    return this.originalsDir && /^[a-z0-9-]{1,64}$/.test(id) ? path.join(this.originalsDir, id + '.json') : null;
+  }
+
+  // Marks `id` as a copy of copiedFrom ({ id, version }) and keeps the original's panel.json (the
+  // file as it was, a Buffer or a string). Nothing reads it yet: a future version will use it to show
+  // what changed when the original gets a new version.
+  setCopiedFrom(id, copiedFrom, original) {
+    this.mustGet(id);
+    const clean = cleanCopiedFrom(copiedFrom);
+    if (!clean) throw new Error('Invalid copiedFrom');
+    const data = Buffer.from(original);
+    if (!data.length || data.length > MAX_ORIGINAL) throw new Error('Invalid original panel.json');
+    const file = this.originalFile(id);
+    if (!file) throw new Error('No folder for original panels');
+    fs.mkdirSync(this.originalsDir, { recursive: true });
+    fs.writeFileSync(file, data);
+    this.state[id] = { ...this.state[id], copiedFrom: clean };
+    this.saveState();
+  }
+
+  // Restores where a shard installed from a backup came from: { source, copiedFrom } as the backup
+  // saved it, and the copy's original panel.json (copiedFrom is only kept with it). Anything that
+  // doesn't check out is left out.
+  restoreOrigin(id, { source, copiedFrom } = {}, original = null) {
+    this.mustGet(id);
+    const clean = cleanSource(source);
+    if (clean) {
+      this.state[id] = { ...this.state[id], source: clean };
+      this.saveState();
+    }
+    if (cleanCopiedFrom(copiedFrom) && original) {
+      try { this.setCopiedFrom(id, copiedFrom, original); } catch (e) {
+        this.log.warn('copy-origin-not-restored', { shard: id, error: e });
+      }
+    }
   }
 
   // Copies a validated shard folder into installDir/<id> and approves its keys. Replaces an
   // installed copy of the same shard; refuses to touch bundled or linked (development) shards.
-  // `source`: where the files came from ({ kind: 'url', host } or { kind: 'gallery', id }); without
-  // it, the previous one stays.
+  // `source`: where the files came from (see cleanSource); without it, the previous one stays.
   install(sourceDir, manifest, { source } = {}) {
     const existing = this.entries.get(manifest.id);
     if (existing?.bundled) throw new Error(`The id "${manifest.id}" belongs to a bundled shard`);
@@ -268,7 +331,9 @@ class ShardStore extends EventEmitter {
     fs.cpSync(sourceDir, target, { recursive: true, filter: (src) => !fs.lstatSync(src).isSymbolicLink() });
     // Only the approval changes: favorite, menu position, disabled and settings stay (saving a panel
     // or updating a shard shouldn't reset them)
-    this.state[manifest.id] = { ...this.state[manifest.id], approved: [...manifest.keys], ...(source ? { source } : {}) };
+    const clean = cleanSource(source);
+    if (source && !clean) throw new Error('Invalid source');
+    this.state[manifest.id] = { ...this.state[manifest.id], approved: [...manifest.keys], ...(clean ? { source: clean } : {}) };
     this.saveState();
     this.load();
     return this.entries.get(manifest.id);
@@ -444,4 +509,4 @@ class ShardStore extends EventEmitter {
   }
 }
 
-module.exports = { ShardStore, loadRules, resolveApps, cleanApps, cleanRule, removeShardFolder };
+module.exports = { ShardStore, loadRules, resolveApps, cleanApps, cleanRule, cleanSource, cleanCopiedFrom, removeShardFolder };

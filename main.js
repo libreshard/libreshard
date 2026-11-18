@@ -9,7 +9,7 @@ const { startServer } = require('./server');
 const { Pairing, Devices, RateLimiter } = require('./pairing');
 const { ShardStore } = require('./shard-store');
 const { classifyKeys, validateManifest, httpsUrl } = require('./manifest');
-const { validatePanel, imagesOf, importedImages, imageFile, buildShard, LIMITS: PANEL_LIMITS } = require('./panel-format');
+const { validatePanel, imagesOf, importedImages, imageFile, buildShard, isOwnPanel, copyOfPanel, LIMITS: PANEL_LIMITS } = require('./panel-format');
 const zip = require('./zip');
 const download = require('./download');
 const links = require('./links');
@@ -248,6 +248,7 @@ async function start() {
     installDir: userShards,
     stateFile: dataFile('shards-state.json'),
     rulesFile,
+    originalsDir: dataFile('panel-originals'),
     appVersion: app.getVersion(),
     watch: true,
     log,
@@ -332,6 +333,14 @@ async function start() {
   }
   const withIcons = (apps) => Promise.all(apps.map(async (a) => ({ ...a, icon: await iconFor(a.path) })));
 
+  // For the card of a copy of someone else's panel: the shard and version it was made from, with that
+  // shard's name while it's still installed
+  function copyOfState(id) {
+    const c = store.copiedFromOf(id);
+    if (!c) return null;
+    return { id: c.id, version: c.version, name: store.entries.get(c.id)?.manifest.name || null };
+  }
+
   async function buildState() {
     const { code, token, expiresAt } = pairing.current();
     return {
@@ -352,6 +361,7 @@ async function start() {
         bundled: e.bundled, linked: e.linked, enabled: e.enabled, apps: e.apps.map(appLabel),
         appEntries: await withIcons(e.apps), customApps: e.customApps, suggestedApps: e.suggestedApps,
         settings: e.settings, favorite: store.isFavorite(e.id), panel: e.panel,
+        ownPanel: e.panel && isOwnPanel(store.sourceOf(e.id)), copyOf: copyOfState(e.id),
         settingsSchema: e.manifest.settings.map((item) => ({
           ...item,
           label: labelFor(item.label, locale),
@@ -453,7 +463,8 @@ async function start() {
   const candidates = new Map();
   // link: development mode, where the folder is linked instead of copied
   // fromBackup: the shard comes from an imported backup; `after` runs once the user confirms it
-  // `origin`: where a downloaded shard came from ({ kind: 'url', host }), shown in the review and saved
+  // `origin`: where the shard comes from (see cleanSource in shard-store.js), saved on install; the
+  // review mentions a web address or the gallery
   async function prepareInstall(source, { link = false, fromBackup = false, after = null, origin = null } = {}) {
     if (link && !fs.statSync(source).isDirectory()) throw new Error('Development mode needs a folder');
     const r = await installer.prepare(source, {
@@ -468,7 +479,7 @@ async function start() {
 
   openShardFile = async (file) => {
     if (!file || !fs.existsSync(file)) return;
-    const r = await prepareInstall(file);
+    const r = await prepareInstall(file, { origin: { kind: 'file' } });
     if (r.ok) win.webContents.send('install:review', r.review);
     else dialog.showErrorBox('LibreShard', r.errors.join('\n'));
   };
@@ -601,11 +612,11 @@ async function start() {
       ? { title: t('dialog.pickFolder'), properties: ['openDirectory'] }
       : { title: t('dialog.pickZip'), properties: ['openFile'], filters: [{ name: t('dialog.zipFilter'), extensions: ['zip', 'libreshard'] }] });
     if (r.canceled || !r.filePaths[0]) return { ok: true };
-    return prepareInstall(r.filePaths[0]);
+    return prepareInstall(r.filePaths[0], { origin: { kind: 'file' } });
   });
   handle('install:path', (p, opts) => {
     if (typeof p !== 'string' || !p || !fs.existsSync(p)) throw new Error('File not found');
-    return prepareInstall(p, { link: opts?.link === true });
+    return prepareInstall(p, { link: opts?.link === true, origin: { kind: 'file' } });
   });
   // A shard from a web address: downloaded by download.js (public https servers only, 50 MB, 60 s)
   // into a temporary folder, then the usual review. The log keeps only the server's name, since
@@ -812,7 +823,7 @@ async function start() {
     if (r.canceled || !r.filePath) return { ok: true, saved: false };
     let rules = {};
     try { rules = JSON.parse(fs.readFileSync(rulesFile, 'utf8')) || {}; } catch { /* no valid rules: none saved */ }
-    const zip = backup.createBackup({ appVersion: app.getVersion(), config: settingsForBackup(), rules, state: store.state, shards: store.all() });
+    const zip = backup.createBackup({ appVersion: app.getVersion(), config: settingsForBackup(), rules, state: store.state, shards: store.all(), originalFile: (id) => store.originalFile(id) });
     fs.writeFileSync(r.filePath, zip);
     log.info('backup-exported', { shards: store.all().filter((e) => !e.bundled && !e.linked).length, bytes: zip.length });
     return { ok: true, saved: true };
@@ -873,6 +884,8 @@ async function start() {
         fromBackup: true,
         after: () => {
           if (saved) store.restoreState(sid, saved);
+          // Its source too, so a panel made on the old PC is still the user's own here
+          store.restoreOrigin(sid, restoring.read.data.origins[sid], restoring.read.originalOf(sid));
         },
       }).catch((e) => ({ ok: false, errors: [e.message] }));
       if (r.ok && r.review.manifest.id === sid) {
@@ -956,14 +969,19 @@ async function start() {
 
   /* ---------- Panel editor ---------- */
 
-  // Panels without code, in a window of their own (one at a time). The editor works on a copy; only
-  // "Save" writes a shard: validated here (validatePanel), built from desktop/panel-template/ and
+  // Panels without code, in a window of their own (one at a time). The editor works on its own state;
+  // only "Save" writes a shard: validated here (validatePanel), built from desktop/panel-template/ and
   // installed with store.install(), which approves its keys, since the user chose them on this PC.
   // A panel made on another PC is edited from its panel.json alone; the rest is generated again.
   // Images live in a draft folder per editor session (libreshard-draft-*, removed on close and, if
   // left behind by a crash, on the next start); saving copies only the ones still in use.
   let editor = null;
-  let editing = null; // { id, meta, panel, images, warnings, imported, draft, dirty } while the editor is open
+  // While the editor is open: { id, meta, panel, images, warnings, imported, copy, draft, dirty }.
+  // `copy`: someone else's panel (from the gallery, a web address or a file) is never changed in
+  // place. Opening one sets `copy` ({ from: { id, version }, kind, name, original: its panel.json })
+  // and leaves `id` null with the name "<name> (copy)", so the first save builds a new shard of the
+  // user's own and the original keeps its files, version, source, settings and updates.
+  let editing = null;
   const DRAFT_PREFIX = 'libreshard-draft-';
   for (const name of fs.readdirSync(os.tmpdir())) {
     if (!name.startsWith(DRAFT_PREFIX)) continue;
@@ -975,17 +993,21 @@ async function start() {
   const panelImages = (root) => {
     try { return fs.readdirSync(path.join(root, 'images')).map((n) => 'images/' + n); } catch { return []; }
   };
-  // An installed panel as the editor needs it, with its images as data: URLs for the preview
+  // An installed panel as the editor needs it, with its images as data: URLs for the preview, and
+  // its panel.json exactly as it is on disk (`file`, kept when the panel is copied)
   function readPanel(e) {
-    let raw;
-    try { raw = JSON.parse(fs.readFileSync(path.join(e.root, 'panel.json'), 'utf8')); } catch (err) {
+    let raw, file;
+    try {
+      file = fs.readFileSync(path.join(e.root, 'panel.json'));
+      raw = JSON.parse(file.toString('utf8'));
+    } catch (err) {
       throw new Error(t('editor.unreadable', { error: err.message }));
     }
     const r = validatePanel(raw, { files: new Set(panelImages(e.root)) });
     if (!r.ok) throw new Error(t('editor.unreadable', { error: r.errors.join('; ') }));
     const images = {};
     for (const f of imagesOf(r.panel)) images[f] = 'data:image/png;base64,' + fs.readFileSync(path.join(e.root, f)).toString('base64');
-    return { panel: r.panel, warnings: r.warnings, images };
+    return { panel: r.panel, warnings: r.warnings, images, file };
   }
   const newPanel = () => ({
     format: 1, grid: { cols: 5, rows: 3 },
@@ -1005,7 +1027,15 @@ async function start() {
       const e = entry(id);
       if (!e.panel) throw new Error('Not a panel');
       const m = e.manifest;
-      editing = { id: e.id, meta: { name: m.name, icon: m.icon, description: m.description, author: m.author, apps: m.apps, version: m.version, license: m.license, url: m.url }, ...readPanel(e) };
+      const meta = { name: m.name, icon: m.icon, description: m.description, author: m.author, apps: m.apps, version: m.version, license: m.license, url: m.url };
+      const { file, ...read } = readPanel(e);
+      const source = store.sourceOf(e.id);
+      if (isOwnPanel(source)) {
+        editing = { id: e.id, meta, ...read };
+      } else {
+        const c = copyOfPanel({ id: e.id, meta, format: (name) => t('editor.copyName', { name }) });
+        editing = { id: null, meta: c.meta, ...read, copy: { from: c.copiedFrom, kind: source.kind, name: m.name || e.id, original: file } };
+      }
     } else {
       editing = { id: null, meta: { name: t('editor.newName'), icon: '' }, panel: newPanel(), images: {}, warnings: [] };
     }
@@ -1047,7 +1077,7 @@ async function start() {
       editing = null;
     });
     editor.loadFile(EDITOR_PAGE);
-    log.info('editor-opened', { shard: editing.id || undefined });
+    log.info('editor-opened', { shard: editing.id || editing.copy?.from.id || undefined, copy: editing.copy ? true : undefined });
   }
   handle('editor:open', (id) => { openEditor(typeof id === 'string' ? id : null); });
 
@@ -1121,6 +1151,7 @@ async function start() {
     ok: true, platform: process.platform, locale, strings: i18n.strings(locale), icons: iconBodies, limits: PANEL_LIMITS,
     id: editing.id, meta: { name: editing.meta.name || '', icon: editing.meta.icon || '' },
     panel: editing.panel, images: editing.images, warnings: editing.warnings, imported: editing.imported || null,
+    copyOf: editing.copy ? { name: editing.copy.name, version: editing.copy.from.version, kind: editing.copy.kind } : null,
   }));
   // The live warnings: the install review's risk classes, and keys this system can't press
   editorHandle('editor:check', (combos) => {
@@ -1166,24 +1197,35 @@ async function start() {
       const images = imagesOf(r.panel);
       if (images.length) fs.mkdirSync(path.join(dir, 'images'));
       for (const f of images) fs.copyFileSync(path.join(editing.draft, f), path.join(dir, f));
-      store.install(dir, checked.manifest);
+      // Whatever it was before 0.5.1, a panel saved here is now the user's own
+      store.install(dir, checked.manifest, { source: { kind: 'editor' } });
     } catch (e) {
       log.error('panel-save-failed', { shard: built.manifest.id, error: e });
       throw e;
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+    // A copy remembers what it came from, for a future review of what changed in the original. It's
+    // already saved: if this fails, the copy stays a plain panel of the user's.
+    const copy = editing.copy;
+    if (copy) {
+      try { store.setCopiedFrom(built.manifest.id, copy.from, copy.original); } catch (e) {
+        log.warn('panel-copy-origin-failed', { shard: built.manifest.id, error: e });
+      }
+    }
     // Tablets showing this panel reload it (like a development shard); new ones see it in the menu
     store.emit('files', built.manifest.id);
     log.info('panel-saved', {
-      shard: built.manifest.id, version: built.manifest.version, new: !editing.id,
+      shard: built.manifest.id, version: built.manifest.version, new: !editing.id, copyOf: copy?.from.id,
       pages: r.panel.pages.length, buttons: r.panel.pages.reduce((n, p) => n + p.buttons.length, 0),
     });
     editing.id = built.manifest.id;
     editing.meta = { ...editing.meta, name, icon, version: built.manifest.version };
     editing.imported = null;
+    editing.copy = null; // from now on the copy is the user's own and saves in place
     editing.dirty = false;
-    return { ok: true, id: built.manifest.id, version: built.manifest.version };
+    push(); // the PC window shows the new shard and what it's a copy of
+    return { ok: true, id: built.manifest.id, version: built.manifest.version, name: built.manifest.name, copied: !!copy };
   });
 
   /* ---------- Local panel ("This PC") ---------- */

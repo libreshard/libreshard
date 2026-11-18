@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const vm = require('vm');
-const { validatePanel, keysOf, imagesOf, imageFile, buildShard, panelId, nextVersion, LIMITS } = require('../panel-format');
+const { validatePanel, keysOf, imagesOf, imageFile, buildShard, panelId, nextVersion, isOwnPanel, copyName, copyOfPanel, LIMITS } = require('../panel-format');
 const { validateManifest } = require('../manifest');
 const installer = require('../installer');
 const { PANEL_TEMPLATE } = require('../tools/build-shard-base');
@@ -293,6 +293,37 @@ test('saving an existing panel keeps its id and manifest details and raises the 
   assert.deepEqual(manifest.apps, ['obs64.exe']);
   assert.equal(manifest.license, 'MIT');
   assert.equal(manifest.url, 'https://ana.example/obs');
+});
+
+test('panels from the gallery, a web address or a file are someone else\'s; the editor\'s and older ones are the user\'s', () => {
+  assert.equal(isOwnPanel(null), true, 'installed before 0.5.1');
+  assert.equal(isOwnPanel({ kind: 'editor' }), true);
+  for (const kind of ['gallery', 'url', 'file']) assert.equal(isOwnPanel({ kind }), false, kind);
+});
+
+test('a copy is named "<name> (copy)" within the 60-character limit, and the suffix is never cut', () => {
+  assert.equal(copyName('Office'), 'Office (copy)');
+  assert.equal(copyName('  Oficina ', (n) => `${n} (copia)`), 'Oficina (copia)');
+  const long = copyName('x'.repeat(60), (n) => `${n} (copia)`);
+  assert.equal([...long].length, LIMITS.text);
+  assert.ok(long.endsWith('x (copia)'));
+  const emoji = copyName('🎛️'.repeat(40));
+  assert.ok([...emoji].length <= LIMITS.text && emoji.endsWith(' (copy)'), 'counted in code points, like the name itself');
+  assert.equal(copyName('a'.repeat(52) + ' bcdefgh'), 'a'.repeat(52) + ' (copy)', 'a cut that ends in a space leaves no double space');
+  assert.equal(copyName(''), 'Panel (copy)');
+});
+
+test('opening someone else\'s panel: the copy keeps author, license, link and apps, and has no id or version yet', () => {
+  const meta = { name: 'OBS', icon: '🎬', author: 'Ana', version: '2.0.1', description: 'Scenes', apps: ['obs64.exe'], license: 'MIT', url: 'https://ana.example/obs' };
+  const c = copyOfPanel({ id: 'obs-scenes', meta, format: (n) => `${n} (copia)` });
+  assert.deepEqual(c.copiedFrom, { id: 'obs-scenes', version: '2.0.1' });
+  assert.deepEqual(c.meta, { name: 'OBS (copia)', icon: '🎬', author: 'Ana', description: 'Scenes', apps: ['obs64.exe'], license: 'MIT', url: 'https://ana.example/obs' });
+  assert.equal(meta.name, 'OBS', 'the original details are not changed');
+  const { manifest } = buildShard({ panel: validatePanel(FULL).panel, meta: c.meta });
+  assert.match(manifest.id, /^panel-obs-copia-[0-9a-f]{4}$/);
+  assert.equal(manifest.version, '1.0.0');
+  assert.deepEqual([manifest.license, manifest.url, manifest.author], ['MIT', 'https://ana.example/obs', 'Ana']);
+  assert.deepEqual(copyOfPanel({ id: 'x', meta: { name: 'X' } }).copiedFrom, { id: 'x', version: null }, 'a manifest without a version');
 });
 
 test('a generated panel folder with the template passes the install review', () => {
