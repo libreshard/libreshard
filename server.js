@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
 const { rateLimit } = require('express-rate-limit');
-const { parse, normalize, unavailable } = require('./keys');
+const { parse, normalize, unavailable, withLayout } = require('./keys');
 const { hostAllowed, isLoopback, isPrivateAddress } = require('./net');
 const { Pairing, Devices, RateLimiter, cleanName } = require('./pairing');
 const { ShardStore } = require('./shard-store');
@@ -107,11 +107,15 @@ function startServer({
   keyboard, focus, devices, pairing, limiter, allowPublic = false, onAlert, confirmPairing,
   allowAppsFromTablet = false, unavailableKeys = unavailable, language = 'auto',
   platform = shardPlatform(process.platform), isSelf = isSelfApp, isElevated, httpRate = HTTP_RATE, sessionGraceMs = SESSION_GRACE_MS, log = nullLog,
-  confirmTimeoutMs = CONFIRM_TIMEOUT_MS, onShardOpened,
+  confirmTimeoutMs = CONFIRM_TIMEOUT_MS, onShardOpened, layoutModifiers,
 }) {
   const warnOnce = once(log);
   const canAllow = () => (typeof allowAppsFromTablet === 'function' ? allowAppsFromTablet() : allowAppsFromTablet) === true;
   const typer = makeTyper(keyboard || nutKeyboard());
+  // The modifiers the keyboard layout needs for digits and symbols (layout.js). Only with the real
+  // keyboard, unless a test passes its own.
+  if (layoutModifiers === undefined) layoutModifiers = keyboard ? null : require('./layout').modifiersFor;
+  const keysOf = (combo) => withLayout(parse(combo), layoutModifiers);
   focus = focus || require('./focus');
   isElevated = isElevated || require('./focus/elevation').above;
   devices = devices || new Devices(null);
@@ -292,7 +296,8 @@ function startServer({
   server.on('close', detach);
 
   wss.on('connection', (ws, req) => {
-    const c = { ws, ip: remoteIp(req), authed: false, device: null, held: new Set(), pending: 0, tokens: RATE, last: Date.now() };
+    // held: combo → the keys pressed for it, released exactly so even if the layout changes meanwhile
+    const c = { ws, ip: remoteIp(req), authed: false, device: null, held: new Map(), pending: 0, tokens: RATE, last: Date.now() };
     conns.add(c);
     const authTimer = setTimeout(() => { if (!c.authed) ws.close(CLOSE.authTimeout, 'Authentication timeout'); }, AUTH_TIMEOUT_MS);
     const send = (obj) => ws.readyState === ws.OPEN && ws.send(JSON.stringify(obj));
@@ -329,7 +334,7 @@ function startServer({
       const session = c.session && sessions.get(c.session);
       if (session && --session.conns <= 0) { session.conns = 0; session.until = Date.now() + sessionGraceMs; }
       queue = queue.then(async () => {
-        for (const combo of c.held) await typer.up(parse(combo)).catch((e) => log.error('release-failed', { error: e }));
+        for (const keys of c.held.values()) await typer.up(keys).catch((e) => log.error('release-failed', { error: e }));
         c.held.clear();
         conns.delete(c);
         updateFocusPolling();
@@ -490,8 +495,8 @@ function startServer({
       }
 
       try {
-        const keys = parse(combo);
         if (msg.type === 'press') {
+          const keys = keysOf(combo);
           try {
             await typer.down(keys);
             await sleep(TAP_MS);
@@ -499,9 +504,11 @@ function startServer({
             await typer.up(keys);
           }
         } else if (msg.type === 'down') {
-          c.held.add(combo);
+          const keys = keysOf(combo);
+          c.held.set(combo, keys);
           await typer.down(keys);
         } else {
+          const keys = c.held.get(combo) || keysOf(combo);
           c.held.delete(combo);
           await typer.up(keys);
         }
@@ -513,7 +520,7 @@ function startServer({
 
   const releaseHeld = async () => {
     for (const c of conns) {
-      for (const combo of c.held) await typer.up(parse(combo)).catch((e) => log.error('release-failed', { error: e }));
+      for (const keys of c.held.values()) await typer.up(keys).catch((e) => log.error('release-failed', { error: e }));
       c.held.clear();
     }
   };

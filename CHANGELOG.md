@@ -6,6 +6,15 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+### App
+
+- **Symbols on keyboards other than US (Windows):** keys such as `[`, `]` or `=` now arrive as
+  themselves on layouts where they need Shift or AltGr, like Spanish (Latin America), French or
+  German. Before, LibreShard pressed the right key without its Shift: on a Latin American keyboard
+  `[` and `]` typed `{` and `}` (so Krita's brush size buttons did nothing) and Ctrl+= became Ctrl+0,
+  which zooms to fit in Photoshop instead of zooming in. Keys that need nothing extra, and US
+  keyboards, work as before.
+
 ## [0.5.2] - 2026-11-18
 
 ### App
