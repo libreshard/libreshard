@@ -6,11 +6,13 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-11-18
+
 ### App
 
 - **Symbols on keyboards other than US (Windows):** keys such as `[`, `]` or `=` now arrive as
-  themselves on layouts where they need Shift or AltGr, like Spanish (Latin America), French or
-  German. Before, LibreShard pressed the right key without its Shift: on a Latin American keyboard
+  themselves on layouts where they need Shift or AltGr (checked with Spanish, Latin America).
+  Before, LibreShard pressed the right key without its Shift: on a Latin American keyboard
   `[` and `]` typed `{` and `}` (so Krita's brush size buttons did nothing) and Ctrl+= became Ctrl+0,
   which zooms to fit in Photoshop instead of zooming in. Keys that need nothing extra, and US
   keyboards, work as before.
@@ -281,7 +283,8 @@ First public release.
 - Linux `.deb` (with an AppArmor profile for Ubuntu 24.04 and newer) and AppImage.
 - Electron Fuses: no `ELECTRON_RUN_AS_NODE`, no inspector flags, and `app.asar` integrity checks.
 
-[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/libreshard/libreshard/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/libreshard/libreshard/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/libreshard/libreshard/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/libreshard/libreshard/compare/v0.4.1...v0.5.0
