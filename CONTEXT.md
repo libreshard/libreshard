@@ -719,7 +719,7 @@ The maintainer plans the work in local notes (`docs/plans/`, not published). The
 
 **0.5: shard ecosystem and sustainability** (released 2026-11-15)
 
-- A community gallery (the reviewed `libreshard/shards` repository, listed in the app and on libreshard.com), installing from a web address and from `libreshard://` links, notices when an installed shard has a new version, `license` and `url` in the manifest, paid shards listed with a link to their shop (no DRM), shard files served only to paired devices, a guide to selling a shard, and ways to support the project. French and Brazilian Portuguese follow in 0.5.2.
+- A community gallery (the reviewed `libreshard/shards` repository, listed in the app and on libreshard.com), installing from a web address and from `libreshard://` links, notices when an installed shard has a new version, `license` and `url` in the manifest, paid shards listed with a link to their shop (no DRM), shard files served only to paired devices, a guide to selling a shard, and ways to support the project. In 0.5.2, French and Brazilian Portuguese (translated by AI), and OBS Studio (now Stream Control) and Image editing moved from the app to the gallery.
 
 **0.6: tablet experience** (next)
 

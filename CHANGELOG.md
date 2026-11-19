@@ -6,20 +6,22 @@ All notable changes to LibreShard are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-11-18
+
 ### App
 
 - **French and Brazilian Portuguese:** the PC window, the tablet and the bundled shards are now
   also in French and in Brazilian Portuguese (Portugal gets it too), following the system language
   or the one chosen in Settings. Both were translated by AI and haven't been reviewed by a native
   speaker yet: Settings says so, with a **Suggest a fix** button that opens a short form.
-- The help of the Desktop, Numpad and Video calls shards in Spanish now names them as the Shards
-  tab shows them.
 - **OBS Studio and Image editing moved to the gallery:** they no longer come with LibreShard, and
   live with the project's other shards in
   [libreshard/gallery-shards](https://github.com/libreshard/gallery-shards). The OBS one is now
   called **Stream Control**. If you used LibreShard before, the PC window tells you once and offers
   to install each one again with a button, through the gallery's usual review; your settings,
   favorite, place in the menu and app rules come back with it. "No, thanks" stops the notice.
+- The help of the Desktop, Numpad and Video calls shards in Spanish now names them as the Shards
+  tab shows them.
 
 ## [0.5.1] - 2026-11-18
 
@@ -270,7 +272,8 @@ First public release.
 - Linux `.deb` (with an AppArmor profile for Ubuntu 24.04 and newer) and AppImage.
 - Electron Fuses: no `ELECTRON_RUN_AS_NODE`, no inspector flags, and `app.asar` integrity checks.
 
-[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/libreshard/libreshard/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/libreshard/libreshard/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/libreshard/libreshard/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/libreshard/libreshard/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/libreshard/libreshard/compare/v0.4.0...v0.4.1
