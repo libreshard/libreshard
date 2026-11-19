@@ -68,6 +68,7 @@
       "installer.js",
       "shard-settings.js",
       "keys.js",
+      "layout.js",
       "log.js",
       "diagnostics.js",
       "updates.js",

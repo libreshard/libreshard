@@ -238,6 +238,7 @@ async function start() {
 
   focus.setLog(log);
   elevation.setLog(log);
+  require('./layout').setLog(log);
   // Every tap asks for the app in front (LibreShard itself is never typed into), and the first
   // detection is slow (~400 ms on Windows while the native module warms up): pay it now
   focus.active().catch(() => {});

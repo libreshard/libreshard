@@ -53,7 +53,8 @@ libreshard/
 ├── pairing.js            pairing codes, paired devices (token hashes) and the attempt limiter
 ├── manifest.js           shard manifest validation and key risk classification
 ├── net.js                allowed Host headers and private-network checks
-├── keys.js               turns "ctrl+shift+m" into nut-js keys
+├── keys.js               turns "ctrl+shift+m" into nut-js keys, plus the layout's modifiers for digits and symbols
+├── layout.js             Windows: which modifiers (Shift, AltGr) the active keyboard layout needs to type a character, via koffi
 ├── log.js                the log on disk (<userData>/logs/), rotated, with no personal data
 ├── diagnostics.js        the text "Copy diagnostics" and "Report a bug" put on the clipboard
 ├── updates.js            the daily check for a new version (GitHub's latest release), and version comparison
@@ -115,7 +116,7 @@ libreshard/
 └── docs/plans/           local work plans in Spanish (not in the repository)
 ```
 
-Dependencies in `package.json`: `express`, `ws`, `qrcode`, `yauzl` (reads shard zips), `@nut-tree-fork/nut-js` (production) and `electron` (45), `electron-builder` (26) (development). Optional: `active-win@8` (recognizes the program and its executable; installed by default, see section 8) and `koffi@3` (calls Windows APIs for `focus/elevation.js`; MIT, prebuilt binary in a per-platform package such as `@koromix/koffi-win32-x64`, so its install script is denied in `allowScripts`; unpacked from the `.asar` like active-win). Every version is exact (`.npmrc` has `save-exact=true`).
+Dependencies in `package.json`: `express`, `ws`, `qrcode`, `yauzl` (reads shard zips), `@nut-tree-fork/nut-js` (production) and `electron` (45), `electron-builder` (26) (development). Optional: `active-win@8` (recognizes the program and its executable; installed by default, see section 8) and `koffi@3` (calls Windows APIs for `focus/elevation.js` and `layout.js`; MIT, prebuilt binary in a per-platform package such as `@koromix/koffi-win32-x64`, so its install script is denied in `allowScripts`; unpacked from the `.asar` like active-win). Every version is exact (`.npmrc` has `save-exact=true`).
 
 Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contributor Covenant 3.0 text, under CC BY-SA 4.0). `shard-base/` and `docs/shard-template/` (and the `libreshard.css`/`libreshard.js` copies in each shard) are MIT-0, so shard authors can copy them freely; their source files carry `SPDX-License-Identifier: MIT-0`. The name and logo are covered by `TRADEMARKS.md`, not by the license. Contributions are inbound=outbound plus a DCO sign-off (`git commit -s`), checked by CI on pull requests.
 
@@ -236,7 +237,13 @@ Licensing: the project is Apache-2.0 (except `CODE_OF_CONDUCT.md`, the Contribut
 - `normalize(combo)`: lowercase, no whitespace.
 - `parse(combo)`: splits on `+` and maps each part to a nut-js `Key`. Throws `Unknown key: …` if the key doesn't exist.
 - Besides the usual keys it knows `print` (`printscreen`) and `numlock`.
+- `withLayout(keys, modifiersFor)`: the combo's keys with the modifiers the keyboard layout needs for each digit or symbol (`CHARS`: the keys libnut presses by the character they type on a US keyboard; letters, numpad and named keys are left alone), each inserted right before its key unless the combo already holds that modifier (either side). Without `modifiersFor`, the keys as they are.
+- **Why:** on Windows libnut asks `VkKeyScan` which key types the character on the active layout and presses that key, but drops the Shift or AltGr the answer comes with. On Latin American (`0000080A`) `[` and `]` typed `{` and `}`, and `ctrl+equal` became Ctrl+0 (checked 2026-11-18 with a low-level keyboard hook and in Krita, whose brush size then didn't change; with the fix it does, and US is unchanged).
 - `unavailable(combo)`: the keys this system can't press safely. Only ever non-empty on Linux, for F13–F24 missing from the X keymap (checked with `xmodmap -pke`, cached for a minute; without xmodmap they count as missing). Pressing such a key makes Xlib abort the whole process.
+
+**layout.js**
+- `modifiersFor(char)` → `['ctrl', 'alt', 'shift']` (any of them, AltGr being Ctrl + Alt) or `[]`: asks `VkKeyScanW` through koffi on Windows, from the same thread libnut asks it from, so the answer matches the key libnut presses. Elsewhere, for a character the layout has no key for, or if koffi is missing or a call fails, `[]` (pressed as before; the log gets one line, `layout-unavailable` or `layout-failed`). `createLayout({ platform, api })` takes a fake API in the tests. Linux (XTest by keysym) may have the same problem with symbols on other layouts; not checked yet.
+- The server applies it to every combo (`keysOf`) only with the real keyboard; tests with a fake keyboard get none unless they pass `layoutModifiers`. A held combo (`down`) keeps the exact keys it pressed (`c.held` is combo → keys), so its `up`, a dropped connection, `releaseAll` and pausing release those even if the layout changed meanwhile.
 
 **log.js**
 - `createLog({ file })`: `info`/`warn`/`error(event, details)` append one line (`time LEVEL event key=value…`, an `Error` adds its stack below), synchronously so the last lines before a crash are on disk. Rotates at 1 MB, keeping `.1` and `.2`. A failed write never throws (reported once on the console). `tail(n)` returns the last lines, for diagnostics.
@@ -603,6 +610,7 @@ Tests (`test/`):
 - `themes.test.js`: every theme's values are valid panel style, settings combine with the theme's, contrast follows WCAG and every theme keeps 4.5:1 between text and buttons.
 - `streamdeck.test.js`: synthetic 3.0 and 2.0 profiles (base32 folders): pages, nested folders and a cycle, missing pages, Default, title styles, images (hostile paths too), Mac shortcuts, Key Logic, dials, the errors, a hostile zip, the key tables and that every reason has its strings. Real profiles never enter the repository.
 - `moved.test.js`: who is offered the moved shards (everyone who updates, except a disabled shard; nobody on a new install), the saved answer, and that a moved shard installed from the gallery gets back its favorite, settings and rules. `packaging.test.js`: every local module `main.js` loads (following `require`) is in `build.files`, since a missing one only breaks the packaged app.
+- `layout.test.js`: the modifiers a layout needs (a fake `VkKeyScanW` with the Latin American answers), the fallback when koffi is missing or fails, `withLayout`, and the server pressing and releasing a symbol with its modifiers, a held one released with exactly what it pressed after a layout change or a dropped connection.
 - `gallery.test.js`: the index (bad entries left out, formats, paid entries), files matching their entry, installed shards matched by source or by id and author, a shard saved by the editor (a copy) never taken for an entry, gallery links, and `downloadText`.
 - `links.test.js`: only `install` with an url is understood; the link is found in a command line.
 - `download.test.js`: https only, literal and resolved private addresses refused (a real request to `localhost` included), redirects (to http, to private servers, loops), HTTP errors, size limits (announced and streamed), time limit, and no temporary files left behind. `net.test.js` covers `isPublicAddress`.

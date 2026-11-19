@@ -20,6 +20,39 @@ const ALIAS = {
   playpause: 'AudioPlay', next: 'AudioNext', prev: 'AudioPrev',
 };
 
+// The keys libnut presses by the character they type on a US keyboard: digits and symbols (letters
+// need no modifier on any common layout, and numpad and named keys go by key code)
+const CHARS = {
+  Num0: '0', Num1: '1', Num2: '2', Num3: '3', Num4: '4', Num5: '5', Num6: '6', Num7: '7', Num8: '8', Num9: '9',
+  Minus: '-', Equal: '=', LeftBracket: '[', RightBracket: ']', Backslash: '\\', Semicolon: ';', Quote: "'",
+  Comma: ',', Period: '.', Slash: '/', Grave: '`',
+};
+const CHAR_OF = new Map(Object.entries(CHARS).map(([name, ch]) => [Key[name], ch]));
+const MODIFIER_KEYS = {
+  shift: [Key.LeftShift, Key.RightShift],
+  ctrl: [Key.LeftControl, Key.RightControl],
+  alt: [Key.LeftAlt, Key.RightAlt],
+};
+
+// A combo's keys (from parse) with the modifiers the keyboard layout needs for its digits and
+// symbols (modifiersFor(char) → ['shift'…], see layout.js), each inserted right before its key unless
+// the combo already holds that modifier. Without modifiersFor, the keys as they are.
+function withLayout(keys, modifiersFor) {
+  if (!modifiersFor) return keys;
+  const out = [];
+  for (const k of keys) {
+    const ch = CHAR_OF.get(k);
+    if (ch !== undefined) {
+      for (const m of modifiersFor(ch)) {
+        const variants = MODIFIER_KEYS[m];
+        if (variants && !variants.some((v) => keys.includes(v) || out.includes(v))) out.push(variants[0]);
+      }
+    }
+    out.push(k);
+  }
+  return out;
+}
+
 function normalize(combo) {
   return String(combo).toLowerCase().replace(/\s+/g, '');
 }
@@ -62,4 +95,4 @@ function unavailable(combo, { platform = process.platform, keysyms } = {}) {
   return risky.filter((p) => !map.has(p.toUpperCase()));
 }
 
-module.exports = { parse, normalize, unavailable };
+module.exports = { parse, normalize, unavailable, withLayout };
